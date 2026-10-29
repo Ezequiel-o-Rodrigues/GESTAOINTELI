@@ -465,4 +465,4 @@ function abrirModalInventarioProduto(produtoId) {
     }
 }
 
-const estoqueManager = new EstoqueManager();
+window.estoqueManager = new EstoqueManager();

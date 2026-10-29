@@ -510,10 +510,7 @@ foreach ($produtos as $produto) {
 <script src="js/estoque-manager-fixed.js?v=<?= time() ?>"></script>
 
 <script>
-// Garantir que o estoqueManager use os caminhos corretos
-if (window.estoqueManager) {
-    window.estoqueManager.apiUrl = '../../api';
-}
+window.estoqueManager.apiUrl = <?= json_encode(rtrim(PathConfig::api(), '/')) ?>;
 </script>
 
 <script>
