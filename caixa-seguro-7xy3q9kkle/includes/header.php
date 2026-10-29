@@ -275,16 +275,11 @@ $usuarioPerfil = $_SESSION['usuario_perfil'] ?? '';
     </div>
 
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
     // Script para alteração de senha
     document.addEventListener('DOMContentLoaded', function() {
-        if (window.lucide) {
-            lucide.createIcons();
-        }
-
         const changePasswordForm = document.getElementById('changePasswordForm');
         const savePasswordBtn = document.getElementById('savePasswordBtn');
         const passwordAlert = document.getElementById('passwordAlert');

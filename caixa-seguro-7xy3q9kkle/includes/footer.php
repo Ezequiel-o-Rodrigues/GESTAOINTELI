@@ -16,5 +16,9 @@ $usuarioLogado = isset($_SESSION['usuario_logado']) && $_SESSION['usuario_logado
         </div>
     </footer>
     </div>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+    </script>
 </body>
 </html>
