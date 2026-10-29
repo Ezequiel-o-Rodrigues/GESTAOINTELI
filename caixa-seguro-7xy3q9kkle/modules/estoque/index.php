@@ -1,6 +1,17 @@
 <?php
 require_once '../../config/database.php';
+require_once '../../config/auth.php';
 require_once '../../includes/functions.php';
+
+if (!isset($_SESSION['usuario_logado']) || $_SESSION['usuario_logado'] !== true) {
+    header('Location: ' . PathConfig::url('login.php'));
+    exit;
+}
+
+$isAdmin = strtolower(trim((string) ($_SESSION['usuario_perfil'] ?? ''))) === 'admin';
+if (!isset($_SESSION['csrf_produto'])) {
+    $_SESSION['csrf_produto'] = bin2hex(random_bytes(32));
+}
 
 $database = new Database();
 $db = $database->getConnection();
@@ -353,7 +364,7 @@ foreach ($produtos as $produto) {
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
             <div class="modal-body">
-                <form id="productForm">
+                <form id="productForm" data-csrf-token="<?= htmlspecialchars($_SESSION['csrf_produto'], ENT_QUOTES, 'UTF-8') ?>">
                     <input type="hidden" id="productId">
                     <div class="mb-3">
                         <label for="productName" class="form-label">Nome</label>
@@ -367,6 +378,7 @@ foreach ($produtos as $produto) {
                             <option value="<?= $categoria['id'] ?>"><?= htmlspecialchars($categoria['nome']) ?></option>
                             <?php endforeach; ?>
                         </select>
+                        <div class="form-text">A categoria é compartilhada com relatórios; reclassificar altera o agrupamento das vendas históricas.</div>
                     </div>
                     <div class="mb-3">
                         <label for="productPrice" class="form-label">Preço</label>
@@ -380,6 +392,30 @@ foreach ($produtos as $produto) {
                         <label for="productInitialStock" class="form-label">Estoque Inicial</label>
                         <input type="number" id="productInitialStock" class="form-control" min="0" value="0">
                     </div>
+                    <?php if ($isAdmin): ?>
+                    <hr>
+                    <h6>Apresentação no cardápio público</h6>
+                    <p class="form-text">Nome e descrição são informativos. Preço e categoria continuam vindo do produto no caixa. Se houver opções relacionadas, elas aparecem no lugar do card principal.</p>
+                    <div class="mb-3">
+                        <label for="productPublicName" class="form-label">Nome público (opcional)</label>
+                        <input type="text" id="productPublicName" class="form-control" maxlength="100">
+                    </div>
+                    <div class="mb-3">
+                        <label for="productPublicDescription" class="form-label">Descrição pública (opcional)</label>
+                        <textarea id="productPublicDescription" class="form-control" rows="2" maxlength="1000"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="productImage" class="form-label">Imagem do produto (opcional, JPG/PNG/GIF/WebP, até 5 MB)</label>
+                        <input type="file" id="productImage" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Opções relacionadas (informativas; compartilham produto, preço e estoque)</label>
+                        <div id="productOptions"></div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="estoqueManager.addProductOption()">
+                            Adicionar opção
+                        </button>
+                    </div>
+                    <?php endif; ?>
                 </form>
             </div>
             <div class="modal-footer">
@@ -511,6 +547,7 @@ foreach ($produtos as $produto) {
 
 <script>
 window.estoqueManager.apiUrl = <?= json_encode(rtrim(PathConfig::api(), '/')) ?>;
+window.estoqueManager.csrfToken = <?= json_encode($_SESSION['csrf_produto']) ?>;
 </script>
 
 <script>

@@ -16,6 +16,8 @@
             "SELECT
                 p.id AS produto_id,
                 p.nome AS produto_nome,
+                p.nome_publico,
+                p.descricao_publica,
                 p.preco,
                 p.imagem AS produto_imagem,
                 c.id AS categoria_id,
@@ -58,6 +60,8 @@
                 $produtosPorCategoria[$categoriaId]['produtos'][$produtoId] = [
                     'id' => $produtoId,
                     'nome' => $produto['produto_nome'],
+                    'nome_publico' => $produto['nome_publico'],
+                    'descricao_publica' => $produto['descricao_publica'],
                     'preco' => $produto['preco'],
                     'imagem' => $produto['produto_imagem'],
                     'cards' => []
@@ -597,8 +601,8 @@
                                 $apresentacoes = $produto['cards'];
                                 if (empty($apresentacoes)) {
                                     $apresentacoes[] = [
-                                        'nome' => $produto['nome'],
-                                        'descricao' => null,
+                                        'nome' => $produto['nome_publico'] ?: $produto['nome'],
+                                        'descricao' => $produto['descricao_publica'],
                                         'imagem' => $produto['imagem']
                                     ];
                                 }

@@ -93,17 +93,20 @@ class EstoqueManager {
             if (!form) {
                 throw new Error('Elemento productForm não encontrado');
             }
-            
+
+            form.reset();
+            this.renderProductOptions([]);
+            delete form.dataset.originalCategory;
+            const productIdField = document.getElementById('productId');
+            if (productIdField) {
+                productIdField.value = productId || '';
+            }
+
             if (productId) {
                 title.textContent = 'Editar Produto';
                 this.loadProductData(productId);
             } else {
                 title.textContent = 'Novo Produto';
-                form.reset();
-                const productIdField = document.getElementById('productId');
-                if (productIdField) {
-                    productIdField.value = '';
-                }
             }
             
             const modalElement = document.getElementById('productModal');
@@ -139,9 +142,18 @@ class EstoqueManager {
             this.setFormValue('productId', product.id);
             this.setFormValue('productName', product.nome);
             this.setFormValue('productCategory', product.categoria_id);
+            const productForm = document.getElementById('productForm');
+            if (productForm) {
+                productForm.dataset.originalCategory = String(product.categoria_id);
+            }
             this.setFormValue('productPrice', product.preco);
             this.setFormValue('productMinStock', product.estoque_minimo);
             this.setFormValue('productInitialStock', product.estoque_atual || 0);
+            if (document.getElementById('productPublicName')) {
+                this.setFormValue('productPublicName', product.nome_publico);
+                this.setFormValue('productPublicDescription', product.descricao_publica);
+            }
+            this.renderProductOptions(product.opcoes || []);
 
         } catch (error) {
             this.error('Erro ao carregar produto', error);
@@ -209,19 +221,40 @@ class EstoqueManager {
         this.log('Salvando produto...');
         
         try {
-            const formData = {
-                id: document.getElementById('productId')?.value || null,
-                nome: document.getElementById('productName')?.value,
-                categoria_id: document.getElementById('productCategory')?.value,
-                preco: document.getElementById('productPrice')?.value,
-                estoque_minimo: document.getElementById('productMinStock')?.value,
-                estoque_inicial: document.getElementById('productInitialStock')?.value || 0
-            };
-
-            this.log('Dados do formulário', formData);
-
-            if (!formData.nome || !formData.categoria_id) {
+            const formData = new FormData();
+            const productId = document.getElementById('productId')?.value || '';
+            const productName = document.getElementById('productName')?.value || '';
+            const productCategory = document.getElementById('productCategory')?.value || '';
+            if (!productName || !productCategory) {
                 throw new Error('Preencha todos os campos obrigatórios');
+            }
+            const productForm = document.getElementById('productForm');
+            if (
+                productId
+                && productForm?.dataset.originalCategory
+                && productCategory !== productForm.dataset.originalCategory
+                && !confirm('A categoria é compartilhada e reclassificar altera o agrupamento das vendas históricas. Faça backup antes de continuar. Deseja prosseguir?')
+            ) {
+                return;
+            }
+
+            formData.append('id', productId);
+            formData.append('nome', productName);
+            formData.append('categoria_id', productCategory);
+            formData.append('preco', document.getElementById('productPrice')?.value || '');
+            formData.append('estoque_minimo', document.getElementById('productMinStock')?.value || '');
+            formData.append('estoque_inicial', document.getElementById('productInitialStock')?.value || '0');
+            formData.append('csrf_token', this.csrfToken || '');
+
+            const publicName = document.getElementById('productPublicName');
+            if (publicName) {
+                formData.append('nome_publico', publicName.value);
+                formData.append('descricao_publica', document.getElementById('productPublicDescription')?.value || '');
+                formData.append('opcoes_json', JSON.stringify(this.getProductOptions()));
+                const image = document.getElementById('productImage')?.files?.[0];
+                if (image) {
+                    formData.append('imagem', image);
+                }
             }
 
             const button = document.querySelector('#productModal .btn-primary');
@@ -238,10 +271,7 @@ class EstoqueManager {
 
             const response = await fetch(url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData)
+                body: formData
             });
 
             this.log('Resposta da API', { status: response.status, url: response.url });
@@ -267,6 +297,61 @@ class EstoqueManager {
                 button.disabled = false;
             }
         }
+    }
+
+    renderProductOptions(options) {
+        const container = document.getElementById('productOptions');
+        if (!container) return;
+
+        container.replaceChildren();
+        options.forEach((option) => this.addProductOption(option));
+    }
+
+    addProductOption(option = {}) {
+        const container = document.getElementById('productOptions');
+        if (!container) return;
+
+        const row = document.createElement('div');
+        row.className = 'product-option border rounded p-2 mb-2';
+        row.dataset.cardId = option.id || '';
+
+        const nameLabel = document.createElement('label');
+        nameLabel.className = 'form-label';
+        nameLabel.textContent = 'Nome da opção';
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'form-control option-name';
+        nameInput.maxLength = 100;
+        nameInput.required = true;
+        nameInput.value = option.nome_exibicao || '';
+        nameLabel.append(nameInput);
+
+        const descriptionLabel = document.createElement('label');
+        descriptionLabel.className = 'form-label mt-2';
+        descriptionLabel.textContent = 'Descrição da opção (opcional)';
+        const descriptionInput = document.createElement('input');
+        descriptionInput.type = 'text';
+        descriptionInput.className = 'form-control option-description';
+        descriptionInput.maxLength = 1000;
+        descriptionInput.value = option.descricao || '';
+        descriptionLabel.append(descriptionInput);
+
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.className = 'btn btn-outline-danger btn-sm mt-2';
+        removeButton.textContent = 'Remover opção';
+        removeButton.addEventListener('click', () => row.remove());
+
+        row.append(nameLabel, descriptionLabel, removeButton);
+        container.append(row);
+    }
+
+    getProductOptions() {
+        return Array.from(document.querySelectorAll('#productOptions .product-option')).map((row) => ({
+            id: row.dataset.cardId || null,
+            nome_exibicao: row.querySelector('.option-name').value,
+            descricao: row.querySelector('.option-description').value
+        }));
     }
 
     async registerEntry() {

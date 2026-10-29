@@ -1,72 +1,11 @@
 <?php
 require_once __DIR__ . '/includes/cardapio-auth.php';
 require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/config/database.php';
+require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/menu-images.php';
 
 function voltarComErro($mensagem) {
     header('Location: gerenciar_cardapio.php?erro=' . urlencode($mensagem));
     exit;
-}
-
-function prepararImagemEnviada($arquivo, $produtoId) {
-    if ($arquivo === null || (is_array($arquivo) && ($arquivo['error'] ?? null) === UPLOAD_ERR_NO_FILE)) {
-        return null;
-    }
-
-    if (
-        !is_array($arquivo)
-        || ($arquivo['error'] ?? null) !== UPLOAD_ERR_OK
-        || !isset($arquivo['tmp_name'], $arquivo['size'])
-        || !is_string($arquivo['tmp_name'])
-        || !is_int($arquivo['size'])
-        || !is_uploaded_file($arquivo['tmp_name'])
-    ) {
-        throw new RuntimeException('Não foi possível receber a imagem enviada.');
-    }
-    if ($arquivo['size'] > 5 * 1024 * 1024) {
-        throw new RuntimeException('A imagem deve ter no máximo 5 MB.');
-    }
-
-    $imagemInfo = getimagesize($arquivo['tmp_name']);
-    $extensoesMime = [
-        'image/jpeg' => 'jpg',
-        'image/png' => 'png',
-        'image/gif' => 'gif',
-        'image/webp' => 'webp'
-    ];
-    if (!$imagemInfo || !isset($imagemInfo['mime']) || !isset($extensoesMime[$imagemInfo['mime']])) {
-        throw new RuntimeException('Envie uma imagem JPG, PNG, GIF ou WebP válida.');
-    }
-
-    $diretorio = __DIR__ . '/../public/images/menu/products';
-    if (!is_dir($diretorio) && !mkdir($diretorio, 0755, true) && !is_dir($diretorio)) {
-        throw new RuntimeException('Não foi possível preparar a pasta de imagens.');
-    }
-
-    $nomeArquivo = $produtoId . '_' . bin2hex(random_bytes(8)) . '.' . $extensoesMime[$imagemInfo['mime']];
-    $caminho = $diretorio . DIRECTORY_SEPARATOR . $nomeArquivo;
-    if (!move_uploaded_file($arquivo['tmp_name'], $caminho)) {
-        throw new RuntimeException('Falha ao salvar a imagem enviada.');
-    }
-
-    return [
-        'caminho' => $caminho,
-        'relativo' => 'products/' . $nomeArquivo
-    ];
-}
-
-function removerImagemGerenciada($imagemRelativa) {
-    $imagemRelativa = str_replace('\\', '/', (string) $imagemRelativa);
-    if (strpos($imagemRelativa, 'products/') !== 0 || strpos($imagemRelativa, '..') !== false) {
-        return;
-    }
-
-    $diretorioGerenciado = realpath(__DIR__ . '/../public/images/menu/products');
-    $arquivo = __DIR__ . '/../public/images/menu/' . $imagemRelativa;
-    if ($diretorioGerenciado && realpath(dirname($arquivo)) === $diretorioGerenciado && is_file($arquivo)) {
-        if (!unlink($arquivo)) {
-            error_log('Não foi possível remover a imagem do card: ' . $imagemRelativa);
-        }
-    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -87,10 +26,6 @@ if (
 
 $acao = $_POST['acao'] ?? 'salvar_produto';
 $idProduto = filter_var($_POST['id'] ?? $_POST['produto_id'] ?? null, FILTER_VALIDATE_INT);
-if (!$idProduto || $idProduto < 1) {
-    voltarComErro('Produto inválido.');
-}
-
 $arquivoNovo = null;
 
 try {
@@ -100,6 +35,77 @@ try {
         throw new RuntimeException('Não foi possível conectar ao banco de dados do caixa.');
     }
 
+    if ($acao === 'salvar_categoria') {
+        $categoriaId = ($_POST['categoria_id'] ?? '') === ''
+            ? null
+            : filter_var($_POST['categoria_id'], FILTER_VALIDATE_INT);
+        $nomeInput = $_POST['nome_categoria'] ?? '';
+        $descricaoInput = $_POST['descricao_categoria'] ?? '';
+        if (!is_string($nomeInput) || !is_string($descricaoInput)) {
+            throw new RuntimeException('Confira o nome e a descrição da categoria.');
+        }
+        $nome = trim($nomeInput);
+        $descricao = trim($descricaoInput);
+        $nomeComprimento = preg_match_all('/./us', $nome, $caracteresNome);
+        $descricaoComprimento = preg_match_all('/./us', $descricao, $caracteresDescricao);
+        if ($nome === '' || $nomeComprimento === false || $nomeComprimento > 50 || $descricaoComprimento === false || $descricaoComprimento > 1000) {
+            throw new RuntimeException('Informe um nome de categoria de até 50 caracteres e uma descrição de até 1.000 caracteres.');
+        }
+
+        if ($categoriaId !== null) {
+            if ($categoriaId < 1) {
+                throw new RuntimeException('Categoria inválida.');
+            }
+            if (($_POST['backup_confirmado'] ?? '') !== '1') {
+                throw new RuntimeException('Confirme o backup antes de renomear ou editar uma categoria compartilhada.');
+            }
+            $stmt = $db->prepare('UPDATE categorias SET nome = :nome, descricao = :descricao WHERE id = :id');
+            $stmt->execute([
+                ':nome' => $nome,
+                ':descricao' => $descricao === '' ? null : $descricao,
+                ':id' => $categoriaId
+            ]);
+        } else {
+            $stmt = $db->prepare('INSERT INTO categorias (nome, descricao) VALUES (:nome, :descricao)');
+            $stmt->execute([
+                ':nome' => $nome,
+                ':descricao' => $descricao === '' ? null : $descricao
+            ]);
+        }
+
+        header('Location: gerenciar_cardapio.php?msg=' . urlencode('Categoria salva. A categoria é compartilhada com estoque e relatórios.'));
+        exit;
+    }
+
+    if ($acao === 'excluir_categoria') {
+        $categoriaId = filter_var($_POST['categoria_id'] ?? null, FILTER_VALIDATE_INT);
+        if (!$categoriaId || $categoriaId < 1) {
+            throw new RuntimeException('Categoria inválida.');
+        }
+        if (($_POST['backup_confirmado'] ?? '') !== '1') {
+            throw new RuntimeException('Confirme o backup antes de excluir uma categoria.');
+        }
+
+        $stmt = $db->prepare('SELECT COUNT(*) FROM produtos WHERE categoria_id = :categoria_id');
+        $stmt->execute([':categoria_id' => $categoriaId]);
+        if ((int) $stmt->fetchColumn() > 0) {
+            throw new RuntimeException('A categoria possui produtos. Reclassifique todos no estoque antes de excluí-la.');
+        }
+
+        $stmt = $db->prepare('DELETE FROM categorias WHERE id = :id');
+        $stmt->execute([':id' => $categoriaId]);
+        if ($stmt->rowCount() === 0) {
+            throw new RuntimeException('Categoria não encontrada.');
+        }
+
+        header('Location: gerenciar_cardapio.php?msg=' . urlencode('Categoria excluída.'));
+        exit;
+    }
+
+    if (!$idProduto || $idProduto < 1) {
+        throw new RuntimeException('Produto inválido.');
+    }
+
     $stmt = $db->prepare('SELECT id, imagem FROM produtos WHERE id = :id');
     $stmt->execute([':id' => $idProduto]);
     $produto = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -107,53 +113,16 @@ try {
         throw new RuntimeException('Produto não encontrado.');
     }
 
-    if ($acao === 'salvar_produto') {
-        $categoriaId = filter_var($_POST['categoria_id'] ?? null, FILTER_VALIDATE_INT);
-        $nomeInput = $_POST['nome'] ?? '';
-        $precoInput = $_POST['preco'] ?? '';
-        if (!is_string($nomeInput) || !is_string($precoInput)) {
-            throw new RuntimeException('Confira nome e preço informados.');
+    if ($acao === 'salvar_imagem_produto') {
+        $arquivoNovo = menuPrepareUploadedImage($_FILES['imagem'] ?? null, $idProduto);
+        if (!$arquivoNovo) {
+            throw new RuntimeException('Selecione uma imagem antes de salvar.');
         }
-        $nome = trim($nomeInput);
-        $preco = str_replace(',', '.', trim($precoInput));
-        $nomeComprimento = preg_match_all('/./us', $nome, $caracteresNome);
-        if (!$categoriaId || $categoriaId < 1 || $nome === '' || $nomeComprimento === false || $nomeComprimento > 100 || !preg_match('/^\d{1,8}(?:\.\d{1,2})?$/D', $preco)) {
-            throw new RuntimeException('Confira nome e preço informados.');
-        }
-
-        $stmt = $db->prepare('SELECT id FROM categorias WHERE id = :id');
-        $stmt->execute([':id' => $categoriaId]);
-        if (!$stmt->fetchColumn()) {
-            throw new RuntimeException('A categoria selecionada não existe.');
-        }
-
-        $arquivoNovo = prepararImagemEnviada($_FILES['imagem'] ?? null, $idProduto);
-        if ($arquivoNovo) {
-            $stmt = $db->prepare(
-                'UPDATE produtos
-                 SET nome = :nome, preco = :preco, categoria_id = :categoria_id, imagem = :imagem
-                 WHERE id = :id'
-            );
-            $stmt->execute([
-                ':nome' => $nome,
-                ':preco' => $preco,
-                ':categoria_id' => $categoriaId,
-                ':imagem' => $arquivoNovo['relativo'],
-                ':id' => $idProduto
-            ]);
-        } else {
-            $stmt = $db->prepare(
-                'UPDATE produtos
-                 SET nome = :nome, preco = :preco, categoria_id = :categoria_id
-                 WHERE id = :id'
-            );
-            $stmt->execute([
-                ':nome' => $nome,
-                ':preco' => $preco,
-                ':categoria_id' => $categoriaId,
-                ':id' => $idProduto
-            ]);
-        }
+        $stmt = $db->prepare('UPDATE produtos SET imagem = :imagem WHERE id = :id');
+        $stmt->execute([
+            ':imagem' => $arquivoNovo['relativo'],
+            ':id' => $idProduto
+        ]);
     } elseif ($acao === 'salvar_card') {
         $cardIdInput = $_POST['card_id'] ?? '';
         $cardId = $cardIdInput === '' ? null : filter_var($cardIdInput, FILTER_VALIDATE_INT);
@@ -184,7 +153,7 @@ try {
             }
         }
 
-        $arquivoNovo = prepararImagemEnviada($_FILES['imagem'] ?? null, $idProduto);
+        $arquivoNovo = menuPrepareUploadedImage($_FILES['imagem'] ?? null, $idProduto);
         $imagem = $arquivoNovo ? $arquivoNovo['relativo'] : $imagemAtual;
 
         if ($cardId) {
@@ -229,7 +198,7 @@ try {
 
         $stmt = $db->prepare('DELETE FROM produto_cards WHERE id = :card_id AND produto_id = :produto_id');
         $stmt->execute([':card_id' => $cardId, ':produto_id' => $idProduto]);
-        removerImagemGerenciada($imagem);
+        menuRemoveManagedImage($imagem);
     } else {
         throw new RuntimeException('Ação inválida.');
     }
@@ -238,7 +207,9 @@ try {
     exit;
 } catch (Throwable $e) {
     if ($arquivoNovo && is_file($arquivoNovo['caminho'])) {
-        unlink($arquivoNovo['caminho']);
+        if (!unlink($arquivoNovo['caminho'])) {
+            error_log('Não foi possível remover o upload temporário após falha: ' . $arquivoNovo['caminho']);
+        }
     }
     error_log('Erro ao atualizar apresentação do cardápio: ' . $e->getMessage());
     if ($e instanceof RuntimeException) {

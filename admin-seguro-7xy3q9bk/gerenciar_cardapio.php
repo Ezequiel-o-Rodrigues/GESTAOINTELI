@@ -10,7 +10,7 @@ try {
     }
 
     $stmt = $db->query(
-        "SELECT id, nome FROM categorias
+        "SELECT id, nome, descricao FROM categorias
          ORDER BY CASE nome
             WHEN 'Espetos' THEN 1
             WHEN 'Porções' THEN 2
@@ -24,7 +24,7 @@ try {
     $categorias = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $stmt = $db->query(
-        "SELECT p.id, p.nome, p.preco, p.imagem, p.ativo, p.categoria_id, c.nome AS categoria_nome
+        "SELECT p.id, p.nome, p.nome_publico, p.descricao_publica, p.preco, p.imagem, p.ativo, p.categoria_id, c.nome AS categoria_nome
          FROM produtos p
          INNER JOIN categorias c ON c.id = p.categoria_id
          ORDER BY
@@ -54,7 +54,7 @@ try {
 } catch (Throwable $e) {
     error_log('Erro ao carregar gerenciador do cardápio: ' . $e->getMessage());
     http_response_code(503);
-    exit('Não foi possível carregar o gerenciador. Verifique a conexão e se a migração de cards foi aplicada.');
+    exit('Não foi possível carregar o gerenciador. Verifique a conexão e se as migrações do cardápio foram aplicadas.');
 }
 
 if (!isset($_SESSION['csrf_cardapio'])) {
@@ -78,6 +78,10 @@ $erro = $_GET['erro'] ?? '';
         .back, button { display: inline-block; border: 0; border-radius: 6px; padding: 10px 14px; background: #4a6fa5; color: #fff; text-decoration: none; font-weight: 700; cursor: pointer; }
         .notice { margin: 12px 0; padding: 12px; border-radius: 6px; background: #dcfce7; }
         .error { margin: 12px 0; padding: 12px; border-radius: 6px; background: #fee2e2; }
+        .warning { margin: 16px 0; padding: 14px; border-radius: 6px; background: #fef3c7; }
+        .category { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto auto; gap: 10px; align-items: end; margin: 10px 0; padding: 12px; background: #fff; border: 1px solid #e5e7eb; border-radius: 7px; }
+        .ack { display: flex; grid-column: 1 / -1; align-items: flex-start; gap: 8px; }
+        .ack input { width: auto; margin-top: 3px; }
         .product { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 16px; margin: 14px 0; padding: 16px; border-radius: 8px; background: #fff; box-shadow: 0 2px 6px #00000012; }
         .product img { width: 140px; height: 110px; object-fit: cover; border-radius: 6px; background: #eee; }
         .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -98,6 +102,7 @@ $erro = $_GET['erro'] ?? '';
             .product { grid-template-columns: 1fr; }
             .product img { width: 100%; height: 180px; }
             .fields { grid-template-columns: 1fr; }
+            .category { grid-template-columns: 1fr; }
             .menu-card { grid-template-columns: 1fr; }
             .menu-card img { width: 100%; height: 160px; }
         }
@@ -117,7 +122,61 @@ $erro = $_GET['erro'] ?? '';
         <p class="error"><?= htmlspecialchars($erro, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
 
-    <p>Produtos ativos aparecem no cardápio público e herdam preço e categoria do estoque. Você pode configurar vários cards visuais para um produto; eles não criam itens nem registram opções na venda.</p>
+    <p>Produtos ativos aparecem no cardápio público e usam nome, preço e categoria oficiais do estoque. As apresentações públicas e opções são informativas: não criam produtos, preços ou estoque próprios.</p>
+
+    <section class="warning">
+        <strong>Categorias compartilhadas com estoque, caixa e relatórios.</strong>
+        Alterar o nome de uma categoria ou reclassificar produtos também altera como as vendas históricas são agrupadas nos relatórios. Excluir uma categoria com produtos é bloqueado até que todos sejam reclassificados no estoque.
+    </section>
+
+    <section>
+        <h2>Categorias</h2>
+        <?php foreach ($categorias as $categoria): ?>
+            <div class="category">
+                <form method="post" action="salvar_cardapio.php" class="fields" style="grid-column: 1 / 3;">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_cardapio'], ENT_QUOTES, 'UTF-8') ?>">
+                    <input type="hidden" name="acao" value="salvar_categoria">
+                    <input type="hidden" name="categoria_id" value="<?= (int) $categoria['id'] ?>">
+                    <label>
+                        Nome
+                        <input type="text" name="nome_categoria" maxlength="50" required value="<?= htmlspecialchars($categoria['nome'], ENT_QUOTES, 'UTF-8') ?>">
+                    </label>
+                    <label>
+                        Descrição (opcional)
+                        <input type="text" name="descricao_categoria" maxlength="1000" value="<?= htmlspecialchars($categoria['descricao'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                    </label>
+                    <label class="ack">
+                        <input type="checkbox" name="backup_confirmado" value="1" required>
+                        Confirmo que fiz backup e entendo o impacto do nome compartilhado nos relatórios históricos.
+                    </label>
+                    <button type="submit">Salvar categoria</button>
+                </form>
+                <form method="post" action="salvar_cardapio.php" onsubmit="return confirm('Excluir esta categoria? A operação será bloqueada se houver produtos vinculados.');">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_cardapio'], ENT_QUOTES, 'UTF-8') ?>">
+                    <input type="hidden" name="acao" value="excluir_categoria">
+                    <input type="hidden" name="categoria_id" value="<?= (int) $categoria['id'] ?>">
+                    <label class="ack">
+                        <input type="checkbox" name="backup_confirmado" value="1" required>
+                        Backup feito
+                    </label>
+                    <button class="delete-button" type="submit">Excluir</button>
+                </form>
+            </div>
+        <?php endforeach; ?>
+        <form method="post" action="salvar_cardapio.php" class="category">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_cardapio'], ENT_QUOTES, 'UTF-8') ?>">
+            <input type="hidden" name="acao" value="salvar_categoria">
+            <label>
+                Nova categoria
+                <input type="text" name="nome_categoria" maxlength="50" required>
+            </label>
+            <label>
+                Descrição (opcional)
+                <input type="text" name="descricao_categoria" maxlength="1000">
+            </label>
+            <button type="submit">Criar categoria</button>
+        </form>
+    </section>
 
     <?php foreach ($produtos as $produto): ?>
         <?php
@@ -136,35 +195,28 @@ $erro = $_GET['erro'] ?? '';
                 <p class="status">
                     Produto #<?= (int) $produto['id'] ?> · <?= $produto['ativo'] ? 'Ativo e visível no cardápio' : 'Inativo e oculto no cardápio' ?>
                 </p>
+                <p>
+                    <strong>Produto no caixa:</strong> <?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?><br>
+                    <strong>Preço oficial:</strong> R$ <?= number_format((float) $produto['preco'], 2, ',', '.') ?><br>
+                    <strong>Categoria compartilhada:</strong> <?= htmlspecialchars($produto['categoria_nome'], ENT_QUOTES, 'UTF-8') ?>
+                </p>
+                <p>
+                    <strong>Nome público:</strong> <?= htmlspecialchars($produto['nome_publico'] ?: $produto['nome'], ENT_QUOTES, 'UTF-8') ?><br>
+                    <strong>Descrição pública:</strong> <?= htmlspecialchars($produto['descricao_publica'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                </p>
                 <form method="post" action="salvar_cardapio.php" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_cardapio'], ENT_QUOTES, 'UTF-8') ?>">
+                    <input type="hidden" name="acao" value="salvar_imagem_produto">
                     <input type="hidden" name="id" value="<?= (int) $produto['id'] ?>">
                     <div class="fields">
-                        <label>
-                            Nome
-                            <input type="text" name="nome" maxlength="100" required value="<?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?>">
-                        </label>
-                        <label>
-                            Preço (R$)
-                            <input type="number" name="preco" min="0" max="99999999.99" step="0.01" required value="<?= htmlspecialchars((string) $produto['preco'], ENT_QUOTES, 'UTF-8') ?>">
-                        </label>
-                        <label>
-                            Categoria
-                            <select name="categoria_id" required>
-                                <?php foreach ($categorias as $categoria): ?>
-                                    <option value="<?= (int) $categoria['id'] ?>" <?= (int) $categoria['id'] === (int) $produto['categoria_id'] ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($categoria['nome'], ENT_QUOTES, 'UTF-8') ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </label>
                         <label>
                             Imagem (JPG, PNG, GIF ou WebP; até 5 MB)
                             <input type="file" name="imagem" accept="image/jpeg,image/png,image/gif,image/webp">
                         </label>
                     </div>
                     <div class="actions">
-                        <button type="submit">Salvar alterações</button>
+                        <button type="submit">Atualizar imagem do produto</button>
+                        <a href="../caixa-seguro-7xy3q9kkle/modules/estoque/">Editar produto no estoque</a>
                     </div>
                 </form>
             </div>
@@ -172,9 +224,9 @@ $erro = $_GET['erro'] ?? '';
                 <h2>Cards públicos</h2>
                 <p class="card-help">
                     <?php if (!empty($cardsPorProduto[(int) $produto['id']])): ?>
-                        Os cards abaixo substituem a apresentação padrão deste produto no cardápio.
+                        Estas opções aparecem como apresentações relacionadas. São informativas e compartilham o preço do produto no caixa.
                     <?php else: ?>
-                        Sem cards personalizados: o cardápio mostra o nome e a imagem do produto do estoque.
+                        Sem opções relacionadas: o cardápio usa o nome público configurado no estoque (ou o nome oficial) e a imagem do produto.
                     <?php endif; ?>
                 </p>
 
