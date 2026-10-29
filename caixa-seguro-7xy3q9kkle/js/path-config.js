@@ -1,36 +1,40 @@
-// 📁 js/path-config.js
 class PathConfig {
     static getBasePath() {
-        // Detecta o caminho base automaticamente
-        const path = window.location.pathname;
-        if (path.includes('/modules/')) {
-            return path.split('/modules/')[0];
+        const pathname = window.location.pathname;
+        const subdirectoryPositions = ['/modules/', '/api/']
+            .map((directory) => pathname.indexOf(directory))
+            .filter((position) => position !== -1);
+
+        if (subdirectoryPositions.length) {
+            return pathname.slice(0, Math.min(...subdirectoryPositions));
         }
-        if (path.includes('/gestaointeli-jnr/')) {
-            return '/gestaointeli-jnr';
+
+        const segments = pathname.split('/').filter(Boolean);
+        const lastSegment = segments[segments.length - 1];
+
+        if (lastSegment && lastSegment.includes('.')) {
+            segments.pop();
         }
-        return '';
+
+        return segments.length ? `/${segments.join('/')}` : '';
     }
 
     static url(path = '') {
-        const base = this.getBasePath();
-        return `${base}/${path.replace(/^\//, '')}`;
+        const base = this.getBasePath().replace(/\/+$/, '');
+        const normalizedPath = String(path).replace(/^\/+/, '');
+
+        return normalizedPath ? `${base}/${normalizedPath}` : `${base}/`;
     }
 
     static api(endpoint = '') {
-        return this.url(`api/${endpoint}`);
+        return this.url(`api/${String(endpoint).replace(/^\/+/, '')}`);
     }
 
     static modules(module = '') {
-        return this.url(`modules/${module}`);
+        return this.url(`modules/${String(module).replace(/^\/+/, '')}`);
     }
 
     static assets(path = '') {
-        return this.url(`assets/${path}`);
+        return this.url(`assets/${String(path).replace(/^\/+/, '')}`);
     }
 }
-
-// Exemplos de uso:
-// PathConfig.api('comanda_aberta.php')
-// PathConfig.modules('estoque/script.js')
-// PathConfig.assets('css/style.css')
