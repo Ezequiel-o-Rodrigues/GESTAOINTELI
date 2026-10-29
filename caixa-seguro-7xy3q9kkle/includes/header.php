@@ -100,7 +100,7 @@ $usuarioPerfil = $_SESSION['usuario_perfil'] ?? '';
                 <div class="d-flex align-items-center">
                     <h1 class="me-4">🍽️ Sistema Restaurante</h1>
                     <nav class="main-nav">
-                        <a href="<?= PathConfig::url() ?>">🏠 Início</a>
+                        <a href="<?= PathConfig::url('index.php') ?>">🏠 Início</a>
                         <a href="<?= PathConfig::modules('caixa/') ?>">💰 Caixa</a>
                         <a href="<?= PathConfig::modules('estoque/') ?>">📦 Estoque</a>
                         <a href="<?= PathConfig::modules('relatorios/') ?>">📊 Relatórios</a>
