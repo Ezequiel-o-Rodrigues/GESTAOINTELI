@@ -54,6 +54,11 @@ if (window.CaixaSystemAlreadyLoaded) {
                 this.filtrarProdutos(e.target.value);
             });
         }
+
+        const filtroCategoria = document.getElementById('filtro-categoria');
+        if (filtroCategoria) {
+            filtroCategoria.addEventListener('change', () => this.filtrarProdutos());
+        }
         
         // Filtro por categoria
         document.querySelectorAll('.categoria-btn').forEach(btn => {
@@ -72,31 +77,21 @@ if (window.CaixaSystemAlreadyLoaded) {
         // para evitar duplicação de chamadas de clique
     }
     
-    async carregarProdutos() {
-        try {
-            this.mostrarLoadingProdutos(true);
-            
-            // AJUSTE: tentar endpoint API padrão (se houver) — se não existir, o código atual do servidor renderiza produtos em PHP
-            const response = await fetch('/api/produtos_categoria.php');
-            const data = await response.json();
-            
-            if (data.success && data.produtos) {
-                this.produtos = data.produtos;
-            } else if (Array.isArray(data)) {
-                // alguns endpoints podem retornar diretamente um array
-                this.produtos = data;
-            } else if (data.produtos) {
-                this.produtos = data.produtos;
-                this.renderizarProdutos(this.produtos);
-            } else {
-                throw new Error(data.message || 'Erro ao carregar produtos');
-            }
-        } catch (error) {
-            console.error('Erro ao carregar produtos:', error);
-            this.mostrarToast('Erro ao carregar produtos', 'error');
-        } finally {
-            this.mostrarLoadingProdutos(false);
+    carregarProdutos() {
+        this.produtos = Array.from(document.querySelectorAll('.produto-card[data-produto-id]')).map((card) => ({
+            id: card.dataset.produtoId,
+            nome: card.dataset.produtoNome || '',
+            preco: card.dataset.produtoPreco || '0',
+            categoria_id: card.dataset.produtoCategoria || ''
+        }));
+    }
+
+    apiUrl(endpoint) {
+        const apiBase = window.appConfig && window.appConfig.apiBase;
+        if (!apiBase) {
+            throw new Error('URL da API do caixa não foi configurada');
         }
+        return apiBase + endpoint.replace(/^\/+/, '');
     }
     
     renderizarProdutos(produtos) {
@@ -147,7 +142,7 @@ if (window.CaixaSystemAlreadyLoaded) {
             this.carregando = true;
             
             // Usar endpoint PHP do projeto (sem garçom)
-            const response = await fetch('/api/nova_comanda.php', {
+            const response = await fetch(this.apiUrl('nova_comanda.php'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -186,7 +181,7 @@ if (window.CaixaSystemAlreadyLoaded) {
             this.carregando = true;
             
             // Usar endpoint específico para criar comanda com garçom
-            const response = await fetch('criar_comanda.php', {
+            const response = await fetch(window.appConfig.createOrderUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ garcom: garcomCodigo })
@@ -229,7 +224,7 @@ if (window.CaixaSystemAlreadyLoaded) {
             this.carregando = true;
             
             // Usar endpoint PHP instalado no projeto
-            const response = await fetch('/api/adicionar_item.php', {
+            const response = await fetch(this.apiUrl('adicionar_item.php'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -262,7 +257,7 @@ if (window.CaixaSystemAlreadyLoaded) {
         
         try {
             // Usar endpoint PHP do projeto
-            const response = await fetch(`/api/itens_comanda.php?comanda_id=${this.comandaAtual.id}`);
+            const response = await fetch(`${this.apiUrl('itens_comanda.php')}?comanda_id=${encodeURIComponent(this.comandaAtual.id)}`);
             const data = await response.json();
 
             // DEBUG: log para diagnóstico
@@ -415,7 +410,7 @@ if (window.CaixaSystemAlreadyLoaded) {
         try {
             this.carregando = true;
             
-            const response = await fetch('/api/adicionar_item.php', {
+            const response = await fetch(this.apiUrl('adicionar_item.php'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -460,7 +455,7 @@ if (window.CaixaSystemAlreadyLoaded) {
             console.log('Enviando requisição para remover item:', itemId, 'de comanda:', this.comandaAtual.id);
             
             // Usar endpoint PHP do projeto (API espera comanda_id E item_id)
-            const response = await fetch('/api/remover_item.php', {
+            const response = await fetch(this.apiUrl('remover_item.php'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -521,7 +516,7 @@ if (window.CaixaSystemAlreadyLoaded) {
             console.log('Enviando requisição para finalizar comanda:', this.comandaAtual.id);
             
             // Usar endpoint PHP do projeto
-            const response = await fetch('/api/finalizar_comanda.php', {
+            const response = await fetch(this.apiUrl('finalizar_comanda.php'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -579,7 +574,7 @@ if (window.CaixaSystemAlreadyLoaded) {
             console.log('Validando estoque para comanda:', this.comandaAtual.id);
             
             // Usar endpoint PHP do projeto
-            const response = await fetch('/api/verificar_estoque.php', {
+            const response = await fetch(this.apiUrl('verificar_estoque.php'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -666,10 +661,34 @@ if (window.CaixaSystemAlreadyLoaded) {
     }
     
     filtrarProdutos(termo) {
-        const produtosFiltrados = this.produtos.filter(produto =>
-            produto.nome.toLowerCase().includes(termo.toLowerCase())
-        );
-        this.renderizarProdutos(produtosFiltrados);
+        const buscaInput = document.getElementById('search-produto');
+        const filtroCategoria = document.getElementById('filtro-categoria');
+        const texto = String(typeof termo === 'string' ? termo : (buscaInput ? buscaInput.value : ''))
+            .trim()
+            .toLowerCase();
+        const categoria = filtroCategoria ? filtroCategoria.value : '';
+        let quantidadeVisivel = 0;
+
+        document.querySelectorAll('.categoria-produtos').forEach((grupo) => {
+            const categoriaId = grupo.dataset.categoria || '';
+            const categoriaVisivel = !categoria || categoria === categoriaId;
+            let produtosVisiveis = 0;
+
+            grupo.querySelectorAll('.produto-card[data-produto-id]').forEach((card) => {
+                const nome = (card.dataset.produtoNome || '').toLowerCase();
+                const visivel = categoriaVisivel && nome.includes(texto);
+                card.style.display = visivel ? '' : 'none';
+                if (visivel) produtosVisiveis++;
+            });
+
+            grupo.style.display = produtosVisiveis === 0 ? 'none' : '';
+            quantidadeVisivel += produtosVisiveis;
+        });
+
+        const contador = document.getElementById('contador-produtos');
+        if (contador) {
+            contador.textContent = `${quantidadeVisivel} produto(s)`;
+        }
     }
     
     filtrarPorCategoria(categoria) {
@@ -819,7 +838,7 @@ async imprimirComprovante(comprovanteId) {
     try {
         console.log('Solicitando comprovante:', comprovanteId);
         
-        const response = await fetch('/api/imprimir_simples.php', {
+        const response = await fetch(this.apiUrl('imprimir_simples.php'), {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({comprovante_id: comprovanteId})

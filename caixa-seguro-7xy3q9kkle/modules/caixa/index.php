@@ -1,6 +1,9 @@
 <?php
+require_once __DIR__ . '/../../config/paths.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
+
+$base_path = rtrim(PathConfig::url(), '/') . '/';
 
 // Iniciar a sessão se necessário
 if (session_status() === PHP_SESSION_NONE) {
@@ -77,7 +80,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Caixa - Sistema Restaurante</title>
-    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="<?= htmlspecialchars(PathConfig::url('css/style.css'), ENT_QUOTES, 'UTF-8') ?>">
     <style>
         * {
             margin: 0;
@@ -106,6 +109,20 @@ try {
         .mini-header h1 {
             font-size: 1.2rem;
             font-weight: 600;
+        }
+
+        .mini-header > a {
+            color: white;
+            text-decoration: none;
+            padding: 7px 12px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            transition: background 0.2s ease;
+        }
+
+        .mini-header > a:hover,
+        .mini-header > a:focus-visible {
+            background: rgba(255, 255, 255, 0.15);
         }
 
         .btn-voltar {
@@ -552,8 +569,8 @@ try {
     <!-- CONTEÚDO PRINCIPAL - MAIS ESPAÇO PARA PRODUTOS -->
     <div class="conteudo-principal">
         <div class="filtros-container">
-            <input type="text" id="search-produto" class="search-input" placeholder="🔍 Buscar..." onkeyup="filtrarProdutos()">
-            <select id="filtro-categoria" class="categoria-filtro" onchange="filtrarProdutos()">
+            <input type="text" id="search-produto" class="search-input" placeholder="🔍 Buscar...">
+            <select id="filtro-categoria" class="categoria-filtro">
                 <option value="">Todas categorias</option>
                 <?php foreach($categorias as $categoria): ?>
                 <option value="<?= $categoria['id'] ?>"><?= htmlspecialchars($categoria['nome']) ?></option>
@@ -604,10 +621,12 @@ try {
     <script>
           // Passar variáveis PHP para JavaScript - VERIFICAR SE JÁ EXISTE
     if (typeof window.appConfig === 'undefined') {
-        window.appConfig = {
+        window.appConfig = Object.assign({}, window.appConfig || {}, {
             comandaAtualId: <?php echo isset($comanda_aberta) && $comanda_aberta ? $comanda_aberta['id'] : 'null'; ?>,
-            basePath: '<?php echo $base_path; ?>'
-        };
+            basePath: <?= json_encode($base_path) ?>,
+            apiBase: <?= json_encode(rtrim(PathConfig::api(), '/') . '/') ?>,
+            createOrderUrl: <?= json_encode(PathConfig::modules('caixa/criar_comanda.php')) ?>
+        });
     }
     </script>   
 
@@ -724,7 +743,7 @@ try {
             
             try {
                 // Fazer requisição direta
-                const response = await fetch('criar_comanda.php', {
+                const response = await fetch(window.appConfig.createOrderUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -815,7 +834,7 @@ try {
     </script>
 
     <!-- Script de impressão -->
-<script src="<?php echo $base_path; ?>modules/caixa/impressao-service.js"></script>
+<script src="<?= htmlspecialchars(PathConfig::modules('caixa/impressao-service.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 
 <script>
 // Teste de compatibilidade Web USB
@@ -834,7 +853,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
     <!-- Carregamento do CaixaSystem (com proteção contra duplicação) -->
-    <script src="<?php echo $base_path; ?>modules/caixa/caixa.js?v=<?= time() ?>"></script>
+    <script src="<?= htmlspecialchars(PathConfig::modules('caixa/caixa.js'), ENT_QUOTES, 'UTF-8') ?>?v=<?= time() ?>"></script>
     
     <script>
     // Event listeners para modal de comprovante
