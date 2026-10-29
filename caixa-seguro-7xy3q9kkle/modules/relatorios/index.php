@@ -150,7 +150,6 @@ try {
                 <div class="filtro-group">
                     <button class="btn btn-primary" onclick="gerarRelatorio()">Gerar Relatório</button>
                     <button class="btn" onclick="exportarRelatorio()">📥 Exportar</button>
-                    <button class="btn btn-warning" onclick="limparPerdasDuplicadas()" title="Limpar perdas duplicadas">🧹 Limpar Duplicadas</button>
                 </div>
             </div>
         </div>

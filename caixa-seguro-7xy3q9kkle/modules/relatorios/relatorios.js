@@ -1396,26 +1396,3 @@ function limparFiltroData() {
 function exportarHistoricoPerdas() {
     relatorios.exportarHistoricoPerdas();
 }
-
-async function limparPerdasDuplicadas() {
-    if (!confirm('Deseja limpar as perdas duplicadas do banco de dados? Esta ação não pode ser desfeita.')) {
-        return;
-    }
-    
-    try {
-        const response = await fetch('../../api/limpar_perdas_duplicadas.php');
-        const result = await response.json();
-        
-        if (result.success) {
-            alert(`✅ ${result.message}`);
-            relatorios.carregarAlertasPerda();
-            // Recarregar página para atualizar tudo
-            setTimeout(() => location.reload(), 1000);
-        } else {
-            alert(`❌ Erro: ${result.message}`);
-        }
-    } catch (error) {
-        alert(`❌ Erro ao limpar duplicadas: ${error.message}`);
-    }
-}
-
