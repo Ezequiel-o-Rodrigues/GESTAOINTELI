@@ -8,7 +8,6 @@ if (!isset($_SESSION['usuario_logado']) || $_SESSION['usuario_logado'] !== true)
     exit;
 }
 
-$isAdmin = strtolower(trim((string) ($_SESSION['usuario_perfil'] ?? ''))) === 'admin';
 if (!isset($_SESSION['csrf_produto'])) {
     $_SESSION['csrf_produto'] = bin2hex(random_bytes(32));
 }
@@ -392,7 +391,6 @@ foreach ($produtos as $produto) {
                         <label for="productInitialStock" class="form-label">Estoque Inicial</label>
                         <input type="number" id="productInitialStock" class="form-control" min="0" value="0">
                     </div>
-                    <?php if ($isAdmin): ?>
                     <hr>
                     <h6>Apresentação no cardápio público</h6>
                     <p class="form-text">Nome e descrição são informativos. Preço e categoria continuam vindo do produto no caixa. Se houver opções relacionadas, elas aparecem no lugar do card principal.</p>
@@ -415,7 +413,6 @@ foreach ($produtos as $produto) {
                             Adicionar opção
                         </button>
                     </div>
-                    <?php endif; ?>
                 </form>
             </div>
             <div class="modal-footer">

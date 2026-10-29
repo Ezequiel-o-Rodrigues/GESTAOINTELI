@@ -30,15 +30,10 @@ if (stripos($contentType, 'application/json') !== false) {
     $input = $_POST;
 }
 
-$isAdmin = strtolower(trim((string) ($_SESSION['usuario_perfil'] ?? ''))) === 'admin';
 $hasMenuFields = array_key_exists('nome_publico', $input)
     || array_key_exists('descricao_publica', $input)
     || array_key_exists('opcoes_json', $input)
     || (isset($_FILES['imagem']) && ($_FILES['imagem']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE);
-
-if ($hasMenuFields && !$isAdmin) {
-    responderErro('Apenas usuários com perfil administrativo podem alterar a apresentação do cardápio.', 403);
-}
 
 if ($hasMenuFields) {
     $token = $_POST['csrf_token'] ?? '';
