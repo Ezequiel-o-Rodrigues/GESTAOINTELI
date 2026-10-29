@@ -11,6 +11,9 @@ if (!isset($_SESSION['usuario_logado']) || $_SESSION['usuario_logado'] !== true)
 
 require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/header.php';
+
+$baseSistema = rtrim(dirname(rtrim(PathConfig::url(), '/')), '/');
+$urlGerenciarCardapio = $baseSistema . '/admin-seguro-7xy3q9bk/gerenciar_cardapio.php';
 ?>
 
 <div class="welcome-section">
@@ -19,7 +22,7 @@ require_once __DIR__ . '/includes/header.php';
 </div>
 
 <section class="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4" aria-label="Módulos do sistema">
-    <a href="../admin-seguro-7xy3q9bk/gerenciar_cardapio.php" class="group relative flex min-h-60 flex-col items-center overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 text-center text-slate-900 no-underline shadow-sm transition duration-200 hover:-translate-y-1 hover:border-violet-300 hover:shadow-lg">
+    <a href="<?= htmlspecialchars($urlGerenciarCardapio, ENT_QUOTES, 'UTF-8') ?>" class="group relative flex min-h-60 flex-col items-center overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 text-center text-slate-900 no-underline shadow-sm transition duration-200 hover:-translate-y-1 hover:border-violet-300 hover:shadow-lg">
         <span class="absolute inset-x-0 top-0 h-1 bg-transparent transition-colors group-hover:bg-violet-500"></span>
         <span class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
             <i data-lucide="book-open" class="h-8 w-8"></i>
