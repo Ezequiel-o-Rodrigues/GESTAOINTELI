@@ -524,7 +524,7 @@ try {
     <!-- CABEÇALHO -->
     <div class="mini-header">
         <h1>💰 Caixa Rápido</h1>
-        <a href="<?php echo $base_path; ?>index.php" class="btn-voltar">🏠 Início</a>
+        <a href="<?= PathConfig::url('index.php') ?>">🏠 Início</a>
     </div>
 
     <!-- COMANDA HORIZONTAL - NOVA POSIÇÃO -->
