@@ -4,7 +4,7 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 $host = 'localhost';
-$usuario = 'u903648047_ezequiel';
+$usuario = 'u248790471_junior';
 $senha = 'Ezequiel_2014';
 $banco = 'u248790471_restaurante';
 
