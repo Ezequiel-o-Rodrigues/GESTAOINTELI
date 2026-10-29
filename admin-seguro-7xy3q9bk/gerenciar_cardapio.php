@@ -54,7 +54,7 @@ try {
 } catch (Throwable $e) {
     error_log('Erro ao carregar gerenciador do cardápio: ' . $e->getMessage());
     http_response_code(503);
-    exit('Não foi possível carregar o gerenciador. Verifique a conexão e se as migrações do cardápio foram aplicadas.');
+    exit('Não foi possível carregar o gerenciador. Confira a conexão com o banco do caixa e, se necessário, faça backup e execute migracao_cardapio_integrado.sql no phpMyAdmin desse banco.');
 }
 
 if (!isset($_SESSION['csrf_cardapio'])) {
