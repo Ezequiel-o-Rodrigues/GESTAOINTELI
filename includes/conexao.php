@@ -6,7 +6,7 @@ error_reporting(E_ALL);
 $host = 'localhost';
 $usuario = 'u903648047_ezequiel';
 $senha = 'Ezequiel_2014';
-$banco = 'u903648047_junior';
+$banco = 'u248790471_restaurante';
 
 $conn = new mysqli($host, $usuario, $senha, $banco);
 
