@@ -15,5 +15,6 @@ $usuarioLogado = isset($_SESSION['usuario_logado']) && $_SESSION['usuario_logado
             <?php endif; ?>
         </div>
     </footer>
+    </div>
 </body>
 </html>

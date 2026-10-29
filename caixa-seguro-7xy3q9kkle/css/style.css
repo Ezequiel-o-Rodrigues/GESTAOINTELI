@@ -5,13 +5,17 @@
 }
 
 body {
-    display: flex;
-    flex-direction: column;
     min-height: 100vh;
     margin: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #F8FAFC;
     color: #333;
+}
+
+.page-layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
 main {
@@ -56,9 +60,8 @@ main {
     background: #34495e;
     color: white;
     text-align: center;
-    align-items: end;
     padding: 1rem 0;
-    margin-top: 2rem;
+    margin-top: auto;
 }
 
 /* Grid de Categorias */

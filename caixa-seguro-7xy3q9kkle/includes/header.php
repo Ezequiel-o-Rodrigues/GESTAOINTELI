@@ -94,6 +94,7 @@ $usuarioPerfil = $_SESSION['usuario_perfil'] ?? '';
     <?php endif; ?>
 </head>
 <body>
+    <div class="page-layout">
     <header class="header">
         <div class="container">
             <div class="d-flex justify-content-between align-items-center">
