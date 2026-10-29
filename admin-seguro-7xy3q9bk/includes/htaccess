@@ -1,0 +1,16 @@
+# Bloqueia acesso direto a arquivos .php
+<FilesMatch "\.php$">
+    Deny from all
+</FilesMatch>
+
+# Permite apenas o index.php
+<Files index.php>
+    Allow from all
+</Files>
+
+# Impede listagem de diretórios
+Options -Indexes
+
+# Redireciona erros para a página de login
+ErrorDocument 403 /index.php
+ErrorDocument 404 /index.php
