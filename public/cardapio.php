@@ -13,7 +13,7 @@
         }
 
         $stmt = $db->prepare(
-            'SELECT p.id, p.nome, p.preco, p.imagem, c.id AS categoria_id, c.nome AS categoria_nome
+            "SELECT p.id, p.nome, p.preco, p.imagem, c.id AS categoria_id, c.nome AS categoria_nome
              FROM produtos p
              INNER JOIN categorias c ON c.id = p.categoria_id
              WHERE p.ativo = 1
@@ -28,7 +28,7 @@
                     ELSE 7
                 END,
                 c.nome,
-                p.nome'
+                p.nome"
         );
         $stmt->execute();
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $produto) {

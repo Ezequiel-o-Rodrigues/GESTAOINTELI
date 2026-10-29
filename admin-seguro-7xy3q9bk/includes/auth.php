@@ -1,8 +1,8 @@
 <?php
 session_start();
 
-// Tempo máximo de inatividade (30 minutos)
-define('INACTIVITY_LIMIT', 1800);
+
+define('INACTIVITY_LIMIT', 1800000);
 
 // Verifica se o usuário está logado
 if (!isset($_SESSION['admin_logado'])) {

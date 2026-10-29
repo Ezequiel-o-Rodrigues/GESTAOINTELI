@@ -25,7 +25,7 @@ $stmt = $db->query(
 $categorias = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $stmt = $db->query(
-    'SELECT p.id, p.nome, p.preco, p.imagem, p.ativo, p.categoria_id, c.nome AS categoria_nome
+    "SELECT p.id, p.nome, p.preco, p.imagem, p.ativo, p.categoria_id, c.nome AS categoria_nome
      FROM produtos p
      INNER JOIN categorias c ON c.id = p.categoria_id
      ORDER BY
@@ -39,7 +39,7 @@ $stmt = $db->query(
             ELSE 7
         END,
         c.nome,
-        p.nome'
+        p.nome"
 );
 $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
