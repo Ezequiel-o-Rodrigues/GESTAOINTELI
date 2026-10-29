@@ -99,11 +99,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: index.php'); exit;
         }
 
-        if ($action === 'delete_garcom') {
+        if ($action === 'remove_garcom') {
             $id = (int)($_POST['id'] ?? 0);
-            $stmt = $db->prepare('DELETE FROM garcons WHERE id = ?');
+            $stmt = $db->prepare('UPDATE garcons SET ativo = 0 WHERE id = ?');
             $stmt->execute([$id]);
-            $_SESSION['sucesso'] = 'Garçom removido.';
+            $_SESSION['sucesso'] = 'Garçom removido da lista.';
             header('Location: index.php'); exit;
         }
     } catch (Exception $e) {
@@ -117,8 +117,8 @@ $stmt = $db->prepare('SELECT id, nome, email, perfil, ativo, created_at FROM usu
 $stmt->execute();
 $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Buscar garçons
-$stmt = $db->prepare('SELECT id, nome, codigo, ativo, created_at FROM garcons ORDER BY nome');
+// Mostrar somente garçons ativos; os inativos permanecem no banco para preservar o histórico.
+$stmt = $db->prepare('SELECT id, nome, codigo, ativo, created_at FROM garcons WHERE ativo = 1 ORDER BY nome');
 $stmt->execute();
 $garcons = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -229,6 +229,11 @@ require_once '../../includes/header.php';
                         </tr>
                     </thead>
                     <tbody>
+                        <?php if (empty($garcons)): ?>
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">Nenhum garçom ativo cadastrado.</td>
+                        </tr>
+                        <?php endif; ?>
                         <?php foreach($garcons as $garcom): ?>
                         <tr>
                             <td><?= htmlspecialchars($garcom['nome']) ?></td>
@@ -246,8 +251,8 @@ require_once '../../includes/header.php';
                                     <input type="hidden" name="id" value="<?= $garcom['id'] ?>">
                                     <button type="submit" class="btn btn-sm btn-outline-warning">Toggle</button>
                                 </form>
-                                <form method="POST" class="d-inline" onsubmit="return confirm('Remover garçom?')">
-                                    <input type="hidden" name="action" value="delete_garcom">
+                                <form method="POST" class="d-inline" onsubmit="return confirm('Remover este garçom da lista? O histórico será preservado.')">
+                                    <input type="hidden" name="action" value="remove_garcom">
                                     <input type="hidden" name="id" value="<?= $garcom['id'] ?>">
                                     <button type="submit" class="btn btn-sm btn-outline-danger">Remover</button>
                                 </form>

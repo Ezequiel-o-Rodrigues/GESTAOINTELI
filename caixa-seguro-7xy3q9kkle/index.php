@@ -34,7 +34,7 @@ require_once __DIR__ . '/includes/header.php';
         <p>Análises e métricas</p>
     </div>
 
-    <?php if ($_SESSION['usuario_perfil'] === 'admin'): ?>
+    
     <div class="module-card" onclick="location.href='<?= PathConfig::modules('admin/') ?>'">
         <h3>⚙️ Admin</h3>
         <p>Configurações do sistema</p>
