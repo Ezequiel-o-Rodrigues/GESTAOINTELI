@@ -1,12 +1,13 @@
 <?php
 require_once __DIR__ . '/config/auth.php';
 
-// DEBUG
-error_log("=== INICIANDO LOGIN ===");
+$destinoCardapio = ($_GET['destino'] ?? $_POST['destino'] ?? '') === 'cardapio';
 
 // Se já estiver logado, redireciona para página principal
 if (isset($_SESSION['usuario_logado']) && $_SESSION['usuario_logado'] === true) {
-    header('Location: /');
+    header('Location: ' . ($destinoCardapio
+        ? '../admin-seguro-7xy3q9bk/gerenciar_cardapio.php'
+        : '/'));
     exit;
 }
 
@@ -16,8 +17,6 @@ $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $login = $_POST['email'] ?? '';
     $senha = $_POST['senha'] ?? '';
-    
-    error_log("Tentando login com: " . $login);
     
     if (!empty($login) && !empty($senha)) {
         require_once __DIR__ . '/config/database.php';
@@ -32,14 +31,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($usuario) {
-                error_log("Usuário encontrado: " . $usuario['nome']);
-                error_log("Hash no BD: " . $usuario['senha']);
-                error_log("Senha fornecida: " . $senha);
-                
                 // Verificar senha
                 if (password_verify($senha, $usuario['senha'])) {
-                    error_log("✅ SENHA VÁLIDA!");
-                    
                     // Login bem-sucedido
                     $_SESSION['usuario_id'] = $usuario['id'];
                     $_SESSION['usuario_nome'] = $usuario['nome'];
@@ -48,21 +41,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['usuario_logado'] = true;
                     $_SESSION['last_activity'] = time();
                     
-                    error_log("SESSION após login: " . print_r($_SESSION, true));
-                    error_log("✅ Login bem-sucedido! Redirecionando...");
-                    
-                    header('Location: /');
+                    header('Location: ' . ($destinoCardapio
+                        ? '../admin-seguro-7xy3q9bk/gerenciar_cardapio.php'
+                        : '/'));
                     exit;
                 } else {
-                    error_log("❌ SENHA INVÁLIDA!");
                     $error = 'Senha incorreta';
                 }
             } else {
-                error_log("❌ USUÁRIO NÃO ENCONTRADO OU INATIVO");
                 $error = 'Usuário não encontrado ou inativo';
             }
         } catch (Exception $e) {
-            error_log("❌ ERRO NO BANCO: " . $e->getMessage());
+            error_log('Erro ao processar login: ' . $e->getMessage());
             $error = 'Erro ao processar login: ' . $e->getMessage();
         }
     } else {
@@ -144,6 +134,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?php endif; ?>
                         
                         <form method="post" id="loginForm">
+                            <?php if ($destinoCardapio): ?>
+                                <input type="hidden" name="destino" value="cardapio">
+                            <?php endif; ?>
                             <div class="mb-3">
                                 <label for="email" class="form-label">Usuário ou Email</label>
                                 <div class="input-group">

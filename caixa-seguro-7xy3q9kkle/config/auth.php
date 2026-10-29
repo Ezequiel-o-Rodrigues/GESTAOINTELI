@@ -15,19 +15,26 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// DEBUG: Log da sessão
-error_log("Sessão iniciada: " . session_id());
-error_log("Dados da sessão: " . print_r($_SESSION, true));
-
 // Verificar se a sessão expirou (apenas se usuário estiver logado)
 if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 28800)) {
-    error_log("Sessão expirada");
     session_unset();
     session_destroy();
     
     // Se não está na página de login, redirecionar
     if (basename($_SERVER['PHP_SELF']) !== 'login.php') {
-        header('Location: /login.php?expired=1');
+        $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
+        $caixaPath = '/caixa-seguro-7xy3q9kkle';
+        $adminPath = '/admin-seguro-7xy3q9bk';
+        $caixaPosition = strpos($scriptName, $caixaPath);
+        $adminPosition = strpos($scriptName, $adminPath);
+        $basePath = $caixaPosition !== false
+            ? substr($scriptName, 0, $caixaPosition)
+            : ($adminPosition !== false ? substr($scriptName, 0, $adminPosition) : '');
+        $destinoCardapio = $adminPosition !== false && strpos($scriptName, '/gerenciar_cardapio.php') !== false
+            ? '&destino=cardapio'
+            : '';
+
+        header('Location: ' . rtrim($basePath, '/') . $caixaPath . '/login.php?expired=1' . $destinoCardapio);
         exit;
     }
 }
@@ -35,6 +42,5 @@ if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 
 // Atualizar timestamp da última atividade se o usuário estiver logado
 if (isset($_SESSION['usuario_logado']) && $_SESSION['usuario_logado'] === true) {
     $_SESSION['last_activity'] = time();
-    error_log("Atividade atualizada para usuário: " . $_SESSION['usuario_nome']);
 }
 ?>
