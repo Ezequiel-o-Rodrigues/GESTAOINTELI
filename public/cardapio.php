@@ -13,9 +13,20 @@
         }
 
         $stmt = $db->prepare(
-            "SELECT p.id, p.nome, p.preco, p.imagem, c.id AS categoria_id, c.nome AS categoria_nome
+            "SELECT
+                p.id AS produto_id,
+                p.nome AS produto_nome,
+                p.preco,
+                p.imagem AS produto_imagem,
+                c.id AS categoria_id,
+                c.nome AS categoria_nome,
+                pc.id AS card_id,
+                pc.nome_exibicao AS card_nome,
+                pc.descricao AS card_descricao,
+                pc.imagem AS card_imagem
              FROM produtos p
              INNER JOIN categorias c ON c.id = p.categoria_id
+             LEFT JOIN produto_cards pc ON pc.produto_id = p.id
              WHERE p.ativo = 1
              ORDER BY
                 CASE c.nome
@@ -28,7 +39,9 @@
                     ELSE 7
                 END,
                 c.nome,
-                p.nome"
+                p.nome,
+                pc.ordem,
+                pc.id"
         );
         $stmt->execute();
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $produto) {
@@ -40,8 +53,28 @@
                     'produtos' => []
                 ];
             }
-            $produtosPorCategoria[$categoriaId]['produtos'][] = $produto;
+            $produtoId = (int) $produto['produto_id'];
+            if (!isset($produtosPorCategoria[$categoriaId]['produtos'][$produtoId])) {
+                $produtosPorCategoria[$categoriaId]['produtos'][$produtoId] = [
+                    'id' => $produtoId,
+                    'nome' => $produto['produto_nome'],
+                    'preco' => $produto['preco'],
+                    'imagem' => $produto['produto_imagem'],
+                    'cards' => []
+                ];
+            }
+            if ($produto['card_id'] !== null) {
+                $produtosPorCategoria[$categoriaId]['produtos'][$produtoId]['cards'][] = [
+                    'nome' => $produto['card_nome'],
+                    'descricao' => $produto['card_descricao'],
+                    'imagem' => $produto['card_imagem']
+                ];
+            }
         }
+        foreach ($produtosPorCategoria as &$categoria) {
+            $categoria['produtos'] = array_values($categoria['produtos']);
+        }
+        unset($categoria);
     } catch (Exception $e) {
         error_log('Erro ao carregar produtos do cardápio público: ' . $e->getMessage());
         $erroCardapio = true;
@@ -561,29 +594,47 @@
                         <div class="menu-grid">
                             <?php foreach ($categoria['produtos'] as $produto): ?>
                                 <?php
-                                $imagemRelativa = str_replace('\\', '/', (string) ($produto['imagem'] ?? ''));
-                                $imagemValida = $imagemRelativa !== ''
-                                    && strpos($imagemRelativa, '..') === false
-                                    && $imagemRelativa[0] !== '/'
-                                    && file_exists(__DIR__ . '/images/menu/' . $imagemRelativa);
-                                $imagemUrl = $imagemValida
-                                    ? 'images/menu/' . $imagemRelativa
-                                    : 'images/menu/default.png';
+                                $apresentacoes = $produto['cards'];
+                                if (empty($apresentacoes)) {
+                                    $apresentacoes[] = [
+                                        'nome' => $produto['nome'],
+                                        'descricao' => null,
+                                        'imagem' => $produto['imagem']
+                                    ];
+                                }
                                 ?>
-                                <article class="menu-item">
-                                    <div class="item-img-container">
-                                        <img
-                                            src="<?= htmlspecialchars($imagemUrl, ENT_QUOTES, 'UTF-8') ?>"
-                                            alt="<?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?>"
-                                            class="item-img"
-                                            loading="lazy"
-                                            onerror="this.onerror=null; this.src='images/menu/default.png'">
-                                    </div>
-                                    <div class="item-info">
-                                        <h3 class="item-name"><?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?></h3>
-                                        <p class="item-price"><?= number_format((float) $produto['preco'], 2, ',', '.') ?></p>
-                                    </div>
-                                </article>
+                                <?php foreach ($apresentacoes as $apresentacao): ?>
+                                    <?php
+                                    $imagemFonte = !empty($apresentacao['imagem'])
+                                        ? $apresentacao['imagem']
+                                        : $produto['imagem'];
+                                    $imagemRelativa = str_replace('\\', '/', (string) ($imagemFonte ?? ''));
+                                    $imagemValida = $imagemRelativa !== ''
+                                        && strpos($imagemRelativa, '..') === false
+                                        && $imagemRelativa[0] !== '/'
+                                        && file_exists(__DIR__ . '/images/menu/' . $imagemRelativa);
+                                    $imagemUrl = $imagemValida
+                                        ? 'images/menu/' . $imagemRelativa
+                                        : 'images/menu/default.png';
+                                    ?>
+                                    <article class="menu-item">
+                                        <div class="item-img-container">
+                                            <img
+                                                src="<?= htmlspecialchars($imagemUrl, ENT_QUOTES, 'UTF-8') ?>"
+                                                alt="<?= htmlspecialchars($apresentacao['nome'], ENT_QUOTES, 'UTF-8') ?>"
+                                                class="item-img"
+                                                loading="lazy"
+                                                onerror="this.onerror=null; this.src='images/menu/default.png'">
+                                        </div>
+                                        <div class="item-info">
+                                            <h3 class="item-name"><?= htmlspecialchars($apresentacao['nome'], ENT_QUOTES, 'UTF-8') ?></h3>
+                                            <?php if (!empty($apresentacao['descricao'])): ?>
+                                                <p class="item-desc"><?= htmlspecialchars($apresentacao['descricao'], ENT_QUOTES, 'UTF-8') ?></p>
+                                            <?php endif; ?>
+                                            <p class="item-price"><?= number_format((float) $produto['preco'], 2, ',', '.') ?></p>
+                                        </div>
+                                    </article>
+                                <?php endforeach; ?>
                             <?php endforeach; ?>
                         </div>
                     </section>

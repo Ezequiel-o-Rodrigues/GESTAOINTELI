@@ -2,34 +2,16 @@
 require_once __DIR__ . '/includes/cardapio-auth.php';
 require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/config/database.php';
 
-$database = new Database();
-$db = $database->getConnection();
+try {
+    $database = new Database();
+    $db = $database->getConnection();
+    if (!$db) {
+        throw new RuntimeException('Não foi possível conectar ao banco de dados do caixa.');
+    }
 
-if (!$db) {
-    http_response_code(503);
-    exit('Não foi possível conectar ao banco de dados do caixa.');
-}
-
-$stmt = $db->query(
-    "SELECT id, nome FROM categorias
-     ORDER BY CASE nome
-        WHEN 'Espetos' THEN 1
-        WHEN 'Porções' THEN 2
-        WHEN 'Jantinhas e Marmitas' THEN 3
-        WHEN 'Bebidas não alcoólicas' THEN 4
-        WHEN 'Cervejas' THEN 5
-        WHEN 'Outros' THEN 6
-        ELSE 7
-     END, nome"
-);
-$categorias = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-$stmt = $db->query(
-    "SELECT p.id, p.nome, p.preco, p.imagem, p.ativo, p.categoria_id, c.nome AS categoria_nome
-     FROM produtos p
-     INNER JOIN categorias c ON c.id = p.categoria_id
-     ORDER BY
-        CASE c.nome
+    $stmt = $db->query(
+        "SELECT id, nome FROM categorias
+         ORDER BY CASE nome
             WHEN 'Espetos' THEN 1
             WHEN 'Porções' THEN 2
             WHEN 'Jantinhas e Marmitas' THEN 3
@@ -37,11 +19,43 @@ $stmt = $db->query(
             WHEN 'Cervejas' THEN 5
             WHEN 'Outros' THEN 6
             ELSE 7
-        END,
-        c.nome,
-        p.nome"
-);
-$produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+         END, nome"
+    );
+    $categorias = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $stmt = $db->query(
+        "SELECT p.id, p.nome, p.preco, p.imagem, p.ativo, p.categoria_id, c.nome AS categoria_nome
+         FROM produtos p
+         INNER JOIN categorias c ON c.id = p.categoria_id
+         ORDER BY
+            CASE c.nome
+                WHEN 'Espetos' THEN 1
+                WHEN 'Porções' THEN 2
+                WHEN 'Jantinhas e Marmitas' THEN 3
+                WHEN 'Bebidas não alcoólicas' THEN 4
+                WHEN 'Cervejas' THEN 5
+                WHEN 'Outros' THEN 6
+                ELSE 7
+            END,
+            c.nome,
+            p.nome"
+    );
+    $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $stmt = $db->query(
+        'SELECT id, produto_id, nome_exibicao, descricao, imagem, ordem
+         FROM produto_cards
+         ORDER BY produto_id, ordem, id'
+    );
+    $cardsPorProduto = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $card) {
+        $cardsPorProduto[(int) $card['produto_id']][] = $card;
+    }
+} catch (Throwable $e) {
+    error_log('Erro ao carregar gerenciador do cardápio: ' . $e->getMessage());
+    http_response_code(503);
+    exit('Não foi possível carregar o gerenciador. Verifique a conexão e se a migração de cards foi aplicada.');
+}
 
 if (!isset($_SESSION['csrf_cardapio'])) {
     $_SESSION['csrf_cardapio'] = bin2hex(random_bytes(32));
@@ -71,11 +85,21 @@ $erro = $_GET['erro'] ?? '';
         input, select { box-sizing: border-box; width: 100%; padding: 9px; border: 1px solid #cbd5e1; border-radius: 5px; font: inherit; }
         .status { margin: 0 0 10px; color: #4b5563; font-size: .9rem; }
         .actions { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+        .cards { grid-column: 1 / -1; margin-top: 8px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
+        .cards h2 { margin: 0 0 8px; font-size: 1.15rem; }
+        .card-help { margin: 0 0 14px; color: #4b5563; font-size: .9rem; }
+        .menu-card { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 14px; margin: 12px 0; padding: 12px; border: 1px solid #e5e7eb; border-radius: 7px; }
+        .menu-card img { width: 100px; height: 85px; }
+        .menu-card form + form { margin-top: 8px; }
+        .add-card { margin-top: 18px; padding-top: 14px; border-top: 1px dashed #cbd5e1; }
+        .delete-button { background: #b91c1c; }
         @media (max-width: 600px) {
             body { padding: 14px; }
             .product { grid-template-columns: 1fr; }
             .product img { width: 100%; height: 180px; }
             .fields { grid-template-columns: 1fr; }
+            .menu-card { grid-template-columns: 1fr; }
+            .menu-card img { width: 100%; height: 160px; }
         }
     </style>
 </head>
@@ -93,7 +117,7 @@ $erro = $_GET['erro'] ?? '';
         <p class="error"><?= htmlspecialchars($erro, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
 
-    <p>Nome, preço e categoria são atualizados no mesmo cadastro usado pelo caixa e pelo estoque. Produtos ativos aparecem no cardápio público; produtos inativos ficam ocultos.</p>
+    <p>Produtos ativos aparecem no cardápio público e herdam preço e categoria do estoque. Você pode configurar vários cards visuais para um produto; eles não criam itens nem registram opções na venda.</p>
 
     <?php foreach ($produtos as $produto): ?>
         <?php
@@ -141,6 +165,96 @@ $erro = $_GET['erro'] ?? '';
                     </div>
                     <div class="actions">
                         <button type="submit">Salvar alterações</button>
+                    </div>
+                </form>
+            </div>
+            <div class="cards">
+                <h2>Cards públicos</h2>
+                <p class="card-help">
+                    <?php if (!empty($cardsPorProduto[(int) $produto['id']])): ?>
+                        Os cards abaixo substituem a apresentação padrão deste produto no cardápio.
+                    <?php else: ?>
+                        Sem cards personalizados: o cardápio mostra o nome e a imagem do produto do estoque.
+                    <?php endif; ?>
+                </p>
+
+                <?php foreach ($cardsPorProduto[(int) $produto['id']] ?? [] as $card): ?>
+                    <?php
+                    $imagemFonteCard = !empty($card['imagem']) ? $card['imagem'] : $produto['imagem'];
+                    $imagemCard = str_replace('\\', '/', (string) ($imagemFonteCard ?? ''));
+                    $imagemCardValida = $imagemCard !== ''
+                        && strpos($imagemCard, '..') === false
+                        && $imagemCard[0] !== '/'
+                        && file_exists(__DIR__ . '/../public/images/menu/' . $imagemCard);
+                    $imagemCardUrl = $imagemCardValida
+                        ? '../public/images/menu/' . $imagemCard
+                        : '../public/images/menu/default.png';
+                    ?>
+                    <div class="menu-card">
+                        <img src="<?= htmlspecialchars($imagemCardUrl, ENT_QUOTES, 'UTF-8') ?>" alt="">
+                        <div>
+                            <form method="post" action="salvar_cardapio.php" enctype="multipart/form-data">
+                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_cardapio'], ENT_QUOTES, 'UTF-8') ?>">
+                                <input type="hidden" name="acao" value="salvar_card">
+                                <input type="hidden" name="produto_id" value="<?= (int) $produto['id'] ?>">
+                                <input type="hidden" name="card_id" value="<?= (int) $card['id'] ?>">
+                                <div class="fields">
+                                    <label>
+                                        Nome exibido
+                                        <input type="text" name="nome_exibicao" maxlength="100" required value="<?= htmlspecialchars($card['nome_exibicao'], ENT_QUOTES, 'UTF-8') ?>">
+                                    </label>
+                                    <label>
+                                        Ordem
+                                        <input type="number" name="ordem" min="0" max="100000" required value="<?= (int) $card['ordem'] ?>">
+                                    </label>
+                                    <label>
+                                        Descrição (opcional)
+                                        <input type="text" name="descricao" maxlength="1000" value="<?= htmlspecialchars($card['descricao'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                                    </label>
+                                    <label>
+                                        Trocar imagem (opcional)
+                                        <input type="file" name="imagem" accept="image/jpeg,image/png,image/gif,image/webp">
+                                    </label>
+                                </div>
+                                <div class="actions">
+                                    <button type="submit">Salvar card</button>
+                                </div>
+                            </form>
+                            <form method="post" action="salvar_cardapio.php" onsubmit="return confirm('Excluir apenas este card de apresentação? O produto e o estoque serão mantidos.');">
+                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_cardapio'], ENT_QUOTES, 'UTF-8') ?>">
+                                <input type="hidden" name="acao" value="excluir_card">
+                                <input type="hidden" name="produto_id" value="<?= (int) $produto['id'] ?>">
+                                <input type="hidden" name="card_id" value="<?= (int) $card['id'] ?>">
+                                <button class="delete-button" type="submit">Excluir card</button>
+                            </form>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+
+                <form class="add-card" method="post" action="salvar_cardapio.php" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_cardapio'], ENT_QUOTES, 'UTF-8') ?>">
+                    <input type="hidden" name="acao" value="salvar_card">
+                    <input type="hidden" name="produto_id" value="<?= (int) $produto['id'] ?>">
+                    <div class="fields">
+                        <label>
+                            Novo nome para o card
+                            <input type="text" name="nome_exibicao" maxlength="100" required>
+                        </label>
+                        <label>
+                            Ordem
+                            <input type="number" name="ordem" min="0" max="100000" value="<?= count($cardsPorProduto[(int) $produto['id']] ?? []) + 1 ?>" required>
+                        </label>
+                        <label>
+                            Descrição (opcional)
+                            <input type="text" name="descricao" maxlength="1000">
+                        </label>
+                        <label>
+                            Imagem (opcional; JPG, PNG, GIF ou WebP; até 5 MB)
+                            <input type="file" name="imagem" accept="image/jpeg,image/png,image/gif,image/webp">
+                        </label>
+                    </div>
+                    <div class="actions">
+                        <button type="submit">Adicionar card</button>
                     </div>
                 </form>
             </div>
