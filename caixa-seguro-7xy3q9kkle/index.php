@@ -14,74 +14,82 @@ require_once __DIR__ . '/includes/header.php';
 ?>
 
 <div class="welcome-section">
-    <h2>Bem-vindo, <?= htmlspecialchars($_SESSION['usuario_nome']) ?>! 👋</h2>
-    <p>Selecione um módulo para começar:</p>
+    <h2>Bom dia, <?= htmlspecialchars(explode(' ', trim($_SESSION['usuario_nome']))[0]) ?>! <span aria-hidden="true">👋</span></h2>
+    <p>Selecione um módulo abaixo para gerenciar a operação do restaurante.</p>
 </div>
 
-<div class="modules-grid">
-    <div class="module-card" onclick="location.href='<?= PathConfig::modules('caixa/') ?>'">
-        <h3>💰 Caixa</h3>
-        <p>Gerenciar vendas e comandas</p>
-    </div>
+<section class="grid grid-cols-1 gap-4 sm:grid-cols-3" aria-label="Resumo da operação">
+    <article class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+            <i data-lucide="banknote" class="h-5 w-5"></i>
+        </span>
+        <div>
+            <p class="mb-1 text-sm text-slate-500">Caixa Atual</p>
+            <p class="mb-0 text-lg font-bold text-slate-900">R$ 1.450,00</p>
+        </div>
+    </article>
+    <article class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+            <i data-lucide="receipt" class="h-5 w-5"></i>
+        </span>
+        <div>
+            <p class="mb-1 text-sm text-slate-500">Comandas Abertas</p>
+            <p class="mb-0 text-lg font-bold text-slate-900">6 mesas</p>
+        </div>
+    </article>
+    <article class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700">
+            <i data-lucide="triangle-alert" class="h-5 w-5"></i>
+        </span>
+        <div>
+            <p class="mb-1 text-sm text-slate-500">Alertas de Estoque</p>
+            <p class="mb-0 text-lg font-bold text-slate-900">2 itens baixos</p>
+        </div>
+    </article>
+</section>
 
-    <div class="module-card" onclick="location.href='<?= PathConfig::modules('estoque/') ?>'">
-        <h3>📦 Estoque</h3>
-        <p>Controle de produtos e reposição</p>
-    </div>
+<section class="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4" aria-label="Módulos do sistema">
+    <a href="<?= PathConfig::modules('caixa/') ?>" class="group relative flex min-h-60 flex-col items-center overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 text-center text-slate-900 no-underline shadow-sm transition duration-200 hover:-translate-y-1 hover:border-orange-300 hover:shadow-lg">
+        <span class="absolute inset-x-0 top-0 h-1 bg-transparent transition-colors group-hover:bg-orange-500"></span>
+        <span class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-100 text-orange-600">
+            <i data-lucide="calculator" class="h-8 w-8"></i>
+        </span>
+        <h3 class="mb-2 text-lg font-semibold">Frente de Caixa</h3>
+        <p class="mb-5 text-sm text-slate-500">Gerenciar vendas e comandas</p>
+        <span class="mt-auto inline-flex items-center gap-1 text-sm font-semibold text-orange-700">Acessar Módulo <span aria-hidden="true">→</span></span>
+    </a>
 
-    <div class="module-card" onclick="location.href='<?= PathConfig::modules('relatorios/') ?>'">
-        <h3>📊 Relatórios</h3>
-        <p>Análises e métricas</p>
-    </div>
+    <a href="<?= PathConfig::modules('estoque/') ?>" class="group relative flex min-h-60 flex-col items-center overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 text-center text-slate-900 no-underline shadow-sm transition duration-200 hover:-translate-y-1 hover:border-orange-300 hover:shadow-lg">
+        <span class="absolute inset-x-0 top-0 h-1 bg-transparent transition-colors group-hover:bg-orange-500"></span>
+        <span class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+            <i data-lucide="package" class="h-8 w-8"></i>
+        </span>
+        <h3 class="mb-2 text-lg font-semibold">Controle de Estoque</h3>
+        <p class="mb-5 text-sm text-slate-500">Controle de produtos e reposição</p>
+        <span class="mt-auto inline-flex items-center gap-1 text-sm font-semibold text-orange-700">Acessar Módulo <span aria-hidden="true">→</span></span>
+    </a>
 
-    
-    <div class="module-card" onclick="location.href='<?= PathConfig::modules('admin/') ?>'">
-        <h3>⚙️ Admin</h3>
-        <p>Configurações do sistema</p>
-    </div>
-</div>
+    <a href="<?= PathConfig::modules('relatorios/') ?>" class="group relative flex min-h-60 flex-col items-center overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 text-center text-slate-900 no-underline shadow-sm transition duration-200 hover:-translate-y-1 hover:border-orange-300 hover:shadow-lg">
+        <span class="absolute inset-x-0 top-0 h-1 bg-transparent transition-colors group-hover:bg-orange-500"></span>
+        <span class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-sky-100 text-sky-700">
+            <i data-lucide="chart-no-axes-column-increasing" class="h-8 w-8"></i>
+        </span>
+        <h3 class="mb-2 text-lg font-semibold">Relatórios &amp; Métricas</h3>
+        <p class="mb-5 text-sm text-slate-500">Análises e métricas</p>
+        <span class="mt-auto inline-flex items-center gap-1 text-sm font-semibold text-orange-700">Acessar Módulo <span aria-hidden="true">→</span></span>
+    </a>
 
-<style>
-.modules-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
-    margin: 3rem 0;
-}
+    <a href="<?= PathConfig::modules('admin/') ?>" class="group relative flex min-h-60 flex-col items-center overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 text-center text-slate-900 no-underline shadow-sm transition duration-200 hover:-translate-y-1 hover:border-orange-300 hover:shadow-lg">
+        <span class="absolute inset-x-0 top-0 h-1 bg-transparent transition-colors group-hover:bg-orange-500"></span>
+        <span class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
+            <i data-lucide="settings" class="h-8 w-8"></i>
+        </span>
+        <h3 class="mb-2 text-lg font-semibold">Configurações</h3>
+        <p class="mb-5 text-sm text-slate-500">Configurações do sistema</p>
+        <span class="mt-auto inline-flex items-center gap-1 text-sm font-semibold text-orange-700">Acessar Módulo <span aria-hidden="true">→</span></span>
+    </a>
+</section>
 
-.module-card {
-    background: white;
-    padding: 2rem;
-    border-radius: 10px;
-    text-align: center;
-    cursor: pointer;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    border: 1px solid #e9ecef;
-    border-top: 4px solid #F97316;
-}
-
-.module-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-}
-
-.module-card h3 {
-    margin-bottom: 1rem;
-    color: #2c3e50;
-}
-
-.welcome-section {
-    text-align: center;
-    padding: 2rem 0;
-}
-
-.welcome-section h2 {
-    color: #2c3e50;
-    margin-bottom: 1rem;
-}
-</style>
-
-<?php 
-require_once __DIR__ . '/includes/footer.php'; 
+<?php
+require_once __DIR__ . '/includes/footer.php';
 ?>

@@ -19,6 +19,10 @@ $usuarioPerfil = $_SESSION['usuario_perfil'] ?? '';
     <!-- ✅ Bootstrap via CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { corePlugins: { preflight: false } };
+    </script>
     
     <!-- ✅ CSS personalizado - se existir na raiz -->
     <?php if (file_exists(__DIR__ . '/../css/style.css')): ?>
@@ -93,28 +97,48 @@ $usuarioPerfil = $_SESSION['usuario_perfil'] ?? '';
         <script src="<?= PathConfig::url('js/path-config.js') ?>"></script>
     <?php endif; ?>
 </head>
-<body>
+<body class="bg-slate-50">
     <div class="page-layout">
-    <header class="header">
-        <div class="container">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <h1 class="me-4">🍽️ Sistema Restaurante</h1>
-                    <nav class="main-nav">
-                        <a href="<?= PathConfig::url('index.php') ?>">🏠 Início</a>
-                        <a href="<?= PathConfig::modules('caixa/') ?>">💰 Caixa</a>
-                        <a href="<?= PathConfig::modules('estoque/') ?>">📦 Estoque</a>
-                        <a href="<?= PathConfig::modules('relatorios/') ?>">📊 Relatórios</a>
-                        <a href="<?= PathConfig::modules('admin/') ?>">⚙️ Admin</a>
-                    </nav>
+    <header class="header bg-slate-900 text-white shadow-lg">
+        <div class="dashboard-header-inner mx-auto grid w-full max-w-screen-2xl grid-cols-[1fr_auto_1fr] items-center gap-6 px-6 py-3">
+            <a href="<?= PathConfig::url('index.php') ?>" class="flex min-w-0 items-center gap-3 text-white no-underline">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-500 text-white">
+                    <i data-lucide="utensils" class="h-6 w-6"></i>
+                </span>
+                <span class="min-w-0">
+                    <span class="block truncate text-base font-bold tracking-tight">Sistema Restaurante</span>
+                    <span class="block truncate text-xs text-slate-400">Espetinho do Júnior</span>
+                </span>
+            </a>
+
+            <nav class="main-nav dashboard-nav flex items-center justify-center gap-1" aria-label="Navegação principal">
+                <a href="<?= PathConfig::url('index.php') ?>" aria-current="page" class="dashboard-nav-link flex items-center gap-2 rounded-lg border-b-2 border-orange-500 px-3 py-3 text-sm font-medium text-orange-400 no-underline">
+                    <i data-lucide="layout-dashboard" class="h-4 w-4"></i><span>Início</span>
+                </a>
+                <a href="<?= PathConfig::modules('caixa/') ?>" class="dashboard-nav-link flex items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium text-slate-300 no-underline">
+                    <i data-lucide="wallet" class="h-4 w-4"></i><span>Caixa</span>
+                </a>
+                <a href="<?= PathConfig::modules('estoque/') ?>" class="dashboard-nav-link flex items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium text-slate-300 no-underline">
+                    <i data-lucide="package" class="h-4 w-4"></i><span>Estoque</span>
+                </a>
+                <a href="<?= PathConfig::modules('relatorios/') ?>" class="dashboard-nav-link flex items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium text-slate-300 no-underline">
+                    <i data-lucide="chart-no-axes-column-increasing" class="h-4 w-4"></i><span>Relatórios</span>
+                </a>
+                <a href="<?= PathConfig::modules('admin/') ?>" class="dashboard-nav-link flex items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium text-slate-300 no-underline">
+                    <i data-lucide="settings" class="h-4 w-4"></i><span>Admin</span>
+                </a>
+            </nav>
+
+            <?php if ($usuarioLogado): ?>
+            <div class="flex items-center justify-self-end gap-3">
+                <div class="hidden text-right sm:block">
+                    <div class="text-sm font-semibold text-white"><?= htmlspecialchars($usuarioNome) ?></div>
+                    <div class="text-xs text-slate-400">Último acesso: <?= date('H:i') ?></div>
                 </div>
-                
-                <?php if ($usuarioLogado): ?>
                 <div class="dropdown">
-                    <!-- Bolinha do usuário -->
-                    <div class="user-avatar dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <button type="button" class="user-avatar dashboard-avatar dropdown-toggle border-0 bg-orange-500 text-white" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Abrir menu do usuário">
                         <?= getInitials($usuarioNome) ?>
-                    </div>
+                    </button>
                     
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li class="dropdown-header">
@@ -156,7 +180,7 @@ $usuarioPerfil = $_SESSION['usuario_perfil'] ?? '';
                     </ul>
                 </div>
                 <?php else: ?>
-                <div>
+                <div class="justify-self-end">
                     <a href="<?= PathConfig::url('login.php') ?>" class="btn btn-outline-light btn-sm">
                         <i class="bi bi-box-arrow-in-right"></i> Entrar
                     </a>
@@ -251,11 +275,16 @@ $usuarioPerfil = $_SESSION['usuario_perfil'] ?? '';
     </div>
 
     <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
     // Script para alteração de senha
     document.addEventListener('DOMContentLoaded', function() {
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+
         const changePasswordForm = document.getElementById('changePasswordForm');
         const savePasswordBtn = document.getElementById('savePasswordBtn');
         const passwordAlert = document.getElementById('passwordAlert');
@@ -309,4 +338,4 @@ $usuarioPerfil = $_SESSION['usuario_perfil'] ?? '';
     });
     </script>
 
-    <main class="container">
+    <main class="container flex-1">

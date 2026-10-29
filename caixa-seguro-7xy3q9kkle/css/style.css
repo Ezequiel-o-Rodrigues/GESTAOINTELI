@@ -5,6 +5,8 @@
 }
 
 body {
+    display: flex;
+    flex-direction: column;
     min-height: 100vh;
     margin: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -15,6 +17,7 @@ body {
 .page-layout {
     display: flex;
     flex-direction: column;
+    flex: 1;
     min-height: 100vh;
 }
 
@@ -29,9 +32,8 @@ main {
 }
 
 .header {
-    background: linear-gradient(135deg, #2c3e50, #34495e);
+    background: #0f172a;
     color: white;
-    padding: 1rem 0;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
@@ -41,27 +43,76 @@ main {
 
 .main-nav {
     display: flex;
-    gap: 1rem;
 }
 
-.main-nav a {
+.dashboard-nav-link {
+    position: relative;
+    white-space: nowrap;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.dashboard-nav-link:hover {
     color: white;
-    text-decoration: none;
-    padding: 0.5rem 1rem;
-    border-radius: 5px;
-    transition: background 0.3s;
+    background: rgba(255,255,255,0.08);
 }
 
-.main-nav a:hover {
-    background: rgba(255,255,255,0.1);
+.dashboard-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.welcome-section {
+    padding: 2rem 0 1.5rem;
+}
+
+.welcome-section h2 {
+    margin-bottom: 0.5rem;
+    color: #0f172a;
+    font-size: 1.875rem;
+    font-weight: 700;
+}
+
+.welcome-section p {
+    margin-bottom: 0;
+    color: #64748b;
 }
 
 .footer {
-    background: #34495e;
-    color: white;
-    text-align: center;
-    padding: 1rem 0;
+    background: white;
+    color: #64748b;
     margin-top: auto;
+}
+
+@media (max-width: 900px) {
+    .dashboard-header-inner {
+        grid-template-columns: 1fr auto;
+        gap: 0.75rem;
+    }
+
+    .dashboard-nav {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        justify-content: flex-start;
+        overflow-x: auto;
+    }
+}
+
+@media (max-width: 520px) {
+    .dashboard-header-inner {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .dashboard-nav-link {
+        padding: 0.6rem 0.65rem;
+    }
+
+    .dashboard-nav-link span {
+        display: none;
+    }
 }
 
 /* Grid de Categorias */
