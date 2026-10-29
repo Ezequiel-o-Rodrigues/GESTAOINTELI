@@ -1,8 +1,4 @@
 <?php
-// Configuração para subdomínio (raiz)
-$base_path = '/';
-
-// Usar caminhos absolutos com __DIR__
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
@@ -81,7 +77,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Caixa - Sistema Restaurante</title>
-    <link rel="stylesheet" href="<?php echo $base_path; ?>css/style.css">
+    <link rel="stylesheet" href="../../css/style.css">
     <style>
         * {
             margin: 0;
