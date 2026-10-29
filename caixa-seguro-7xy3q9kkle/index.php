@@ -18,37 +18,7 @@ require_once __DIR__ . '/includes/header.php';
     <p>Selecione um módulo abaixo para gerenciar a operação do restaurante.</p>
 </div>
 
-<section class="grid grid-cols-1 gap-4 sm:grid-cols-3" aria-label="Resumo da operação">
-    <article class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-            <i data-lucide="banknote" class="h-5 w-5"></i>
-        </span>
-        <div>
-            <p class="mb-1 text-sm text-slate-500">Caixa Atual</p>
-            <p class="mb-0 text-lg font-bold text-slate-900">R$ 1.450,00</p>
-        </div>
-    </article>
-    <article class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-            <i data-lucide="receipt" class="h-5 w-5"></i>
-        </span>
-        <div>
-            <p class="mb-1 text-sm text-slate-500">Comandas Abertas</p>
-            <p class="mb-0 text-lg font-bold text-slate-900">6 mesas</p>
-        </div>
-    </article>
-    <article class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700">
-            <i data-lucide="triangle-alert" class="h-5 w-5"></i>
-        </span>
-        <div>
-            <p class="mb-1 text-sm text-slate-500">Alertas de Estoque</p>
-            <p class="mb-0 text-lg font-bold text-slate-900">2 itens baixos</p>
-        </div>
-    </article>
-</section>
-
-<section class="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4" aria-label="Módulos do sistema">
+<section class="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4" aria-label="Módulos do sistema">
     <a href="<?= PathConfig::modules('caixa/') ?>" class="group relative flex min-h-60 flex-col items-center overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 text-center text-slate-900 no-underline shadow-sm transition duration-200 hover:-translate-y-1 hover:border-orange-300 hover:shadow-lg">
         <span class="absolute inset-x-0 top-0 h-1 bg-transparent transition-colors group-hover:bg-orange-500"></span>
         <span class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-100 text-orange-600">
