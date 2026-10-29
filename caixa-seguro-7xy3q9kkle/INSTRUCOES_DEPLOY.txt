@@ -1,0 +1,47 @@
+INSTRUÇÕES PARA DEPLOY NA HOSTINGER
+===================================
+
+1. PREPARAR ARQUIVOS:
+   - Copie TODOS os arquivos da pasta gestaointeli-jnr
+   - Faça upload para public_html/ na Hostinger
+
+2. CONFIGURAR BANCO DE DADOS:
+   - Renomeie config/database_hostinger.php para config/database.php
+   - Edite config/database.php e coloque sua senha real no lugar de "ALTERE_PARA_SUA_SENHA"
+   - Importe o arquivo sistema_restaurante (6).sql no banco u903648047_sis_restaurant
+
+3. TESTAR CONEXÃO:
+   - Acesse: seusite.com/api/teste_conexao.php
+   - Deve mostrar "Conexão bem-sucedida"
+
+4. CONFIGURAR PATHS:
+   - Edite config/paths.php se necessário
+   - Verifique se todos os caminhos estão corretos
+
+5. TESTAR SISTEMA:
+   - Acesse: seusite.com
+   - Faça login com usuário padrão
+   - Teste todas as funcionalidades
+
+DADOS DO BANCO:
+- Host: localhost
+- Database: u903648047_sis_restaurant
+- Username: u903648047_junior
+- Password: [SUA SENHA]
+
+ESTRUTURA DE PASTAS NO SERVIDOR:
+public_html/
+├── index.php
+├── login.php
+├── .htaccess
+├── api/
+├── config/
+├── css/
+├── includes/
+├── js/
+└── modules/
+
+IMPORTANTE:
+- Não esqueça de alterar a senha no database.php
+- Mantenha backups dos arquivos
+- Teste tudo antes de usar em produção
