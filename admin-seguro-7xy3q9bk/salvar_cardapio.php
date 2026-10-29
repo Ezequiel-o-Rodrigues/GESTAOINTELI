@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/cardapio-auth.php';
 require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/config/database.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

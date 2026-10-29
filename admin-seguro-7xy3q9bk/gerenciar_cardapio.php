@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/cardapio-auth.php';
 require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/config/database.php';
 
 $database = new Database();
@@ -83,7 +83,7 @@ $erro = $_GET['erro'] ?? '';
 <main>
     <header>
         <h1>Gerenciar produtos do cardápio</h1>
-        <a class="back" href="painel.php">Voltar ao painel</a>
+        <a class="back" href="../caixa-seguro-7xy3q9kkle/">Voltar ao sistema de caixa</a>
     </header>
 
     <?php if ($mensagem !== ''): ?>
