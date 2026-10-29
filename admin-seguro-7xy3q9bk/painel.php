@@ -204,11 +204,8 @@ require_once __DIR__ . '/includes/auth.php';
             <div class="container header-container">
                 <nav class="nav">
                     <ul class="menu-botoes">
-                        <li><a href="uploadfotos.php">Cadastrar Imagens</a></li>
-                        <li><a href="controlebuffet.php">Controle Buffet Diário</a></li>
+                        <li><a href="gerenciar_cardapio.php">Gerenciar produtos do cardápio</a></li>
                         <li><a href="relatoriogeral.php">Relatório Geral</a></li>
-                        <li><a href="formularios.php">Cadastros</a></li>
-                        <li><a href="listagens.php">Listagens</a></li>
                         <li><a href="logout.php" class="btn btn-danger">Sair</a></li>
                     </ul>
                 </nav>

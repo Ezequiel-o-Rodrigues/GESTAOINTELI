@@ -1,7 +1,7 @@
     <?php
     require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/config/database.php';
 
-    $produtos = [];
+    $produtosPorCategoria = [];
     $erroCardapio = false;
 
     try {
@@ -13,10 +13,35 @@
         }
 
         $stmt = $db->prepare(
-            'SELECT nome, preco FROM produtos WHERE ativo = 1 ORDER BY nome'
+            'SELECT p.id, p.nome, p.preco, p.imagem, c.id AS categoria_id, c.nome AS categoria_nome
+             FROM produtos p
+             INNER JOIN categorias c ON c.id = p.categoria_id
+             WHERE p.ativo = 1
+             ORDER BY
+                CASE c.nome
+                    WHEN 'Espetos' THEN 1
+                    WHEN 'Porções' THEN 2
+                    WHEN 'Jantinhas e Marmitas' THEN 3
+                    WHEN 'Bebidas não alcoólicas' THEN 4
+                    WHEN 'Cervejas' THEN 5
+                    WHEN 'Outros' THEN 6
+                    ELSE 7
+                END,
+                c.nome,
+                p.nome'
         );
         $stmt->execute();
-        $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $produto) {
+            $categoriaId = (int) $produto['categoria_id'];
+            if (!isset($produtosPorCategoria[$categoriaId])) {
+                $produtosPorCategoria[$categoriaId] = [
+                    'id' => $categoriaId,
+                    'nome' => $produto['categoria_nome'],
+                    'produtos' => []
+                ];
+            }
+            $produtosPorCategoria[$categoriaId]['produtos'][] = $produto;
+        }
     } catch (Exception $e) {
         error_log('Erro ao carregar produtos do cardápio público: ' . $e->getMessage());
         $erroCardapio = true;
@@ -517,31 +542,57 @@
         <!-- Menu de navegação -->
         <nav class="menu-navegacao">
             <ul>
-                <li><a href="#produtos">Cardápio</a></li>
+                <?php foreach ($produtosPorCategoria as $categoria): ?>
+                    <li><a href="#categoria-<?= $categoria['id'] ?>"><?= htmlspecialchars($categoria['nome'], ENT_QUOTES, 'UTF-8') ?></a></li>
+                <?php endforeach; ?>
                 <li><a href="#delivery">Delivery</a></li>
             </ul>
         </nav>
 
         <main class="container">
-            <section id="produtos" class="menu-section">
-                <h2 class="section-title">Cardápio</h2>
-                <div class="menu-grid">
-                    <?php if ($erroCardapio): ?>
-                        <p class="no-items">O cardápio está temporariamente indisponível. Tente novamente mais tarde.</p>
-                    <?php elseif (!empty($produtos)): ?>
-                        <?php foreach ($produtos as $produto): ?>
-                            <article class="menu-item">
-                                <div class="item-info">
-                                    <h3 class="item-name"><?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?></h3>
-                                    <p class="item-price"><?= number_format((float) $produto['preco'], 2, ',', '.') ?></p>
-                                </div>
-                            </article>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <p class="no-items">Nenhum produto disponível no momento.</p>
-                    <?php endif; ?>
-                </div>
-            </section>
+            <?php if ($erroCardapio): ?>
+                <section class="menu-section">
+                    <p class="no-items">O cardápio está temporariamente indisponível. Tente novamente mais tarde.</p>
+                </section>
+            <?php elseif (!empty($produtosPorCategoria)): ?>
+                <?php foreach ($produtosPorCategoria as $categoria): ?>
+                    <section id="categoria-<?= $categoria['id'] ?>" class="menu-section">
+                        <h2 class="section-title"><?= htmlspecialchars($categoria['nome'], ENT_QUOTES, 'UTF-8') ?></h2>
+                        <div class="menu-grid">
+                            <?php foreach ($categoria['produtos'] as $produto): ?>
+                                <?php
+                                $imagemRelativa = str_replace('\\', '/', (string) ($produto['imagem'] ?? ''));
+                                $imagemValida = $imagemRelativa !== ''
+                                    && strpos($imagemRelativa, '..') === false
+                                    && $imagemRelativa[0] !== '/'
+                                    && file_exists(__DIR__ . '/images/menu/' . $imagemRelativa);
+                                $imagemUrl = $imagemValida
+                                    ? 'images/menu/' . $imagemRelativa
+                                    : 'images/menu/default.png';
+                                ?>
+                                <article class="menu-item">
+                                    <div class="item-img-container">
+                                        <img
+                                            src="<?= htmlspecialchars($imagemUrl, ENT_QUOTES, 'UTF-8') ?>"
+                                            alt="<?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?>"
+                                            class="item-img"
+                                            loading="lazy"
+                                            onerror="this.onerror=null; this.src='images/menu/default.png'">
+                                    </div>
+                                    <div class="item-info">
+                                        <h3 class="item-name"><?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?></h3>
+                                        <p class="item-price"><?= number_format((float) $produto['preco'], 2, ',', '.') ?></p>
+                                    </div>
+                                </article>
+                            <?php endforeach; ?>
+                        </div>
+                    </section>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <section class="menu-section">
+                    <p class="no-items">Nenhum produto disponível no momento.</p>
+                </section>
+            <?php endif; ?>
             <!-- Seção Delivery -->
             <section id="delivery" class="menu-section" style="text-align: center; margin-top: 60px;">
                 <button id="deliveryBtn" style="background-color: var(--accent-color); color: var(--secondary-color); 
@@ -662,28 +713,6 @@
                 }
             });
 
-            // Filtro de bebidas
-            document.addEventListener('DOMContentLoaded', function() {
-                const filtroBtns = document.querySelectorAll('.filtro-btn');
-                const bebidas = document.querySelectorAll('.menu-item[data-categoria]');
-                
-                filtroBtns.forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        filtroBtns.forEach(b => b.classList.remove('active'));
-                        this.classList.add('active');
-                        
-                        const categoria = this.getAttribute('data-categoria');
-                        
-                        bebidas.forEach(bebida => {
-                            if (categoria === 'todas' || bebida.getAttribute('data-categoria') === categoria) {
-                                bebida.style.display = 'block';
-                            } else {
-                                bebida.style.display = 'none';
-                            }
-                        });
-                    });
-                });
-            });
         </script>
     </body>
     </html>
