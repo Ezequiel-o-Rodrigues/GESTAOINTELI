@@ -1,41 +1,27 @@
     <?php
-    require_once __DIR__ . '/../includes/conexao.php';
+    require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/config/database.php';
 
-    function getMenuItems($conn, $tabela, $where = '') {
-        $tabelas_validas = ['espetos', 'porcoes', 'bebidas', 'cervejas', 'opcoes_buffet'];
-        
-        if(!in_array($tabela, $tabelas_validas)) {
-            die("Nome de tabela inválido!");
+    $produtos = [];
+    $erroCardapio = false;
+
+    try {
+        $database = new Database();
+        $db = $database->getConnection();
+
+        if (!$db) {
+            throw new RuntimeException('Não foi possível conectar ao banco de dados do caixa.');
         }
-        
-        $sql = "SELECT * FROM $tabela WHERE ativo = 1";
-        if(!empty($where)) {
-            $sql .= " AND $where";
-        }
-        
-        $result = $conn->query($sql);
-        
-        if (!$result) {
-            error_log("Erro na consulta de $tabela: " . $conn->error);
-            return [];
-        }
-        
-        $items = [];
-        while($row = $result->fetch_assoc()) {
-            $items[] = $row;
-        }
-        return $items;
+
+        $stmt = $db->prepare(
+            'SELECT nome, preco FROM produtos WHERE ativo = 1 ORDER BY nome'
+        );
+        $stmt->execute();
+        $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        error_log('Erro ao carregar produtos do cardápio público: ' . $e->getMessage());
+        $erroCardapio = true;
+        http_response_code(503);
     }
-
-    $menuData = [
-        'espetos' => getMenuItems($conn, 'espetos'),
-        'porcoes' => getMenuItems($conn, 'porcoes'),
-        'bebidas' => getMenuItems($conn, 'bebidas'),
-        'cervejas' => getMenuItems($conn, 'cervejas'),
-        'buffet' => getMenuItems($conn, 'opcoes_buffet', 'ativo = 1')
-    ];
-
-    $conn->close();
     ?>
 
     <!DOCTYPE html>
@@ -531,198 +517,28 @@
         <!-- Menu de navegação -->
         <nav class="menu-navegacao">
             <ul>
-                <li><a href="#espetos">Espetos</a></li>
-                <li><a href="#porcoes">Porções</a></li>
-                <li><a href="#bebidas">Bebidas</a></li>
-                <li><a href="#cervejas">Cervejas</a></li>
-                <li><a href="#buffet">Jantinha</a></li>
+                <li><a href="#produtos">Cardápio</a></li>
                 <li><a href="#delivery">Delivery</a></li>
             </ul>
         </nav>
 
         <main class="container">
-            <!-- Seção de Espetos -->
-        <section id="espetos" class="menu-section">
-                <h2 class="section-title">Espetos da casa</h2>
+            <section id="produtos" class="menu-section">
+                <h2 class="section-title">Cardápio</h2>
                 <div class="menu-grid">
-                    <?php if (!empty($menuData['espetos'])): ?>
-                        <?php foreach($menuData['espetos'] as $item): ?>
-                        <div class="menu-item">
-                            <div class="item-img-container">
-                                <img src="<?= 
-        // Verifica se a imagem existe no sistema de arquivos
-        (isset($item['imagem']) && file_exists('images/menu/espetos/' . $item['imagem'])) 
-        ? 'images/menu/espetos/' . htmlspecialchars($item['imagem']) 
-        : 'images/menu/default.jpg' 
-    ?>" 
-        alt="<?= htmlspecialchars($item['tipo_carne'] ?? 'Espeto') ?>" 
-        class="item-img">
-                                <div class="item-special">Incluso acompanhamento!</div>
-                            </div>
-                            <div class="item-info">
-                                <h3 class="item-name"><?= htmlspecialchars($item['tipo_carne'] ?? 'Espeto') ?></h3>
-                                <?php if(!empty($item['descricao'])): ?>
-                                    <p class="item-desc"><?= htmlspecialchars($item['descricao']) ?></p>
-                                <?php endif; ?>
-                                <p class="item-price"><?= isset($item['preco']) ? number_format($item['preco'], 2, ',', '.') : '0,00' ?></p>
-                            </div>
-                        </div>
+                    <?php if ($erroCardapio): ?>
+                        <p class="no-items">O cardápio está temporariamente indisponível. Tente novamente mais tarde.</p>
+                    <?php elseif (!empty($produtos)): ?>
+                        <?php foreach ($produtos as $produto): ?>
+                            <article class="menu-item">
+                                <div class="item-info">
+                                    <h3 class="item-name"><?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?></h3>
+                                    <p class="item-price"><?= number_format((float) $produto['preco'], 2, ',', '.') ?></p>
+                                </div>
+                            </article>
                         <?php endforeach; ?>
                     <?php else: ?>
-                        <p class="no-items">Nenhum espeto disponível no momento</p>
-                    <?php endif; ?>
-                </div>
-            </section>
-            
-            <!-- Seção de Porções -->
-            <section id="porcoes" class="menu-section">
-                <h2 class="section-title">Porções</h2>
-                <div class="menu-grid">
-                    <?php if (!empty($menuData['porcoes'])): ?>
-                        <?php foreach($menuData['porcoes'] as $item): ?>
-                        <div class="menu-item">
-                            <div class="item-img-container">
-                        <img src="images/menu/porcoes/<?= htmlspecialchars($item['imagem'] ?? 'default.jpg') ?>" 
-                                        alt="<?= htmlspecialchars($item['nome'] ?? 'Porção') ?>" 
-                                        class="item-img"
-                                        onerror="this.onerror=null; this.src='images/menu/opcoes_buffet.jpg'">
-                                <?php if($item['destaque'] == 1): ?>
-                                    <div class="item-special">RECOMENDADO</div>
-                                <?php endif; ?>
-                            </div>
-                            <div class="item-info">
-                                <h3 class="item-name"><?= htmlspecialchars($item['nome'] ?? 'Porção') ?></h3>
-                                <?php if(!empty($item['descricao'])): ?>
-                                    <p class="item-desc"><?= htmlspecialchars($item['descricao']) ?></p>
-                                <?php endif; ?>
-                                <?php if(isset($item['tamanho'])): ?>
-                                    <p class="item-desc"><strong>Tamanho:</strong> <?= htmlspecialchars($item['tamanho']) ?></p>
-                                <?php endif; ?>
-                                <p class="item-price"><?= isset($item['preco']) ? number_format($item['preco'], 2, ',', '.') : '0,00' ?></p>
-                            </div>
-                        </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <p class="no-items">Nenhuma porção disponível no momento</p>
-                    <?php endif; ?>
-                </div>
-            </section>
-
-    <!-- Seção de Bebidas -->
-    <section id="bebidas" class="menu-section">
-        <h2 class="section-title">Bebidas e Refrigerantes</h2>
-        <div class="bebidas-filtro" style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;">
-            <button class="filtro-btn active" data-categoria="todas">Todas</button>
-            <button class="filtro-btn" data-categoria="refrigerante">Refrigerantes</button>
-            <button class="filtro-btn" data-categoria="suco">Sucos</button>
-            <button class="filtro-btn" data-categoria="energetico">Energéticos</button>
-            <button class="filtro-btn" data-categoria="agua">Águas</button>
-        </div>
-        <div class="menu-grid">
-            <?php if (!empty($menuData['bebidas'])): ?>
-                <?php foreach($menuData['bebidas'] as $item): ?>
-                <div class="menu-item" data-categoria="<?= htmlspecialchars($item['categoria'] ?? 'outros') ?>">
-                    <div class="item-img-container">
-                        <img src="images/menu/bebidas/<?= htmlspecialchars($item['imagem'] ?? 'default.jpg') ?>" 
-                            alt="<?= htmlspecialchars($item['nome'] ?? 'Bebida') ?>" 
-                            class="item-img"
-                            onerror="this.onerror=null; this.src='images/menu/default.jpg'">
-                    </div>
-                    <div class="item-info">
-                        <h3 class="item-name"><?= htmlspecialchars($item['nome'] ?? 'Bebida') ?></h3>
-                        <?php if(!empty($item['descricao'])): ?>
-                            <p class="item-desc"><?= htmlspecialchars($item['descricao']) ?></p>
-                        <?php endif; ?>
-                        <?php if(isset($item['tamanho_ml'])): ?>
-                            <p style="display: block;"><strong>Tamanho:</strong> <?= htmlspecialchars($item['tamanho_ml']) ?>ml</p>
-                        <?php endif; ?>
-                        <p class="item-price"><?= isset($item['preco']) ? number_format($item['preco'], 2, ',', '.') : '0,00' ?></p>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <p class="no-items">Nenhuma bebida disponível no momento</p>
-            <?php endif; ?>
-        </div>
-    </section>
-
-            <!-- Seção de Cervejas -->
-            <section id="cervejas" class="menu-section">
-                <h2 class="section-title">Cervejas</h2>
-                <div class="menu-grid">
-                    <?php if (!empty($menuData['cervejas'])): ?>
-                        <?php foreach($menuData['cervejas'] as $item): ?>
-                        <div class="menu-item">
-                            <div class="item-img-container">
-                                <img src="images/menu/cervejas/<?= htmlspecialchars($item['imagem'] ?? 'default.jpg') ?>" 
-                                    alt="<?= htmlspecialchars($item['marca'] ?? 'Cerveja') ?>" 
-                                    class="item-img"
-                                    onerror="this.onerror=null; this.src='images/menu/default.jpg'">
-                            
-                            </div>
-                            <div class="item-info">
-                                <h3 class="item-name"><?= htmlspecialchars($item['marca'] ?? 'Cerveja') ?></h3>
-                                <?php if(!empty($item['descricao'])): ?>
-                                    <p style="display: block;"><?= htmlspecialchars($item['descricao']) ?></p>
-                                <?php endif; ?>
-                                <?php if(isset($item['tamanho_ml'])): ?>
-                                    <p style="display: block;"><strong>Tamanho:</strong> <?= htmlspecialchars($item['tamanho_ml']) ?>ml</p>
-                                <?php endif; ?>
-                                <p class="item-price"><?= isset($item['preco']) ? number_format($item['preco'], 2, ',', '.') : '0,00' ?></p>
-                            </div>
-                        </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <p class="no-items">Nenhuma cerveja disponível no momento</p>
-                    <?php endif; ?>
-                </div>
-            </section>
-
-        <section id="buffet" class="menu-section">
-        <div class="buffet-header">
-            <h2 class="section-title">Jantinha Exclusiva</h2>
-            <div class="buffet-options">
-                <div class="buffet-option">
-                    <i class="fas fa-utensils"></i>
-                    <div>
-                        <h4 class="buffet-subtitle">Self Service + Espetinho</h4>
-                        <p class="item-price">R$28,00</p>
-                    </div>
-                </div>
-                <div class="buffet-option">
-                    <i class="fas fa-utensils"></i>
-                    <div>
-                        <h4 class="buffet-subtitle">Self Service + Bife</h4>
-                        <p class="item-price">R$30,00</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-                <div class="menu-grid">
-                    <?php if (!empty($menuData['buffet'])): ?>
-                        <?php foreach($menuData['buffet'] as $item): ?>
-                            <div class="menu-item">
-                                <div class="item-img-container">
-                                <div class="item-special">Buffet do dia!</div>
-                                <?php 
-                                $imagemPath = 'images/menu/opcoes_buffet/' . htmlspecialchars($item['imagem'] ?? 'default.png');
-                                $imagemPath = file_exists($imagemPath) ? $imagemPath : 'images/menu/default.jpg';
-                                ?>
-                                <img src="<?= $imagemPath ?>" 
-                                    alt="<?= htmlspecialchars($item['nome'] ?? 'Opção Buffet') ?>" 
-                                    class="item-img">
-                            </div>
-                            <div class="item-info">
-                                <h3 class="item-name"><?= htmlspecialchars($item['nome'] ?? 'Opção Buffet') ?></h3>
-                                <?php if(!empty($item['descricao'])): ?>
-                                    <p class="item-desc"><?= htmlspecialchars($item['descricao']) ?></p>
-                                <?php endif; ?>
-                                
-                            </div>
-                        </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <p class="no-items">Nenhuma opção de buffet disponível no momento</p>
+                        <p class="no-items">Nenhum produto disponível no momento.</p>
                     <?php endif; ?>
                 </div>
             </section>
