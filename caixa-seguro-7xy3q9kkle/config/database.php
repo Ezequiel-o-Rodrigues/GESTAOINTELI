@@ -1,8 +1,8 @@
 <?php
 class Database {
     private $host = "localhost";
-    private $db_name = "u903648047_sis_caixa";
-    private $username = "u903648047_juniior";
+    private $db_name = "u248790471_sis_caixa";
+    private $username = "u248790471_ezequiel";
     private $password = "Ezequiel_2014";
     public $conn;
     
