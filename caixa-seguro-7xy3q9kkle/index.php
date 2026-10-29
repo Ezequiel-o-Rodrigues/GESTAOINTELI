@@ -39,7 +39,6 @@ require_once __DIR__ . '/includes/header.php';
         <h3>⚙️ Admin</h3>
         <p>Configurações do sistema</p>
     </div>
-    <?php endif; ?>
 </div>
 
 <style>
@@ -56,15 +55,15 @@ require_once __DIR__ . '/includes/header.php';
     border-radius: 10px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     border: 1px solid #e9ecef;
+    border-top: 4px solid #F97316;
 }
 
 .module-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-4px);
     box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-    border-color: #667eea;
 }
 
 .module-card h3 {

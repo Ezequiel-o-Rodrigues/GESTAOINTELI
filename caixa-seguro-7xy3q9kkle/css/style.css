@@ -5,9 +5,17 @@
 }
 
 body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f5f5f5;
+    background-color: #F8FAFC;
     color: #333;
+}
+
+main {
+    flex: 1;
 }
 
 .container {
