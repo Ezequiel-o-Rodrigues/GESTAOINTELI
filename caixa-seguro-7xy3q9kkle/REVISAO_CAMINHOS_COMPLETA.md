@@ -80,11 +80,19 @@ $base_path = '/';
 
 O sistema agora está 100% configurado para funcionar no subdomínio sem problemas de 404 nas APIs.
 
-## 🔧 ARQUIVOS DE UTILITÁRIOS CRIADOS
+## 🔧 ARQUIVOS AUXILIARES ARQUIVADOS
 
-1. `fix_all_paths_final.php` - Script de correção automática
-2. `verify_paths.php` - Script de verificação
-3. `REVISAO_CAMINHOS_COMPLETA.md` - Este relatório
+Os scripts usados durante a correção foram preservados para consulta em
+`arquivados/correcao-caminhos/`. Eles são históricos e não fazem parte do
+funcionamento normal do sistema. A página de teste manual da API também foi
+arquivada nessa pasta.
+
+- `arquivados/correcao-caminhos/fix_all_paths.php` - Script de correção
+- `arquivados/correcao-caminhos/fix_all_paths_final.php` - Script de correção
+- `arquivados/correcao-caminhos/fix_estoque_paths.php` - Script de correção
+- `arquivados/correcao-caminhos/verify_paths.php` - Script de verificação
+- `arquivados/correcao-caminhos/test_api_path.html` - Página de teste manual
+- `REVISAO_CAMINHOS_COMPLETA.md` - Este relatório
 
 ## ⚠️ OBSERVAÇÕES
 
