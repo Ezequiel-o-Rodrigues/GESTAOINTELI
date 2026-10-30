@@ -3,6 +3,7 @@
     require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/menu-images.php';
 
     $produtosPorCategoria = [];
+    $produtosDestaque = [];
     $erroCardapio = false;
 
     try {
@@ -84,6 +85,23 @@
             $categoria['produtos'] = array_values($categoria['produtos']);
         }
         unset($categoria);
+        $produtosDestaque = [];
+        foreach ($produtosPorCategoria as $categoria) {
+            foreach ($categoria['produtos'] as $produto) {
+                $produtosDestaque[] = [
+                    'categoria_id' => $categoria['id'],
+                    'categoria_nome' => $categoria['nome'],
+                    'nome' => $produto['nome_publico'] ?: $produto['nome'],
+                    'descricao' => $produto['descricao_publica'],
+                    'preco' => $produto['preco'],
+                    'imagem' => $produto['imagem'],
+                    'imagem_url' => $produto['imagem_url']
+                ];
+                if (count($produtosDestaque) === 6) {
+                    break 2;
+                }
+            }
+        }
     } catch (Exception $e) {
         error_log('Erro ao carregar produtos do cardápio público: ' . $e->getMessage());
         $erroCardapio = true;
@@ -576,6 +594,14 @@
     <body>
         <header class="hero">
             <div class="hero-content">
+                <div class="hero-tools" aria-label="Atalhos">
+                    <button class="hero-icon-button" id="openHub" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="siteHub">
+                        <i class="fas fa-bars" aria-hidden="true"></i>
+                    </button>
+                    <button class="hero-icon-button" id="openSearch" type="button" aria-label="Pesquisar produtos" aria-expanded="false" aria-controls="menuSearch">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                    </button>
+                </div>
                 <span class="hero-kicker">Brasa, tempero e tradição</span>
                 <h1>ESPETINHO DO JÚNIOR</h1>
                 <p class="header-subtitle">EXCELÊNCIA EM SERVIR DESDE 2005</p>
@@ -587,6 +613,84 @@
                 </div>
             </div>
         </header>
+
+        <section class="search-panel" id="menuSearch" aria-label="Pesquisar no cardápio" hidden>
+            <label for="menuSearchInput">O que você está procurando?</label>
+            <div class="search-input-wrap">
+                <i class="fas fa-search" aria-hidden="true"></i>
+                <input id="menuSearchInput" type="search" placeholder="Ex.: picanha, cerveja, porção..." autocomplete="off">
+                <button id="closeSearch" type="button" aria-label="Fechar busca"><i class="fas fa-times" aria-hidden="true"></i></button>
+            </div>
+            <p id="searchFeedback" class="search-feedback" aria-live="polite"></p>
+        </section>
+
+        <div class="hub-backdrop" id="hubBackdrop" hidden>
+            <aside class="site-hub" id="siteHub" role="dialog" aria-modal="true" aria-label="Menu do cardápio" aria-hidden="true" tabindex="-1">
+                <div class="hub-heading">
+                    <div>
+                        <span class="eyebrow">Espetinho do Júnior</span>
+                        <h2>Explore o cardápio</h2>
+                    </div>
+                    <button class="hub-close" id="closeHub" type="button" aria-label="Fechar menu">&times;</button>
+                </div>
+                <nav aria-label="Atalhos do cardápio">
+                    <ul>
+                        <?php foreach ($produtosPorCategoria as $categoria): ?>
+                            <li><a href="#categoria-<?= $categoria['id'] ?>"><?= htmlspecialchars($categoria['nome'], ENT_QUOTES, 'UTF-8') ?><i class="fas fa-arrow-right" aria-hidden="true"></i></a></li>
+                        <?php endforeach; ?>
+                        <li><a href="#delivery">Delivery<i class="fas fa-arrow-right" aria-hidden="true"></i></a></li>
+                    </ul>
+                </nav>
+                <a class="hub-phone" href="tel:+556492397675"><i class="fas fa-phone" aria-hidden="true"></i> (64) 99239-7675</a>
+            </aside>
+        </div>
+
+        <?php if (!$erroCardapio && !empty($produtosDestaque)): ?>
+            <section class="featured-section" aria-labelledby="featuredTitle">
+                <div class="featured-heading">
+                    <div>
+                        <span class="eyebrow">Uma seleção da casa</span>
+                        <h2 id="featuredTitle">Destaques do cardápio</h2>
+                    </div>
+                    <div class="featured-controls">
+                        <span id="featuredStatus" class="featured-status" aria-live="polite"></span>
+                        <button class="featured-control" id="pauseFeatured" type="button" aria-label="Pausar destaques automáticos">
+                            <i class="fas fa-pause" aria-hidden="true"></i>
+                        </button>
+                        <button class="featured-control" id="previousFeatured" type="button" aria-label="Produto anterior">
+                            <i class="fas fa-arrow-left" aria-hidden="true"></i>
+                        </button>
+                        <button class="featured-control" id="nextFeatured" type="button" aria-label="Próximo produto">
+                            <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="featured-track" id="featuredTrack" role="region" tabindex="0" aria-label="Produtos em destaque" aria-roledescription="carrossel">
+                    <?php foreach ($produtosDestaque as $indice => $produto): ?>
+                        <?php
+                        $imagemDestaque = menuResolveImageSource(
+                            $produto['imagem'] ?? '',
+                            $produto['imagem_url'] ?? '',
+                            __DIR__ . '/images/menu',
+                            'images/menu/'
+                        );
+                        ?>
+                        <a class="featured-card" href="#categoria-<?= $produto['categoria_id'] ?>" aria-label="<?= htmlspecialchars($produto['nome'] . ', ' . $produto['categoria_nome'] . ', R$ ' . number_format((float) $produto['preco'], 2, ',', '.'), ENT_QUOTES, 'UTF-8') ?>">
+                            <img src="<?= htmlspecialchars($imagemDestaque, ENT_QUOTES, 'UTF-8') ?>" alt="" loading="<?= $indice < 2 ? 'eager' : 'lazy' ?>" onerror="this.onerror=null; this.src='images/menu/default.png'">
+                            <span class="featured-shade" aria-hidden="true"></span>
+                            <span class="featured-copy">
+                                <span class="featured-category"><?= htmlspecialchars($produto['categoria_nome'], ENT_QUOTES, 'UTF-8') ?></span>
+                                <span class="featured-name"><?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?></span>
+                                <?php if (!empty($produto['descricao'])): ?>
+                                    <span class="featured-description"><?= htmlspecialchars($produto['descricao'], ENT_QUOTES, 'UTF-8') ?></span>
+                                <?php endif; ?>
+                                <span class="featured-price">R$ <?= number_format((float) $produto['preco'], 2, ',', '.') ?></span>
+                            </span>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            </section>
+        <?php endif; ?>
         
         <!-- Menu de navegação -->
         <nav class="menu-navegacao" aria-label="Categorias do cardápio">
@@ -648,7 +752,15 @@
                                         );
                                     }
                                     ?>
-                                    <article class="menu-item <?= $apresentacao['principal'] ? 'menu-item--principal' : 'menu-item--opcao' ?>">
+                                    <?php
+                                    $termosPesquisa = implode(' ', [
+                                        $apresentacao['nome'],
+                                        $apresentacao['descricao'] ?? '',
+                                        $produto['nome'],
+                                        $categoria['nome']
+                                    ]);
+                                    ?>
+                                    <article class="menu-item <?= $apresentacao['principal'] ? 'menu-item--principal' : 'menu-item--opcao' ?>" data-search="<?= htmlspecialchars($termosPesquisa, ENT_QUOTES, 'UTF-8') ?>">
                                         <div class="item-img-container">
                                             <img
                                                 src="<?= htmlspecialchars($imagemUrl, ENT_QUOTES, 'UTF-8') ?>"
@@ -738,6 +850,110 @@
         </footer>
 
         <script>
+            const hubBackdrop = document.getElementById('hubBackdrop');
+            const siteHub = document.getElementById('siteHub');
+            const openHub = document.getElementById('openHub');
+            const closeHubButton = document.getElementById('closeHub');
+            const openSearch = document.getElementById('openSearch');
+            const searchPanel = document.getElementById('menuSearch');
+            const searchInput = document.getElementById('menuSearchInput');
+            const searchFeedback = document.getElementById('searchFeedback');
+            let lastHubTrigger = null;
+
+            function closeSiteHub(restoreFocus) {
+                hubBackdrop.hidden = true;
+                siteHub.setAttribute('aria-hidden', 'true');
+                openHub.setAttribute('aria-expanded', 'false');
+                document.body.classList.remove('modal-open');
+                if (restoreFocus && lastHubTrigger) {
+                    lastHubTrigger.focus();
+                }
+            }
+
+            openHub.addEventListener('click', function () {
+                lastHubTrigger = openHub;
+                searchPanel.hidden = true;
+                openSearch.setAttribute('aria-expanded', 'false');
+                hubBackdrop.hidden = false;
+                siteHub.setAttribute('aria-hidden', 'false');
+                openHub.setAttribute('aria-expanded', 'true');
+                document.body.classList.add('modal-open');
+                closeHubButton.focus();
+            });
+            closeHubButton.addEventListener('click', function () {
+                closeSiteHub(true);
+            });
+            hubBackdrop.addEventListener('click', function (event) {
+                if (event.target === hubBackdrop) {
+                    closeSiteHub(true);
+                }
+            });
+            siteHub.querySelectorAll('a[href^="#"]').forEach(function (link) {
+                link.addEventListener('click', function () {
+                    closeSiteHub(false);
+                });
+            });
+
+            openSearch.addEventListener('click', function () {
+                const willOpen = searchPanel.hidden;
+                closeSiteHub(false);
+                searchPanel.hidden = !willOpen;
+                openSearch.setAttribute('aria-expanded', String(willOpen));
+                if (willOpen) {
+                    searchInput.focus();
+                } else {
+                    searchInput.value = '';
+                    searchInput.dispatchEvent(new Event('input'));
+                }
+            });
+            document.getElementById('closeSearch').addEventListener('click', function () {
+                searchInput.value = '';
+                searchInput.dispatchEvent(new Event('input'));
+                searchPanel.hidden = true;
+                openSearch.setAttribute('aria-expanded', 'false');
+                openSearch.focus();
+            });
+
+            function normalizeSearch(value) {
+                return value.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            }
+
+            searchInput.addEventListener('input', function () {
+                const query = normalizeSearch(searchInput.value.trim());
+                const categorySections = document.querySelectorAll('.menu-section[id^="categoria-"]');
+                let totalMatches = 0;
+                categorySections.forEach(function (section) {
+                    const cards = section.querySelectorAll('.menu-item');
+                    let categoryMatches = 0;
+                    cards.forEach(function (card) {
+                        const matches = !query || normalizeSearch(card.dataset.search || '').includes(query);
+                        card.hidden = !matches;
+                        if (matches) {
+                            categoryMatches += 1;
+                        }
+                    });
+                    section.hidden = query !== '' && categoryMatches === 0;
+                    totalMatches += categoryMatches;
+                    const count = section.querySelector('.section-count');
+                    if (count) {
+                        count.textContent = categoryMatches + (categoryMatches === 1 ? ' item' : ' itens');
+                    }
+                    const categoryLink = document.querySelector('.menu-navegacao a[href="#' + section.id + '"]');
+                    if (categoryLink) {
+                        categoryLink.parentElement.hidden = query !== '' && categoryMatches === 0;
+                    }
+                });
+                const featuredSection = document.querySelector('.featured-section');
+                if (featuredSection) {
+                    featuredSection.hidden = query !== '';
+                }
+                searchFeedback.textContent = query === ''
+                    ? ''
+                    : totalMatches === 0
+                        ? 'Nenhum produto encontrado. Tente outro termo.'
+                        : totalMatches + (totalMatches === 1 ? ' resultado encontrado.' : ' resultados encontrados.');
+            });
+
             const deliveryModal = document.getElementById('deliveryModal');
             const closeModal = document.getElementById('closeModal');
             const deliveryTriggers = document.querySelectorAll('[data-delivery-trigger]');
@@ -768,8 +984,33 @@
                 }
             });
             document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && !hubBackdrop.hidden) {
+                    closeSiteHub(true);
+                    return;
+                }
+                if (event.key === 'Escape' && !searchPanel.hidden) {
+                    searchInput.value = '';
+                    searchInput.dispatchEvent(new Event('input'));
+                    searchPanel.hidden = true;
+                    openSearch.setAttribute('aria-expanded', 'false');
+                    openSearch.focus();
+                    return;
+                }
                 if (event.key === 'Escape' && deliveryModal.getAttribute('aria-hidden') === 'false') {
                     closeDeliveryModal();
+                    return;
+                }
+                if (event.key === 'Tab' && !hubBackdrop.hidden) {
+                    const focusableElements = siteHub.querySelectorAll('button, a[href]');
+                    const firstElement = focusableElements[0];
+                    const lastElement = focusableElements[focusableElements.length - 1];
+                    if (event.shiftKey && document.activeElement === firstElement) {
+                        event.preventDefault();
+                        lastElement.focus();
+                    } else if (!event.shiftKey && document.activeElement === lastElement) {
+                        event.preventDefault();
+                        firstElement.focus();
+                    }
                     return;
                 }
                 if (event.key === 'Tab' && deliveryModal.getAttribute('aria-hidden') === 'false') {
@@ -793,6 +1034,122 @@
             window.addEventListener('scroll', function () {
                 backToTop.hidden = window.scrollY < 600;
             }, { passive: true });
+
+            const featuredTrack = document.getElementById('featuredTrack');
+            if (featuredTrack) {
+                const featuredCards = Array.from(featuredTrack.querySelectorAll('.featured-card'));
+                const featuredStatus = document.getElementById('featuredStatus');
+                const pauseFeatured = document.getElementById('pauseFeatured');
+                const featuredSection = document.querySelector('.featured-section');
+                const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+                let featuredIndex = 0;
+                let featuredTimer = null;
+                let featuredPaused = reducedMotion.matches;
+                const featuredPauseReasons = {
+                    pointer: false,
+                    focus: false,
+                    hidden: document.hidden
+                };
+
+                function updateFeaturedStatus() {
+                    const closestCard = featuredCards.reduce(function (closest, card, index) {
+                        const trackLeft = featuredTrack.getBoundingClientRect().left;
+                        const cardPosition = card.getBoundingClientRect().left - trackLeft + featuredTrack.scrollLeft;
+                        const closestPosition = featuredCards[closest].getBoundingClientRect().left - trackLeft + featuredTrack.scrollLeft;
+                        return Math.abs(cardPosition - featuredTrack.scrollLeft) < Math.abs(closestPosition - featuredTrack.scrollLeft)
+                            ? index
+                            : closest;
+                    }, 0);
+                    featuredIndex = closestCard;
+                    featuredStatus.textContent = String(closestCard + 1).padStart(2, '0') + ' / ' + String(featuredCards.length).padStart(2, '0');
+                }
+
+                if (featuredCards.length < 2) {
+                    pauseFeatured.hidden = true;
+                    document.getElementById('previousFeatured').hidden = true;
+                    document.getElementById('nextFeatured').hidden = true;
+                }
+
+                function moveFeatured(index) {
+                    featuredIndex = (index + featuredCards.length) % featuredCards.length;
+                    const targetLeft = featuredCards[featuredIndex].getBoundingClientRect().left
+                        - featuredTrack.getBoundingClientRect().left
+                        + featuredTrack.scrollLeft;
+                    featuredTrack.scrollTo({
+                        left: targetLeft,
+                        behavior: reducedMotion.matches ? 'auto' : 'smooth'
+                    });
+                    updateFeaturedStatus();
+                }
+
+                function stopFeaturedTimer() {
+                    if (featuredTimer !== null) {
+                        window.clearInterval(featuredTimer);
+                        featuredTimer = null;
+                    }
+                }
+
+                function startFeaturedTimer() {
+                    stopFeaturedTimer();
+                    if (!featuredPaused && !Object.values(featuredPauseReasons).some(Boolean) && featuredCards.length > 1) {
+                        featuredTimer = window.setInterval(function () {
+                            moveFeatured(featuredIndex + 1);
+                        }, 5000);
+                    }
+                }
+
+                function updatePauseButton() {
+                    pauseFeatured.setAttribute('aria-label', featuredPaused ? 'Retomar destaques automáticos' : 'Pausar destaques automáticos');
+                    pauseFeatured.innerHTML = featuredPaused
+                        ? '<i class="fas fa-play" aria-hidden="true"></i>'
+                        : '<i class="fas fa-pause" aria-hidden="true"></i>';
+                }
+
+                document.getElementById('previousFeatured').addEventListener('click', function () {
+                    moveFeatured(featuredIndex - 1);
+                    startFeaturedTimer();
+                });
+                document.getElementById('nextFeatured').addEventListener('click', function () {
+                    moveFeatured(featuredIndex + 1);
+                    startFeaturedTimer();
+                });
+                pauseFeatured.addEventListener('click', function () {
+                    featuredPaused = !featuredPaused;
+                    updatePauseButton();
+                    startFeaturedTimer();
+                });
+                featuredTrack.addEventListener('scroll', updateFeaturedStatus, { passive: true });
+                featuredSection.addEventListener('mouseenter', function () {
+                    featuredPauseReasons.pointer = true;
+                    stopFeaturedTimer();
+                });
+                featuredSection.addEventListener('mouseleave', function () {
+                    featuredPauseReasons.pointer = false;
+                    startFeaturedTimer();
+                });
+                featuredSection.addEventListener('focusin', function () {
+                    featuredPauseReasons.focus = true;
+                    stopFeaturedTimer();
+                });
+                featuredSection.addEventListener('focusout', function (event) {
+                    if (!featuredSection.contains(event.relatedTarget)) {
+                        featuredPauseReasons.focus = false;
+                        startFeaturedTimer();
+                    }
+                });
+                document.addEventListener('visibilitychange', function () {
+                    featuredPauseReasons.hidden = document.hidden;
+                    startFeaturedTimer();
+                });
+                reducedMotion.addEventListener('change', function (event) {
+                    featuredPaused = event.matches;
+                    updatePauseButton();
+                    startFeaturedTimer();
+                });
+                updatePauseButton();
+                updateFeaturedStatus();
+                startFeaturedTimer();
+            }
 
             const categorySections = document.querySelectorAll('.menu-section[id]');
             const categoryLinks = document.querySelectorAll('.menu-navegacao a[href^="#"]');
