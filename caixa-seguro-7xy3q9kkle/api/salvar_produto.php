@@ -113,11 +113,15 @@ if ($hasMenuFields) {
 
     $nomePublico = $nomePublicoInput === '' ? null : $nomePublicoInput;
     $descricaoPublica = $descricaoPublicaInput === '' ? null : $descricaoPublicaInput;
+    $imagemProdutoUrlInformada = array_key_exists('imagem_url', $input);
     $imagemProdutoUrl = $input['imagem_url'] ?? '';
     if (!is_string($imagemProdutoUrl) || strlen($imagemProdutoUrl) > 2048) {
         responderErro('A URL da imagem do produto é inválida.', 400);
     }
     $imagemProdutoUrl = trim($imagemProdutoUrl);
+    if ($imagemProdutoUrl !== '' && !menuIsValidImageUrl($imagemProdutoUrl)) {
+        responderErro('Informe uma URL HTTPS pública que aponte diretamente para uma imagem.', 400);
+    }
     $opcoesInput = json_decode((string) ($input['opcoes_json'] ?? '[]'), true);
     if (!is_array($opcoesInput) || count($opcoesInput) > 50) {
         responderErro('A lista de opções é inválida ou excede o limite de 50 itens.', 400);
@@ -155,11 +159,16 @@ if ($hasMenuFields) {
         if (!is_string($imagemOpcaoUrl) || strlen($imagemOpcaoUrl) > 2048) {
             responderErro('A URL da imagem da subcategoria é inválida.', 400);
         }
+        $imagemOpcaoUrl = trim($imagemOpcaoUrl);
+        if ($imagemOpcaoUrl !== '' && !menuIsValidImageUrl($imagemOpcaoUrl)) {
+            responderErro('Informe uma URL HTTPS pública que aponte diretamente para a imagem da subcategoria.', 400);
+        }
         $opcoes[] = [
             'id' => $opcaoId,
             'nome' => $opcaoNome,
             'descricao' => $opcaoDescricao === '' ? null : $opcaoDescricao,
-            'imagem_url' => trim($imagemOpcaoUrl)
+            'imagem_url' => $imagemOpcaoUrl,
+            'imagem_url_informada' => array_key_exists('imagem_url', $opcao)
         ];
     }
 }
@@ -236,13 +245,8 @@ try {
         $uploadProduto = $_FILES['imagem'] ?? null;
         $temUploadProduto = is_array($uploadProduto)
             && ($uploadProduto['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
-        if ($temUploadProduto && $imagemProdutoUrl !== '') {
-            throw new InvalidArgumentException('Escolha o upload do arquivo ou a importação por URL para a imagem do produto, não os dois.');
-        }
         if ($temUploadProduto) {
             $arquivoNovo = menuPrepareUploadedImage($_FILES['imagem'], $produtoId);
-        } elseif ($imagemProdutoUrl !== '') {
-            $arquivoNovo = menuImportImageFromUrl($imagemProdutoUrl, $produtoId);
         }
 
         $query = 'UPDATE produtos SET nome_publico = :nome_publico, descricao_publica = :descricao_publica';
@@ -251,6 +255,10 @@ try {
             ':descricao_publica' => $descricaoPublica,
             ':id' => $produtoId
         ];
+        if ($imagemProdutoUrlInformada) {
+            $query .= ', imagem_url = :imagem_url';
+            $params[':imagem_url'] = $imagemProdutoUrl === '' ? null : $imagemProdutoUrl;
+        }
         if ($arquivoNovo) {
             $query .= ', imagem = :imagem';
             $params[':imagem'] = $arquivoNovo['relativo'];
@@ -274,13 +282,8 @@ try {
             $uploadOpcao = $_FILES[$campoImagem] ?? null;
             $temUpload = is_array($uploadOpcao)
                 && ($uploadOpcao['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
-            if ($temUpload && $opcao['imagem_url'] !== '') {
-                throw new InvalidArgumentException('Escolha o upload do arquivo ou a importação por URL para cada subcategoria, não os dois.');
-            }
             if ($temUpload) {
                 $arquivoOpcao = menuPrepareUploadedImage($uploadOpcao, $produtoId);
-            } elseif ($opcao['imagem_url'] !== '') {
-                $arquivoOpcao = menuImportImageFromUrl($opcao['imagem_url'], $produtoId);
             }
             if ($arquivoOpcao) {
                 $arquivosNovosOpcoes[] = $arquivoOpcao;
@@ -295,29 +298,34 @@ try {
                 }
                 $idsEnviados[] = $opcao['id'];
                 $imagem = $arquivoOpcao ? $arquivoOpcao['relativo'] : $opcoesAtuais[$opcao['id']];
-                $stmt = $db->prepare(
-                    'UPDATE produto_cards
-                     SET nome_exibicao = :nome, descricao = :descricao, imagem = :imagem, ordem = :ordem
-                     WHERE id = :id AND produto_id = :produto_id'
-                );
-                $stmt->execute([
+                $query = 'UPDATE produto_cards
+                          SET nome_exibicao = :nome, descricao = :descricao, imagem = :imagem, ordem = :ordem';
+                $params = [
                     ':nome' => $opcao['nome'],
                     ':descricao' => $opcao['descricao'],
                     ':imagem' => $imagem,
                     ':ordem' => $indice + 1,
                     ':id' => $opcao['id'],
                     ':produto_id' => $produtoId
-                ]);
+                ];
+                if ($opcao['imagem_url_informada']) {
+                    $query .= ', imagem_url = :imagem_url';
+                    $params[':imagem_url'] = $opcao['imagem_url'] === '' ? null : $opcao['imagem_url'];
+                }
+                $query .= ' WHERE id = :id AND produto_id = :produto_id';
+                $stmt = $db->prepare($query);
+                $stmt->execute($params);
             } else {
                 $stmt = $db->prepare(
-                    'INSERT INTO produto_cards (produto_id, nome_exibicao, descricao, imagem, ordem)
-                     VALUES (:produto_id, :nome, :descricao, :imagem, :ordem)'
+                    'INSERT INTO produto_cards (produto_id, nome_exibicao, descricao, imagem, imagem_url, ordem)
+                     VALUES (:produto_id, :nome, :descricao, :imagem, :imagem_url, :ordem)'
                 );
                 $stmt->execute([
                     ':produto_id' => $produtoId,
                     ':nome' => $opcao['nome'],
                     ':descricao' => $opcao['descricao'],
                     ':imagem' => $arquivoOpcao ? $arquivoOpcao['relativo'] : null,
+                    ':imagem_url' => $opcao['imagem_url'] === '' ? null : $opcao['imagem_url'],
                     ':ordem' => $indice + 1
                 ]);
             }

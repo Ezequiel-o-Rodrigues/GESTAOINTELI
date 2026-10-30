@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/cardapio-auth.php';
 require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/config/database.php';
+require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/menu-images.php';
 
 try {
     $database = new Database();
@@ -11,6 +12,7 @@ try {
 
     $stmt = $db->query(
         "SELECT p.id, p.categoria_id, p.nome, p.nome_publico, p.descricao_publica, p.preco,
+                p.imagem_url,
                 p.estoque_minimo, p.estoque_atual, p.imagem, c.nome AS categoria_nome
          FROM produtos p
          INNER JOIN categorias c ON c.id = p.categoria_id
@@ -20,25 +22,30 @@ try {
     $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $stmt = $db->query(
-        'SELECT id, produto_id, nome_exibicao, descricao, imagem, ordem
+        'SELECT id, produto_id, nome_exibicao, descricao, imagem, imagem_url, ordem
          FROM produto_cards
          ORDER BY produto_id, ordem, id'
     );
     $opcoesPorProduto = [];
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $opcao) {
-        $imagemRelativa = str_replace('\\', '/', (string) ($opcao['imagem'] ?? ''));
-        $imagemValida = $imagemRelativa !== ''
-            && strpos($imagemRelativa, '..') === false
-            && $imagemRelativa[0] !== '/'
-            && file_exists(__DIR__ . '/../public/images/menu/' . $imagemRelativa);
+        $imagemPreview = menuResolveImageSource(
+            $opcao['imagem'] ?? '',
+            $opcao['imagem_url'] ?? '',
+            __DIR__ . '/../public/images/menu',
+            '../public/images/menu/'
+        );
+        $imagemLocalValida = menuHasLocalImage(
+            $opcao['imagem'] ?? '',
+            __DIR__ . '/../public/images/menu'
+        );
         $opcoesPorProduto[(int) $opcao['produto_id']][] = [
             'id' => (int) $opcao['id'],
             'nome_exibicao' => $opcao['nome_exibicao'],
             'descricao' => $opcao['descricao'] ?? '',
             'imagem' => $opcao['imagem'] ?? '',
-            'imagem_url' => $imagemValida
-                ? '../public/images/menu/' . $imagemRelativa
-                : '../public/images/menu/default.png'
+            'imagem_url' => $opcao['imagem_url'] ?? '',
+            'imagem_preview' => $imagemPreview,
+            'imagem_local_valida' => $imagemLocalValida
         ];
     }
 } catch (Throwable $e) {
@@ -154,13 +161,16 @@ $erro = $_GET['erro'] ?? '';
                 $produtoId = (int) $produto['id'];
                 $opcoes = $opcoesPorProduto[$produtoId] ?? [];
                 $imagemRelativa = str_replace('\\', '/', (string) ($produto['imagem'] ?? ''));
-                $imagemValida = $imagemRelativa !== ''
-                    && strpos($imagemRelativa, '..') === false
-                    && $imagemRelativa[0] !== '/'
-                    && file_exists(__DIR__ . '/../public/images/menu/' . $imagemRelativa);
-                $imagemUrl = $imagemValida
-                    ? '../public/images/menu/' . $imagemRelativa
-                    : '../public/images/menu/default.png';
+                $imagemUrl = menuResolveImageSource(
+                    $produto['imagem'] ?? '',
+                    $produto['imagem_url'] ?? '',
+                    __DIR__ . '/../public/images/menu',
+                    '../public/images/menu/'
+                );
+                $imagemLocalValida = menuHasLocalImage(
+                    $produto['imagem'] ?? '',
+                    __DIR__ . '/../public/images/menu'
+                );
                 $dadosProduto = [
                     'id' => $produtoId,
                     'categoria_id' => (int) $produto['categoria_id'],
@@ -173,6 +183,8 @@ $erro = $_GET['erro'] ?? '';
                     'estoque_atual' => $produto['estoque_atual'],
                     'imagem' => $produto['imagem'] ?? '',
                     'imagem_url' => $imagemUrl,
+                    'imagem_url_original' => $produto['imagem_url'] ?? '',
+                    'imagem_local_valida' => $imagemLocalValida,
                     'opcoes' => $opcoes
                 ];
                 $jsonProduto = json_encode($dadosProduto, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
@@ -184,7 +196,7 @@ $erro = $_GET['erro'] ?? '';
                     : strtolower($termoPesquisa);
                 ?>
                 <article class="product" data-search="<?= htmlspecialchars($termoPesquisa, ENT_QUOTES, 'UTF-8') ?>">
-                    <img src="<?= htmlspecialchars($imagemUrl, ENT_QUOTES, 'UTF-8') ?>" alt="" loading="lazy">
+                    <img src="<?= htmlspecialchars($imagemUrl, ENT_QUOTES, 'UTF-8') ?>" alt="" loading="lazy" onerror="this.onerror=null; this.src='../public/images/menu/default.png'">
                     <div class="product-main">
                         <div>
                             <p class="product-name"><?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?></p>
@@ -235,14 +247,14 @@ $erro = $_GET['erro'] ?? '';
         </div>
         <div class="field">
             <label for="productImage">Imagem do produto (opcional, JPG/PNG/GIF/WebP, até 5 MB)</label>
-            <img class="product-image-preview" id="productImagePreview" src="../public/images/menu/default.png" alt="Prévia da imagem do produto">
+            <img class="product-image-preview" id="productImagePreview" src="../public/images/menu/default.png" alt="Prévia da imagem do produto" onerror="this.onerror=null; this.src='../public/images/menu/default.png'">
             <input id="productImage" type="file" accept="image/jpeg,image/png,image/gif,image/webp">
             <div class="option-search">
                 <label for="productImageUrl">Ou importar uma URL HTTPS direta de imagem</label>
                 <input id="productImageUrl" type="url" maxlength="2048" placeholder="https://site.com/imagem.jpg">
                 <a id="productGoogleImageSearch" href="#" target="_blank" rel="noopener noreferrer">Pesquisar no Google Imagens</a>
             </div>
-            <small>A imagem atual será mantida se nenhuma nova for selecionada. Na busca, copie o endereço direto do arquivo de imagem e cole aqui; links de páginas de resultados/redirecionamentos não são aceitos. Use apenas imagens que tenha autorização para publicar.</small>
+            <small>Um arquivo salvo e válido tem prioridade sobre o link. Se não houver arquivo local, o cardápio usa a URL HTTPS; sem ambos, mostra a imagem padrão. Na busca, copie o endereço direto do arquivo. Use apenas imagens que tenha autorização para publicar.</small>
         </div>
 
         <section>
@@ -250,7 +262,7 @@ $erro = $_GET['erro'] ?? '';
                 <h3>Subcategorias do produto</h3>
                 <button type="button" class="secondary" id="addOption">Adicionar</button>
             </div>
-            <p class="section-help">Use para listar sabores ou apresentações. Cada subcategoria pode ter foto própria, mas compartilha produto e preço. Você pode enviar uma imagem ou pesquisar no Google Imagens e colar a URL direta do arquivo. Use apenas imagens que tenha autorização para publicar.</p>
+            <p class="section-help">Use para listar sabores ou apresentações. Cada subcategoria pode ter foto própria, mas compartilha produto e preço. Um arquivo salvo e válido tem prioridade sobre a URL HTTPS; sem arquivo, o link é usado e, sem ambos, aparece a imagem padrão. Use apenas imagens que tenha autorização para publicar.</p>
             <div id="productOptions"></div>
         </section>
 
@@ -282,6 +294,7 @@ $erro = $_GET['erro'] ?? '';
         const row = document.createElement('div');
         row.className = 'option';
         row.dataset.id = option.id || '';
+        row.dataset.localImage = option.imagem_local_valida ? 'true' : 'false';
         row.innerHTML = `
             <div class="field">
                 <label>Nome da subcategoria</label>
@@ -292,7 +305,7 @@ $erro = $_GET['erro'] ?? '';
                 <textarea class="option-description" rows="2" maxlength="1000">${escapeHtml(option.descricao || '')}</textarea>
             </div>
             <div class="option-image">
-                <img src="${escapeHtml(option.imagem_url || '../public/images/menu/default.png')}" alt="Prévia da imagem da subcategoria">
+                <img src="${escapeHtml(option.imagem_preview || '../public/images/menu/default.png')}" alt="Prévia da imagem da subcategoria" onerror="this.onerror=null; this.src='../public/images/menu/default.png'">
                 <label class="field">
                     Foto própria da subcategoria (JPG, PNG, GIF ou WebP; até 5 MB)
                     <input class="option-file" type="file" accept="image/jpeg,image/png,image/gif,image/webp">
@@ -320,15 +333,20 @@ $erro = $_GET['erro'] ?? '';
         row.querySelector('.option-file').addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
-                row.querySelector('.option-image-url').value = '';
                 row.querySelector('.option-image img').src = URL.createObjectURL(file);
             }
         });
         row.querySelector('.option-image-url').addEventListener('input', (event) => {
-            if (event.target.value.trim()) {
-                row.querySelector('.option-file').value = '';
+            if (
+                event.target.value.trim()
+                && !row.querySelector('.option-file').files[0]
+                && row.dataset.localImage !== 'true'
+            ) {
+                row.querySelector('.option-image img').src = event.target.value.trim();
             }
         });
+        const externalImageUrl = row.querySelector('.option-image-url');
+        externalImageUrl.value = option.imagem_url || '';
         optionsContainer.append(row);
     }
 
@@ -347,6 +365,7 @@ $erro = $_GET['erro'] ?? '';
             document.getElementById('publicName').value = currentProduct.nome_publico;
             document.getElementById('publicDescription').value = currentProduct.descricao_publica;
             document.getElementById('productImagePreview').src = currentProduct.imagem_url;
+            document.getElementById('productImageUrl').value = currentProduct.imagem_url_original;
             currentProduct.opcoes.forEach(addOption);
             editor.showModal();
         });
@@ -364,14 +383,17 @@ $erro = $_GET['erro'] ?? '';
     document.getElementById('productImage').addEventListener('change', (event) => {
         const file = event.target.files[0];
         if (file) {
-            document.getElementById('productImageUrl').value = '';
             document.getElementById('productImagePreview').src = URL.createObjectURL(file);
         }
     });
 
     document.getElementById('productImageUrl').addEventListener('input', (event) => {
-        if (event.target.value.trim()) {
-            document.getElementById('productImage').value = '';
+        if (
+            event.target.value.trim()
+            && !document.getElementById('productImage').files[0]
+            && !currentProduct.imagem_local_valida
+        ) {
+            document.getElementById('productImagePreview').src = event.target.value.trim();
         }
     });
 

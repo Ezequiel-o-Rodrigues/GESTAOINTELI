@@ -1,4 +1,69 @@
 <?php
+function menuIsValidImageUrl($url) {
+    if (!is_string($url) || strlen($url) > 2048 || filter_var($url, FILTER_VALIDATE_URL) === false) {
+        return false;
+    }
+
+    $partes = parse_url($url);
+    if (
+        !$partes
+        || strtolower($partes['scheme'] ?? '') !== 'https'
+        || empty($partes['host'])
+        || isset($partes['user'])
+        || isset($partes['pass'])
+        || (isset($partes['port']) && (int) $partes['port'] !== 443)
+    ) {
+        return false;
+    }
+
+    $host = strtolower(rtrim(trim($partes['host'], '[]'), '.'));
+    if ($host === '' || $host === 'localhost' || preg_match('/\.local$|\.internal$/i', $host)) {
+        return false;
+    }
+
+    if (filter_var($host, FILTER_VALIDATE_IP)) {
+        return filter_var(
+            $host,
+            FILTER_VALIDATE_IP,
+            FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+        ) !== false;
+    }
+
+    return true;
+}
+
+function menuHasLocalImage($localPath, $imageDirectory) {
+    $relative = str_replace('\\', '/', (string) ($localPath ?? ''));
+    if (
+        $relative === ''
+        || strpos($relative, '..') !== false
+        || $relative[0] === '/'
+        || strtolower(basename($relative)) === 'default.png'
+    ) {
+        return false;
+    }
+
+    $baseReal = realpath($imageDirectory);
+    $fileReal = realpath($imageDirectory . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative));
+    return $baseReal !== false
+        && $fileReal !== false
+        && is_file($fileReal)
+        && strpos($fileReal, $baseReal . DIRECTORY_SEPARATOR) === 0;
+}
+
+function menuResolveImageSource($localPath, $remoteUrl, $imageDirectory, $urlPrefix) {
+    $relative = str_replace('\\', '/', (string) ($localPath ?? ''));
+    if (menuHasLocalImage($relative, $imageDirectory)) {
+        return $urlPrefix . $relative;
+    }
+
+    if (menuIsValidImageUrl($remoteUrl)) {
+        return $remoteUrl;
+    }
+
+    return $urlPrefix . 'default.png';
+}
+
 function menuPrepareUploadedImage($arquivo, $produtoId) {
     if ($arquivo === null || (is_array($arquivo) && ($arquivo['error'] ?? null) === UPLOAD_ERR_NO_FILE)) {
         return null;
@@ -66,109 +131,6 @@ function menuStoreImageContents($conteudo, $produtoId) {
         'caminho' => $caminho,
         'relativo' => 'products/' . $nomeArquivo
     ];
-}
-
-function menuImportImageFromUrl($url, $produtoId) {
-    if (!function_exists('curl_init')) {
-        throw new RuntimeException('A importação por URL requer a extensão cURL habilitada no servidor.');
-    }
-    if (!is_string($url) || strlen($url) > 2048 || filter_var($url, FILTER_VALIDATE_URL) === false) {
-        throw new InvalidArgumentException('Informe uma URL válida que aponte diretamente para uma imagem.');
-    }
-
-    $partes = parse_url($url);
-    if (
-        !$partes
-        || strtolower($partes['scheme'] ?? '') !== 'https'
-        || empty($partes['host'])
-        || isset($partes['user'])
-        || isset($partes['pass'])
-        || (isset($partes['port']) && (int) $partes['port'] !== 443)
-    ) {
-        throw new InvalidArgumentException('Use uma URL HTTPS pública, sem credenciais e na porta padrão.');
-    }
-
-    $host = strtolower(rtrim($partes['host'], '.'));
-    if ($host === '' || $host === 'localhost' || preg_match('/\.local$|\.internal$/i', $host)) {
-        throw new InvalidArgumentException('O endereço da imagem não é permitido.');
-    }
-
-    if (filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-        $enderecos = [$host];
-    } elseif (filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
-        throw new InvalidArgumentException('Use um endereço de imagem com nome de domínio público.');
-    } else {
-        $registrosDns = dns_get_record($host, DNS_A);
-        $enderecos = [];
-        foreach ($registrosDns ?: [] as $registro) {
-            if (isset($registro['ip'])) {
-                $enderecos[] = $registro['ip'];
-            }
-        }
-    }
-
-    if (empty($enderecos)) {
-        throw new InvalidArgumentException('Não foi possível localizar um endereço público para a imagem.');
-    }
-    foreach ($enderecos as $endereco) {
-        if (!filter_var($endereco, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
-            throw new InvalidArgumentException('O domínio da imagem resolve para um endereço não público.');
-        }
-    }
-
-    $endereco = $enderecos[0];
-    $porta = isset($partes['port']) ? (int) $partes['port'] : 443;
-    $cabecalhoHost = $host;
-    $path = $partes['path'] ?? '/';
-    if (isset($partes['query'])) {
-        $path .= '?' . $partes['query'];
-    }
-    $urlValidada = 'https://' . $cabecalhoHost . ($porta === 443 ? '' : ':' . $porta) . $path;
-    $conteudo = '';
-    $excedeuLimite = false;
-    $curl = curl_init($urlValidada);
-    if ($curl === false) {
-        throw new RuntimeException('Não foi possível iniciar a importação da imagem.');
-    }
-
-    curl_setopt_array($curl, [
-        CURLOPT_FOLLOWLOCATION => false,
-        CURLOPT_MAXREDIRS => 0,
-        CURLOPT_CONNECTTIMEOUT => 5,
-        CURLOPT_TIMEOUT => 15,
-        CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
-        CURLOPT_SSL_VERIFYPEER => true,
-        CURLOPT_SSL_VERIFYHOST => 2,
-        CURLOPT_PROXY => '',
-        CURLOPT_RESOLVE => [$host . ':' . $porta . ':' . $endereco],
-        CURLOPT_USERAGENT => 'GestaoInteliMenuImage/1.0',
-        CURLOPT_WRITEFUNCTION => static function ($handle, $chunk) use (&$conteudo, &$excedeuLimite) {
-            if (strlen($conteudo) + strlen($chunk) > 5 * 1024 * 1024) {
-                $excedeuLimite = true;
-                return 0;
-            }
-            $conteudo .= $chunk;
-            return strlen($chunk);
-        }
-    ]);
-
-    $resultado = curl_exec($curl);
-    $status = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
-    $erro = curl_error($curl);
-    curl_close($curl);
-
-    if ($excedeuLimite) {
-        throw new InvalidArgumentException('A imagem deve ter no máximo 5 MB.');
-    }
-    if ($resultado === false) {
-        error_log('Falha ao importar imagem HTTPS: ' . $erro);
-        throw new RuntimeException('Não foi possível baixar a imagem. Use o link direto do arquivo e tente novamente.');
-    }
-    if ($status !== 200) {
-        throw new InvalidArgumentException('O endereço não retornou uma imagem (HTTP ' . $status . '). Redirecionamentos não são aceitos; informe a URL direta do arquivo.');
-    }
-
-    return menuStoreImageContents($conteudo, $produtoId);
 }
 
 function menuRemoveManagedImage($imagemRelativa) {

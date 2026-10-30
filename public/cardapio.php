@@ -1,5 +1,6 @@
     <?php
     require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/config/database.php';
+    require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/menu-images.php';
 
     $produtosPorCategoria = [];
     $erroCardapio = false;
@@ -20,12 +21,14 @@
                 p.descricao_publica,
                 p.preco,
                 p.imagem AS produto_imagem,
+                p.imagem_url AS produto_imagem_url,
                 c.id AS categoria_id,
                 c.nome AS categoria_nome,
                 pc.id AS card_id,
                 pc.nome_exibicao AS card_nome,
                 pc.descricao AS card_descricao,
-                pc.imagem AS card_imagem
+                pc.imagem AS card_imagem,
+                pc.imagem_url AS card_imagem_url
              FROM produtos p
              INNER JOIN categorias c ON c.id = p.categoria_id
              LEFT JOIN produto_cards pc ON pc.produto_id = p.id
@@ -64,6 +67,7 @@
                     'descricao_publica' => $produto['descricao_publica'],
                     'preco' => $produto['preco'],
                     'imagem' => $produto['produto_imagem'],
+                    'imagem_url' => $produto['produto_imagem_url'],
                     'cards' => []
                 ];
             }
@@ -71,7 +75,8 @@
                 $produtosPorCategoria[$categoriaId]['produtos'][$produtoId]['cards'][] = [
                     'nome' => $produto['card_nome'],
                     'descricao' => $produto['card_descricao'],
-                    'imagem' => $produto['card_imagem']
+                    'imagem' => $produto['card_imagem'],
+                    'imagem_url' => $produto['card_imagem_url']
                 ];
             }
         }
@@ -601,7 +606,8 @@
                                 $apresentacoes = [[
                                     'nome' => $produto['nome_publico'] ?: $produto['nome'],
                                     'descricao' => $produto['descricao_publica'],
-                                    'imagem' => $produto['imagem']
+                                    'imagem' => $produto['imagem'],
+                                    'imagem_url' => $produto['imagem_url']
                                 ]];
                                 foreach ($produto['cards'] as $card) {
                                     $apresentacoes[] = $card;
@@ -609,17 +615,20 @@
                                 ?>
                                 <?php foreach ($apresentacoes as $apresentacao): ?>
                                     <?php
-                                    $imagemFonte = !empty($apresentacao['imagem'])
-                                        ? $apresentacao['imagem']
-                                        : $produto['imagem'];
-                                    $imagemRelativa = str_replace('\\', '/', (string) ($imagemFonte ?? ''));
-                                    $imagemValida = $imagemRelativa !== ''
-                                        && strpos($imagemRelativa, '..') === false
-                                        && $imagemRelativa[0] !== '/'
-                                        && file_exists(__DIR__ . '/images/menu/' . $imagemRelativa);
-                                    $imagemUrl = $imagemValida
-                                        ? 'images/menu/' . $imagemRelativa
-                                        : 'images/menu/default.png';
+                                    $imagemUrl = menuResolveImageSource(
+                                        $apresentacao['imagem'] ?? '',
+                                        $apresentacao['imagem_url'] ?? '',
+                                        __DIR__ . '/images/menu',
+                                        'images/menu/'
+                                    );
+                                    if ($imagemUrl === 'images/menu/default.png') {
+                                        $imagemUrl = menuResolveImageSource(
+                                            $produto['imagem'] ?? '',
+                                            $produto['imagem_url'] ?? '',
+                                            __DIR__ . '/images/menu',
+                                            'images/menu/'
+                                        );
+                                    }
                                     ?>
                                     <article class="menu-item">
                                         <div class="item-img-container">
