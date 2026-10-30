@@ -142,7 +142,7 @@
         <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:wght@400;500;600&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
         
-    <link rel="stylesheet" href="cardapio.css?v=20261030-3">
+    <link rel="stylesheet" href="cardapio.css?v=20261030-4">
     </head>
     <body>
         <header class="hero">
@@ -738,20 +738,37 @@
 
             const categorySections = document.querySelectorAll('.menu-section[id]');
             const categoryLinks = document.querySelectorAll('.menu-navegacao a[href^="#"]');
+            const categoryNavList = document.querySelector('.menu-navegacao ul');
+            let activeCategoryLink = null;
             if ('IntersectionObserver' in window) {
                 const sectionObserver = new IntersectionObserver(function (entries) {
                     entries.forEach(function (entry) {
                         if (!entry.isIntersecting) {
                             return;
                         }
+                        const nextActiveLink = Array.from(categoryLinks).find(function (link) {
+                            return link.getAttribute('href') === '#' + entry.target.id;
+                        });
+                        if (!nextActiveLink || nextActiveLink === activeCategoryLink) {
+                            return;
+                        }
                         categoryLinks.forEach(function (link) {
-                            const isCurrent = link.getAttribute('href') === '#' + entry.target.id;
-                            if (isCurrent) {
+                            if (link === nextActiveLink) {
                                 link.setAttribute('aria-current', 'true');
-                                link.scrollIntoView({ block: 'nearest', inline: 'center' });
                             } else {
                                 link.removeAttribute('aria-current');
                             }
+                        });
+                        activeCategoryLink = nextActiveLink;
+                        const listBounds = categoryNavList.getBoundingClientRect();
+                        const linkBounds = nextActiveLink.getBoundingClientRect();
+                        const targetLeft = categoryNavList.scrollLeft
+                            + linkBounds.left
+                            - listBounds.left
+                            - (categoryNavList.clientWidth - linkBounds.width) / 2;
+                        categoryNavList.scrollTo({
+                            left: Math.max(0, targetLeft),
+                            behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
                         });
                     });
                 }, { rootMargin: '-25% 0px -65% 0px' });
