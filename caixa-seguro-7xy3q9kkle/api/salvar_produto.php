@@ -20,6 +20,23 @@ if (!isset($_SESSION['usuario_logado']) || $_SESSION['usuario_logado'] !== true)
     responderErro('É necessário entrar no sistema.', 401);
 }
 
+$tamanhoRequisicao = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+$limitePostConfigurado = trim((string) ini_get('post_max_size'));
+if (
+    $tamanhoRequisicao > 0
+    && preg_match('/^(\d+(?:\.\d+)?)\s*([KMG])?B?$/i', $limitePostConfigurado, $partesLimite)
+) {
+    $multiplicadores = ['' => 1, 'K' => 1024, 'M' => 1024 * 1024, 'G' => 1024 * 1024 * 1024];
+    $unidade = strtoupper($partesLimite[2] ?? '');
+    $limitePostBytes = (int) ((float) $partesLimite[1] * $multiplicadores[$unidade]);
+    if ($tamanhoRequisicao > $limitePostBytes) {
+        responderErro(
+            'O total das imagens excede o limite de envio configurado no servidor. Reduza o tamanho dos arquivos ou envie menos imagens por vez.',
+            413
+        );
+    }
+}
+
 $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
 if (stripos($contentType, 'application/json') !== false) {
     $input = json_decode(file_get_contents('php://input'), true);
@@ -354,6 +371,9 @@ try {
         menuRemoveManagedImage($arquivoOpcao['relativo']);
     }
     error_log('Erro ao salvar produto: ' . $e->getMessage());
+    if ($e instanceof MenuImageUploadException) {
+        responderErro($e->getMessage(), 500);
+    }
     if ($e instanceof InvalidArgumentException) {
         responderErro($e->getMessage(), 400);
     }

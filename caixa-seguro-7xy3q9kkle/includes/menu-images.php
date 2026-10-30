@@ -1,4 +1,7 @@
 <?php
+class MenuImageUploadException extends RuntimeException {
+}
+
 function menuIsValidImageUrl($url) {
     if (!is_string($url) || strlen($url) > 2048 || filter_var($url, FILTER_VALIDATE_URL) === false) {
         return false;
@@ -69,9 +72,22 @@ function menuPrepareUploadedImage($arquivo, $produtoId) {
         return null;
     }
 
+    $erroUpload = is_array($arquivo) ? ($arquivo['error'] ?? UPLOAD_ERR_NO_FILE) : UPLOAD_ERR_NO_FILE;
+    $mensagensErro = [
+        UPLOAD_ERR_INI_SIZE => 'A imagem excede o limite de upload configurado no servidor.',
+        UPLOAD_ERR_FORM_SIZE => 'A imagem excede o tamanho máximo permitido pelo formulário.',
+        UPLOAD_ERR_PARTIAL => 'O envio da imagem foi interrompido. Tente novamente.',
+        UPLOAD_ERR_NO_TMP_DIR => 'O servidor está sem uma pasta temporária para receber imagens.',
+        UPLOAD_ERR_CANT_WRITE => 'O servidor não conseguiu gravar o arquivo enviado.',
+        UPLOAD_ERR_EXTENSION => 'O servidor bloqueou o envio desta imagem.'
+    ];
+    if (isset($mensagensErro[$erroUpload])) {
+        throw new MenuImageUploadException($mensagensErro[$erroUpload]);
+    }
+
     if (
         !is_array($arquivo)
-        || ($arquivo['error'] ?? null) !== UPLOAD_ERR_OK
+        || $erroUpload !== UPLOAD_ERR_OK
         || !isset($arquivo['tmp_name'], $arquivo['size'])
         || !is_string($arquivo['tmp_name'])
         || !is_int($arquivo['size'])
@@ -85,7 +101,7 @@ function menuPrepareUploadedImage($arquivo, $produtoId) {
 
     $conteudo = file_get_contents($arquivo['tmp_name']);
     if ($conteudo === false) {
-        throw new RuntimeException('Não foi possível ler a imagem enviada.');
+        throw new MenuImageUploadException('Não foi possível ler a imagem enviada.');
     }
 
     return menuStoreImageContents($conteudo, $produtoId);
@@ -113,9 +129,12 @@ function menuStoreImageContents($conteudo, $produtoId) {
         throw new InvalidArgumentException('Envie uma imagem JPG, PNG, GIF ou WebP válida.');
     }
 
-    $diretorio = __DIR__ . '/../public/images/menu/products';
+    $diretorio = __DIR__ . '/../../public/images/menu/products';
     if (!is_dir($diretorio) && !mkdir($diretorio, 0755, true) && !is_dir($diretorio)) {
-        throw new RuntimeException('Não foi possível preparar a pasta de imagens.');
+        throw new MenuImageUploadException('Não foi possível preparar a pasta pública de imagens do cardápio.');
+    }
+    if (!is_writable($diretorio)) {
+        throw new MenuImageUploadException('O servidor não tem permissão para salvar imagens do cardápio.');
     }
 
     $nomeArquivo = $produtoId . '_' . bin2hex(random_bytes(8)) . '.' . $extensoesMime[$imagemInfo['mime']];
@@ -124,7 +143,7 @@ function menuStoreImageContents($conteudo, $produtoId) {
         if (is_file($caminho) && !unlink($caminho)) {
             error_log('Não foi possível remover arquivo de imagem incompleto: ' . $caminho);
         }
-        throw new RuntimeException('Falha ao salvar a imagem enviada.');
+        throw new MenuImageUploadException('Falha ao salvar a imagem na pasta pública do cardápio.');
     }
 
     return [
@@ -139,8 +158,8 @@ function menuRemoveManagedImage($imagemRelativa) {
         return;
     }
 
-    $diretorioGerenciado = realpath(__DIR__ . '/../public/images/menu/products');
-    $arquivo = __DIR__ . '/../public/images/menu/' . $imagemRelativa;
+    $diretorioGerenciado = realpath(__DIR__ . '/../../public/images/menu/products');
+    $arquivo = __DIR__ . '/../../public/images/menu/' . $imagemRelativa;
     if ($diretorioGerenciado && realpath(dirname($arquivo)) === $diretorioGerenciado && is_file($arquivo)) {
         if (!unlink($arquivo)) {
             error_log('Não foi possível remover a imagem gerenciada: ' . $imagemRelativa);
