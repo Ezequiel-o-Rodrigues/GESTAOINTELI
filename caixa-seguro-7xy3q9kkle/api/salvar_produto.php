@@ -32,6 +32,7 @@ if (stripos($contentType, 'application/json') !== false) {
 
 $hasMenuFields = array_key_exists('nome_publico', $input)
     || array_key_exists('descricao_publica', $input)
+    || array_key_exists('imagem_url', $input)
     || array_key_exists('opcoes_json', $input);
 foreach (array_keys($_FILES) as $fileField) {
     if ($fileField === 'imagem' || strpos($fileField, 'opcao_imagem_') === 0) {
@@ -112,6 +113,11 @@ if ($hasMenuFields) {
 
     $nomePublico = $nomePublicoInput === '' ? null : $nomePublicoInput;
     $descricaoPublica = $descricaoPublicaInput === '' ? null : $descricaoPublicaInput;
+    $imagemProdutoUrl = $input['imagem_url'] ?? '';
+    if (!is_string($imagemProdutoUrl) || strlen($imagemProdutoUrl) > 2048) {
+        responderErro('A URL da imagem do produto é inválida.', 400);
+    }
+    $imagemProdutoUrl = trim($imagemProdutoUrl);
     $opcoesInput = json_decode((string) ($input['opcoes_json'] ?? '[]'), true);
     if (!is_array($opcoesInput) || count($opcoesInput) > 50) {
         responderErro('A lista de opções é inválida ou excede o limite de 50 itens.', 400);
@@ -145,15 +151,15 @@ if ($hasMenuFields) {
         if ($opcaoId !== null && (!$opcaoId || $opcaoId < 1)) {
             responderErro('Uma das opções possui identificador inválido.', 400);
         }
-        $imagemUrl = $opcao['imagem_url'] ?? '';
-        if (!is_string($imagemUrl) || strlen($imagemUrl) > 2048) {
+        $imagemOpcaoUrl = $opcao['imagem_url'] ?? '';
+        if (!is_string($imagemOpcaoUrl) || strlen($imagemOpcaoUrl) > 2048) {
             responderErro('A URL da imagem da subcategoria é inválida.', 400);
         }
         $opcoes[] = [
             'id' => $opcaoId,
             'nome' => $opcaoNome,
             'descricao' => $opcaoDescricao === '' ? null : $opcaoDescricao,
-            'imagem_url' => trim($imagemUrl)
+            'imagem_url' => trim($imagemOpcaoUrl)
         ];
     }
 }
@@ -227,8 +233,16 @@ try {
     }
 
     if ($hasMenuFields) {
-        if (isset($_FILES['imagem']) && ($_FILES['imagem']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+        $uploadProduto = $_FILES['imagem'] ?? null;
+        $temUploadProduto = is_array($uploadProduto)
+            && ($uploadProduto['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+        if ($temUploadProduto && $imagemProdutoUrl !== '') {
+            throw new InvalidArgumentException('Escolha o upload do arquivo ou a importação por URL para a imagem do produto, não os dois.');
+        }
+        if ($temUploadProduto) {
             $arquivoNovo = menuPrepareUploadedImage($_FILES['imagem'], $produtoId);
+        } elseif ($imagemProdutoUrl !== '') {
+            $arquivoNovo = menuImportImageFromUrl($imagemProdutoUrl, $produtoId);
         }
 
         $query = 'UPDATE produtos SET nome_publico = :nome_publico, descricao_publica = :descricao_publica';

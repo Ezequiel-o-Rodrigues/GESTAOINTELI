@@ -107,6 +107,7 @@ $erro = $_GET['erro'] ?? '';
         .option-image img { width: 68px; height: 56px; border-radius: 6px; object-fit: cover; background: #e5e7eb; }
         .option-search { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
         .option-search a { display: inline-flex; border-radius: 6px; padding: 9px 12px; background: #e5e7eb; color: #1f2937; text-decoration: none; font-weight: 700; }
+        .product-image-preview { width: 140px; height: 110px; border-radius: 7px; object-fit: cover; background: #e5e7eb; }
         .modal-actions { justify-content: flex-end; margin-top: 22px; }
         @media (max-width: 600px) {
             body { padding: 14px; }
@@ -234,8 +235,14 @@ $erro = $_GET['erro'] ?? '';
         </div>
         <div class="field">
             <label for="productImage">Imagem do produto (opcional, JPG/PNG/GIF/WebP, até 5 MB)</label>
+            <img class="product-image-preview" id="productImagePreview" src="../public/images/menu/default.png" alt="Prévia da imagem do produto">
             <input id="productImage" type="file" accept="image/jpeg,image/png,image/gif,image/webp">
-            <small>A imagem atual será mantida se nenhum arquivo for selecionado.</small>
+            <div class="option-search">
+                <label for="productImageUrl">Ou importar uma URL HTTPS direta de imagem</label>
+                <input id="productImageUrl" type="url" maxlength="2048" placeholder="https://site.com/imagem.jpg">
+                <a id="productGoogleImageSearch" href="#" target="_blank" rel="noopener noreferrer">Pesquisar no Google Imagens</a>
+            </div>
+            <small>A imagem atual será mantida se nenhuma nova for selecionada. Na busca, copie o endereço direto do arquivo de imagem e cole aqui; links de páginas de resultados/redirecionamentos não são aceitos. Use apenas imagens que tenha autorização para publicar.</small>
         </div>
 
         <section>
@@ -339,9 +346,33 @@ $erro = $_GET['erro'] ?? '';
             document.getElementById('officialCategory').textContent = currentProduct.categoria;
             document.getElementById('publicName').value = currentProduct.nome_publico;
             document.getElementById('publicDescription').value = currentProduct.descricao_publica;
+            document.getElementById('productImagePreview').src = currentProduct.imagem_url;
             currentProduct.opcoes.forEach(addOption);
             editor.showModal();
         });
+    });
+
+    document.getElementById('productGoogleImageSearch').addEventListener('click', (event) => {
+        const query = currentProduct ? currentProduct.nome : '';
+        if (!query) {
+            event.preventDefault();
+            return;
+        }
+        event.currentTarget.href = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(query)}`;
+    });
+
+    document.getElementById('productImage').addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            document.getElementById('productImageUrl').value = '';
+            document.getElementById('productImagePreview').src = URL.createObjectURL(file);
+        }
+    });
+
+    document.getElementById('productImageUrl').addEventListener('input', (event) => {
+        if (event.target.value.trim()) {
+            document.getElementById('productImage').value = '';
+        }
     });
 
     document.querySelectorAll('[data-close-editor]').forEach((button) => {
@@ -382,6 +413,7 @@ $erro = $_GET['erro'] ?? '';
 
         const image = document.getElementById('productImage').files[0];
         if (image) data.append('imagem', image);
+        data.append('imagem_url', document.getElementById('productImageUrl').value.trim());
 
         const options = Array.from(optionsContainer.querySelectorAll('.option')).map((row) => ({
                 id: row.dataset.id || null,
