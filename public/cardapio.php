@@ -142,7 +142,7 @@
         <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:wght@400;500;600&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
         
-    <link rel="stylesheet" href="cardapio.css?v=20261030-2">
+    <link rel="stylesheet" href="cardapio.css?v=20261030-3">
     </head>
     <body>
         <header class="hero">
