@@ -79,3 +79,5 @@ Opcionalmente, execute `migracao_imagens_cardapio.sql` depois de enviar as image
 As alterações não copiam nem alteram produtos, preços, estoque ou vendas. Categorias são compartilhadas com o estoque e relatórios; renomear uma categoria ou reclassificar produtos também altera o agrupamento histórico por categoria. A exclusão de categorias com produtos é bloqueada até a reclassificação.
 
 Não apague imagens antigas durante a implantação; arquivos novos são salvos em `public/images/menu/products`. A reversão opcional da nova tabela e dos campos está comentada no arquivo SQL e só deve ser usada após confirmar que todos os dados de apresentação podem ser descartados.
+
+Para importar fotos de subcategorias por URL HTTPS, o PHP do servidor precisa ter a extensão cURL habilitada. O botão de pesquisa abre o Google Imagens; copie o endereço direto de um arquivo de imagem autorizado para uso. Links de páginas de resultados e redirecionamentos são recusados.

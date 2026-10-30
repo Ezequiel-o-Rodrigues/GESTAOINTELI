@@ -26,11 +26,19 @@ try {
     );
     $opcoesPorProduto = [];
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $opcao) {
+        $imagemRelativa = str_replace('\\', '/', (string) ($opcao['imagem'] ?? ''));
+        $imagemValida = $imagemRelativa !== ''
+            && strpos($imagemRelativa, '..') === false
+            && $imagemRelativa[0] !== '/'
+            && file_exists(__DIR__ . '/../public/images/menu/' . $imagemRelativa);
         $opcoesPorProduto[(int) $opcao['produto_id']][] = [
             'id' => (int) $opcao['id'],
             'nome_exibicao' => $opcao['nome_exibicao'],
             'descricao' => $opcao['descricao'] ?? '',
-            'imagem' => $opcao['imagem'] ?? ''
+            'imagem' => $opcao['imagem'] ?? '',
+            'imagem_url' => $imagemValida
+                ? '../public/images/menu/' . $imagemRelativa
+                : '../public/images/menu/default.png'
         ];
     }
 } catch (Throwable $e) {
@@ -97,6 +105,8 @@ $erro = $_GET['erro'] ?? '';
         .option { margin: 12px 0; padding: 14px; border: 1px solid #e2e8f0; border-radius: 8px; }
         .option-image { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
         .option-image img { width: 68px; height: 56px; border-radius: 6px; object-fit: cover; background: #e5e7eb; }
+        .option-search { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .option-search a { display: inline-flex; border-radius: 6px; padding: 9px 12px; background: #e5e7eb; color: #1f2937; text-decoration: none; font-weight: 700; }
         .modal-actions { justify-content: flex-end; margin-top: 22px; }
         @media (max-width: 600px) {
             body { padding: 14px; }
@@ -233,7 +243,7 @@ $erro = $_GET['erro'] ?? '';
                 <h3>Subcategorias do produto</h3>
                 <button type="button" class="secondary" id="addOption">Adicionar</button>
             </div>
-            <p class="section-help">Use, por exemplo, para listar sabores ou apresentações. Todas usam o mesmo produto e preço.</p>
+            <p class="section-help">Use para listar sabores ou apresentações. Cada subcategoria pode ter foto própria, mas compartilha produto e preço. Você pode enviar uma imagem ou pesquisar no Google Imagens e colar a URL direta do arquivo. Use apenas imagens que tenha autorização para publicar.</p>
             <div id="productOptions"></div>
         </section>
 
@@ -274,9 +284,44 @@ $erro = $_GET['erro'] ?? '';
                 <label>Descrição (opcional)</label>
                 <textarea class="option-description" rows="2" maxlength="1000">${escapeHtml(option.descricao || '')}</textarea>
             </div>
+            <div class="option-image">
+                <img src="${escapeHtml(option.imagem_url || '../public/images/menu/default.png')}" alt="Prévia da imagem da subcategoria">
+                <label class="field">
+                    Foto própria da subcategoria (JPG, PNG, GIF ou WebP; até 5 MB)
+                    <input class="option-file" type="file" accept="image/jpeg,image/png,image/gif,image/webp">
+                </label>
+            </div>
+            <div class="field option-search">
+                <label>Ou importar uma URL HTTPS direta de imagem</label>
+                <input class="option-image-url" type="url" maxlength="2048" placeholder="https://site.com/imagem.jpg">
+                <a class="google-image-search" href="#" target="_blank" rel="noopener noreferrer">Pesquisar no Google Imagens</a>
+                <small>Na busca, abra a imagem, copie o endereço direto do arquivo e cole aqui. Links de páginas de resultados/redirecionamentos não são aceitos.</small>
+            </div>
             <button type="button" class="danger remove-option">Remover subcategoria</button>
         `;
         row.querySelector('.remove-option').addEventListener('click', () => row.remove());
+        row.querySelector('.google-image-search').addEventListener('click', (event) => {
+            const optionName = row.querySelector('.option-name').value.trim();
+            if (!optionName) {
+                event.preventDefault();
+                row.querySelector('.option-name').focus();
+                return;
+            }
+            const query = `${currentProduct.nome} ${optionName}`;
+            event.currentTarget.href = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(query)}`;
+        });
+        row.querySelector('.option-file').addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                row.querySelector('.option-image-url').value = '';
+                row.querySelector('.option-image img').src = URL.createObjectURL(file);
+            }
+        });
+        row.querySelector('.option-image-url').addEventListener('input', (event) => {
+            if (event.target.value.trim()) {
+                row.querySelector('.option-file').value = '';
+            }
+        });
         optionsContainer.append(row);
     }
 
@@ -341,9 +386,16 @@ $erro = $_GET['erro'] ?? '';
         const options = Array.from(optionsContainer.querySelectorAll('.option')).map((row) => ({
                 id: row.dataset.id || null,
                 nome_exibicao: row.querySelector('.option-name').value,
-                descricao: row.querySelector('.option-description').value
+                descricao: row.querySelector('.option-description').value,
+                imagem_url: row.querySelector('.option-image-url').value.trim()
             }));
         data.append('opcoes_json', JSON.stringify(options));
+        options.forEach((option, index) => {
+            const imageFile = optionsContainer.querySelectorAll('.option-file')[index].files[0];
+            if (imageFile) {
+                data.append(`opcao_imagem_${index}`, imageFile);
+            }
+        });
 
         try {
             const response = await fetch('../../caixa-seguro-7xy3q9kkle/api/salvar_produto.php', {

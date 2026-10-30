@@ -598,13 +598,13 @@
                         <div class="menu-grid">
                             <?php foreach ($categoria['produtos'] as $produto): ?>
                                 <?php
-                                $apresentacoes = $produto['cards'];
-                                if (empty($apresentacoes)) {
-                                    $apresentacoes[] = [
-                                        'nome' => $produto['nome_publico'] ?: $produto['nome'],
-                                        'descricao' => $produto['descricao_publica'],
-                                        'imagem' => $produto['imagem']
-                                    ];
+                                $apresentacoes = [[
+                                    'nome' => $produto['nome_publico'] ?: $produto['nome'],
+                                    'descricao' => $produto['descricao_publica'],
+                                    'imagem' => $produto['imagem']
+                                ]];
+                                foreach ($produto['cards'] as $card) {
+                                    $apresentacoes[] = $card;
                                 }
                                 ?>
                                 <?php foreach ($apresentacoes as $apresentacao): ?>

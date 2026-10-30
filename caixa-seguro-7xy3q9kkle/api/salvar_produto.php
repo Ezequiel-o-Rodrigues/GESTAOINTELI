@@ -32,8 +32,13 @@ if (stripos($contentType, 'application/json') !== false) {
 
 $hasMenuFields = array_key_exists('nome_publico', $input)
     || array_key_exists('descricao_publica', $input)
-    || array_key_exists('opcoes_json', $input)
-    || (isset($_FILES['imagem']) && ($_FILES['imagem']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE);
+    || array_key_exists('opcoes_json', $input);
+foreach (array_keys($_FILES) as $fileField) {
+    if ($fileField === 'imagem' || strpos($fileField, 'opcao_imagem_') === 0) {
+        $hasMenuFields = true;
+        break;
+    }
+}
 
 if ($hasMenuFields) {
     $token = $_POST['csrf_token'] ?? '';
@@ -140,15 +145,21 @@ if ($hasMenuFields) {
         if ($opcaoId !== null && (!$opcaoId || $opcaoId < 1)) {
             responderErro('Uma das opções possui identificador inválido.', 400);
         }
+        $imagemUrl = $opcao['imagem_url'] ?? '';
+        if (!is_string($imagemUrl) || strlen($imagemUrl) > 2048) {
+            responderErro('A URL da imagem da subcategoria é inválida.', 400);
+        }
         $opcoes[] = [
             'id' => $opcaoId,
             'nome' => $opcaoNome,
-            'descricao' => $opcaoDescricao === '' ? null : $opcaoDescricao
+            'descricao' => $opcaoDescricao === '' ? null : $opcaoDescricao,
+            'imagem_url' => trim($imagemUrl)
         ];
     }
 }
 
 $arquivoNovo = null;
+$arquivosNovosOpcoes = [];
 $db = null;
 try {
     $database = new Database();
@@ -234,41 +245,65 @@ try {
         $stmt = $db->prepare($query);
         $stmt->execute($params);
 
-        $stmt = $db->prepare('SELECT id FROM produto_cards WHERE produto_id = :produto_id');
+        $stmt = $db->prepare('SELECT id, imagem FROM produto_cards WHERE produto_id = :produto_id');
         $stmt->execute([':produto_id' => $produtoId]);
-        $idsAtuais = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+        $opcoesAtuais = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $opcaoAtual) {
+            $opcoesAtuais[(int) $opcaoAtual['id']] = $opcaoAtual['imagem'];
+        }
+        $idsAtuais = array_keys($opcoesAtuais);
         $idsEnviados = [];
 
         foreach ($opcoes as $indice => $opcao) {
+            $campoImagem = 'opcao_imagem_' . $indice;
+            $arquivoOpcao = null;
+            $uploadOpcao = $_FILES[$campoImagem] ?? null;
+            $temUpload = is_array($uploadOpcao)
+                && ($uploadOpcao['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+            if ($temUpload && $opcao['imagem_url'] !== '') {
+                throw new InvalidArgumentException('Escolha o upload do arquivo ou a importação por URL para cada subcategoria, não os dois.');
+            }
+            if ($temUpload) {
+                $arquivoOpcao = menuPrepareUploadedImage($uploadOpcao, $produtoId);
+            } elseif ($opcao['imagem_url'] !== '') {
+                $arquivoOpcao = menuImportImageFromUrl($opcao['imagem_url'], $produtoId);
+            }
+            if ($arquivoOpcao) {
+                $arquivosNovosOpcoes[] = $arquivoOpcao;
+            }
+
             if ($opcao['id'] !== null) {
-                if (!in_array($opcao['id'], $idsAtuais, true)) {
+                if (!array_key_exists($opcao['id'], $opcoesAtuais)) {
                     throw new RuntimeException('Uma opção não pertence a este produto.');
                 }
                 if (in_array($opcao['id'], $idsEnviados, true)) {
                     throw new InvalidArgumentException('Uma opção foi enviada mais de uma vez.');
                 }
                 $idsEnviados[] = $opcao['id'];
+                $imagem = $arquivoOpcao ? $arquivoOpcao['relativo'] : $opcoesAtuais[$opcao['id']];
                 $stmt = $db->prepare(
                     'UPDATE produto_cards
-                     SET nome_exibicao = :nome, descricao = :descricao, ordem = :ordem
+                     SET nome_exibicao = :nome, descricao = :descricao, imagem = :imagem, ordem = :ordem
                      WHERE id = :id AND produto_id = :produto_id'
                 );
                 $stmt->execute([
                     ':nome' => $opcao['nome'],
                     ':descricao' => $opcao['descricao'],
+                    ':imagem' => $imagem,
                     ':ordem' => $indice + 1,
                     ':id' => $opcao['id'],
                     ':produto_id' => $produtoId
                 ]);
             } else {
                 $stmt = $db->prepare(
-                    'INSERT INTO produto_cards (produto_id, nome_exibicao, descricao, ordem)
-                     VALUES (:produto_id, :nome, :descricao, :ordem)'
+                    'INSERT INTO produto_cards (produto_id, nome_exibicao, descricao, imagem, ordem)
+                     VALUES (:produto_id, :nome, :descricao, :imagem, :ordem)'
                 );
                 $stmt->execute([
                     ':produto_id' => $produtoId,
                     ':nome' => $opcao['nome'],
                     ':descricao' => $opcao['descricao'],
+                    ':imagem' => $arquivoOpcao ? $arquivoOpcao['relativo'] : null,
                     ':ordem' => $indice + 1
                 ]);
             }
@@ -292,6 +327,9 @@ try {
     }
     if ($arquivoNovo) {
         menuRemoveManagedImage($arquivoNovo['relativo']);
+    }
+    foreach ($arquivosNovosOpcoes as $arquivoOpcao) {
+        menuRemoveManagedImage($arquivoOpcao['relativo']);
     }
     error_log('Erro ao salvar produto: ' . $e->getMessage());
     if ($e instanceof InvalidArgumentException) {
