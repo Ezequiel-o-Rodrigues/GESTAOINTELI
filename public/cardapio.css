@@ -24,7 +24,7 @@ html {
 
 body {
     margin: 0;
-    padding: 0 0 0;
+    padding: 0;
     background:
         radial-gradient(ellipse at 50% -20%, rgba(200, 80, 30, 0.12), transparent 50%),
         var(--color-background);
@@ -253,7 +253,9 @@ body.modal-open {
 
 .featured-section {
     width: min(100% - 2rem, 1180px);
+    min-width: 0;
     margin: 0 auto;
+    overflow: hidden;
     padding-block: 2rem 2.5rem;
 }
 
@@ -308,8 +310,11 @@ body.modal-open {
 
 .featured-track {
     display: grid;
-    grid-auto-columns: minmax(260px, 34%);
+    width: 100%;
+    min-width: 0;
+    grid-auto-columns: clamp(250px, 30vw, 340px);
     grid-auto-flow: column;
+    grid-template-rows: minmax(0, 1fr);
     gap: 1rem;
     overflow-x: auto;
     padding: 0.15rem 0.1rem 0.75rem;
@@ -326,6 +331,7 @@ body.modal-open {
     position: relative;
     display: flex;
     min-height: 320px;
+    min-width: 0;
     overflow: hidden;
     align-items: end;
     border: 1px solid var(--color-border);
@@ -338,6 +344,7 @@ body.modal-open {
 }
 
 .featured-card > img,
+.featured-image-placeholder,
 .featured-shade {
     position: absolute;
     z-index: -1;
@@ -349,6 +356,26 @@ body.modal-open {
 .featured-card > img {
     object-fit: cover;
     transition: transform 650ms ease;
+}
+
+.featured-image-placeholder {
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background:
+        radial-gradient(ellipse at 70% 30%, rgba(200, 80, 30, 0.25), transparent 35%),
+        repeating-linear-gradient(130deg, transparent 0 17px, rgba(243, 235, 221, 0.025) 18px 19px),
+        linear-gradient(145deg, #30231c, #15110e 70%);
+    color: rgba(217, 164, 65, 0.72);
+}
+
+.featured-image-placeholder i {
+    font-size: 3.3rem;
+    opacity: 0.75;
+}
+
+.featured-card--without-image .featured-shade {
+    background: linear-gradient(180deg, rgba(15, 13, 11, 0.04), rgba(15, 13, 11, 0.45) 35%, rgba(15, 13, 11, 0.96));
 }
 
 .featured-card:hover > img {
@@ -396,6 +423,36 @@ body.modal-open {
     font-size: 0.95rem;
     font-variant-numeric: tabular-nums;
     font-weight: 700;
+}
+
+.section-title {
+    border-bottom: 0;
+}
+
+.item-image-placeholder {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    place-content: center;
+    justify-items: center;
+    gap: 0.65rem;
+    padding: 1rem;
+    background:
+        radial-gradient(ellipse at 70% 30%, rgba(200, 80, 30, 0.2), transparent 35%),
+        repeating-linear-gradient(130deg, transparent 0 17px, rgba(243, 235, 221, 0.02) 18px 19px),
+        linear-gradient(145deg, #30231c, #15110e 70%);
+    color: var(--color-muted);
+    text-align: center;
+}
+
+.item-image-placeholder i {
+    color: var(--color-amber);
+    font-size: 1.8rem;
+}
+
+.item-image-placeholder span {
+    font-family: var(--font-display);
+    font-size: 1rem;
 }
 
 .hero-kicker,
@@ -980,10 +1037,8 @@ footer {
     }
 
     .featured-track {
-        grid-auto-columns: minmax(76vw, 330px);
+        grid-auto-columns: min(82vw, 330px);
         gap: 0.75rem;
-        margin-right: -1rem;
-        padding-right: 1rem;
     }
 
     .featured-card {

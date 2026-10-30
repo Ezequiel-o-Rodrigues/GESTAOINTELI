@@ -97,7 +97,7 @@
                     'imagem' => $produto['imagem'],
                     'imagem_url' => $produto['imagem_url']
                 ];
-                $ultimoIndice = array_key_last($produtosDestaque);
+                $ultimoIndice = count($produtosDestaque) - 1;
                 $imagemDestaque = menuResolveImageSource(
                     $produto['imagem'] ?? '',
                     $produto['imagem_url'] ?? '',
@@ -141,477 +141,8 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:wght@400;500;600&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-        <style>
-        :root {
-        --primary-color: #8B0000;
-        --secondary-color: #1a1a1a;
-        --accent-color: #d4af37;
-        --text-color: #333;
-        --bg-light: #f8f5f0;
-        --bg-dark: #1a1a1a;
-    }
-
-    body {
-        font-family: 'Roboto', sans-serif;
-        color: var(--text-color);
-        background-color: var(--bg-light);
-        line-height: 1.5;
-        margin: 0;
-        padding: 0;
-    }
-
-    .container {
-        width: 95%;
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 0 10px;
-    }
-
-    /* Header mobile */
-    header {
-        background: linear-gradient(to right, var(--bg-dark), var(--primary-color));
-        color: white;
-        padding: 15px 0;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    }
-
-    header h1 {
-        font-family: 'Playfair Display', serif;
-        font-size: 1.5rem;
-        text-align: center;
-        margin-bottom: 5px;
-    }
-
-    .header-subtitle {
-        text-align: center;
-        font-size: 0.8rem;
-        opacity: 0.9;
-    }
-
-    /* Seções do cardápio */
-    .menu-section {
-        margin: 30px 0;
-    }
-
-    .section-title {
-        color: var(--primary-color);
-        font-family: 'Playfair Display', serif;
-        border-bottom: 2px solid var(--accent-color);
-        padding-bottom: 5px;
-        margin-bottom: 20px;
-        font-size: 1.4rem;
-        text-align: center;
-    }
-
-    /* Grid de itens - 3 colunas para mobile */
-    .menu-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
-    }
-
-    .menu-item {
-        background: white;
-        border-radius: 5px;
-        overflow: hidden;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-        position: relative;
-    }
-
-    .menu-item:before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 3px;
-        background: var(--accent-color);
-    }
-
-    .item-img-container {
-        position: relative;
-        overflow: hidden;
-        height: 100px;
-    }
-
-    .item-img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .item-special {
-        position: absolute;
-        bottom: 5px;
-        right: 5px;
-        background: var(--accent-color);
-        color: var(--secondary-color);
-        padding: 2px 6px;
-        border-radius: 10px;
-        font-size: 0.6rem;
-        font-weight: bold;
-    }
-
-    .item-info {
-        padding: 8px;
-    }
-
-    .item-name {
-        color: var(--secondary-color);
-        margin: 0;
-        font-size: 0.8rem;
-        font-weight: 600;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .item-price {
-        color: var(--accent-color);
-        font-weight: bold;
-        font-size: 0.9rem;
-        margin-top: 5px;
-    }
-
-    .item-price:before {
-        content: 'R$';
-        font-size: 0.7rem;
-        margin-right: 2px;
-    }
-
-    /* Ajustes para descrições */
-    .item-desc {
-        font-size: 0.7rem;
-        color: #666;
-        margin: 5px 0;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    /* Mostra apenas informações críticas em mobile */
-    @media (max-width: 767px) {
-        .item-desc {
-            display: inline; /* Esconde descrição longa */
-        }
         
-        /* Mostra informações importantes como ml e tamanhos */
-        .item-desc strong {
-            display: inline;
-        }
-        
-        .item-desc[style*="display"] {
-            display: block !important;
-        }
-
-    }
-
-    /* Ajustes para telas muito pequenas */
-    @media (max-width: 359px) {
-        .menu-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-        .item-img-container {
-            height: 90px;
-        }
-    }
-
-    /* Tablets - 3 colunas com mais espaço */
-    @media (min-width: 768px) {
-        .menu-grid {
-            gap: 15px;
-        }
-        .item-img-container {
-            height: 130px;
-        }
-        .item-name {
-            font-size: 0.9rem;
-        }
-        .item-price {
-            font-size: 1rem;
-        }
-    }
-
-    /* Desktops pequenos - 4 colunas */
-    @media (min-width: 992px) {
-        .menu-grid {
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-        }
-        .item-img-container {
-            height: 150px;
-        }
-        .item-info {
-            padding: 12px;
-        }
-        .item-name {
-            font-size: 1rem;
-        }
-    }
-
-    /* Desktops grandes - 5 colunas */
-    @media (min-width: 1200px) {
-        .menu-grid {
-            grid-template-columns: repeat(5, 1fr);
-        }
-        .item-img-container {
-            height: 160px;
-        }
-    }
-
-    /* Footer mobile */
-    footer {
-        background: var(--bg-dark);
-        color: white;
-        padding: 25px 0;
-        text-align: center;
-    }
-
-    .footer-content {
-        max-width: 600px;
-        margin: 0 auto;
-        padding: 0 15px;
-    }
-
-    .footer-logo {
-        font-family: 'Playfair Display', serif;
-        font-size: 1.3rem;
-        margin-bottom: 10px;
-        color: var(--accent-color);
-    }
-
-    .footer-info {
-        margin: 8px 0;
-        font-size: 0.8rem;
-    }
-
-    .social-icons {
-        margin-top: 15px;
-    }
-
-    .social-icon {
-        color: var(--accent-color);
-        margin: 0 8px;
-        font-size: 1.1rem;
-    }
-
-    /* Botão de Delivery mobile */
-    #deliveryBtn {
-        background-color: var(--accent-color);
-        color: var(--secondary-color);
-        border: none;
-        padding: 10px 15px;
-        font-size: 0.9rem;
-        border-radius: 20px;
-        cursor: pointer;
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 20px auto;
-        width: 90%;
-        max-width: 280px;
-    }
-
-    /* Modal Delivery mobile */
-    #deliveryModal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0,0,0,0.8);
-        z-index: 1000;
-    }
-
-    #deliveryModal > div {
-        background-color: white;
-        margin: 15% auto;
-        padding: 15px;
-        border-radius: 8px;
-        width: 90%;
-        max-width: 350px;
-        position: relative;
-    }
-
-    #closeModal {
-        position: absolute;
-        right: 12px;
-        top: 8px;
-        font-size: 20px;
-        cursor: pointer;
-    }
-
-    #deliveryModal a {
-        display: block;
-        padding: 10px;
-        margin-bottom: 8px;
-        border-radius: 5px;
-        text-decoration: none;
-        font-weight: bold;
-        text-align: center;
-        font-size: 0.9rem;
-    }
-
-    /* Botão Voltar ao Topo */
-    #backToTop {
-        display: none;
-        position: fixed;
-        bottom: 15px;
-        right: 15px;
-        background-color: var(--accent-color);
-        color: white;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        text-align: center;
-        line-height: 36px;
-        font-size: 1rem;
-        z-index: 99;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    }
-    .menu-navegacao {
-                position: sticky;
-                top: 0;
-                background: linear-gradient(to right, var(--bg-dark), var(--primary-color));
-                z-index: 1000;
-                padding: 10px 0;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            }
-            
-            .menu-navegacao ul {
-                display: flex;
-                justify-content: center;
-                list-style: none;
-                padding: 0;
-                margin: 0;
-                flex-wrap: wrap;
-            }
-            
-            .menu-navegacao li {
-                margin: 0 10px;
-            }
-            
-            .menu-navegacao a {
-                color: white;
-                text-decoration: none;
-                font-weight: 500;
-                padding: 8px 15px;
-                border-radius: 20px;
-                transition: all 0.3s;
-                font-size: 0.9rem;
-            }
-            
-            .menu-navegacao a:hover,
-            .menu-navegacao a:focus {
-                background-color: var(--accent-color);
-                color: var(--secondary-color);
-            }
-            
-            /* Ajuste o padding do main para o menu fixo */
-            main.container {
-                padding-top: 20px;
-            }
-            
-            /* Adicione um id para cada seção */
-            .menu-section {
-                scroll-margin-top: 80px; /* Altura do menu fixo */
-            }
-            
-            @media (max-width: 768px) {
-                .menu-navegacao ul {
-                    justify-content: space-around;
-                }
-                
-                .menu-navegacao li {
-                    margin: 5px;
-                }
-                
-                .menu-navegacao a {
-                    padding: 6px 10px;
-                    font-size: 0.8rem;
-                }
-                
-                .menu-section {
-                    scroll-margin-top: 60px;
-                }
-            }
-
-            .bebidas-filtro {
-        margin-bottom: 20px;
-        display: flex;
-        justify-content: center;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-
-    .filtro-btn {
-        padding: 8px 16px;
-        border: none;
-        border-radius: 20px;
-        background-color: #ddd;
-        color: #333;
-        cursor: pointer;
-        transition: all 0.3s;
-        font-weight: 500;
-    }
-
-    .filtro-btn.active {
-        background-color: var(--primary-color);
-        color: white;
-    }
-
-    .filtro-btn:hover {
-        background-color: #ccc;
-    }
-
-    .filtro-btn.active:hover {
-        background-color: var(--primary-color);
-        opacity: 0.9;
-    } 
-
-    /* Estilos para a seção de buffet */
-
-    .buffet-options {
-        display: flex;
-        justify-content: center;
-        gap: 15px;
-        flex-wrap: wrap;
-        margin-top: 15px;
-    }
-
-    .buffet-option {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        background: rgba(255, 255, 255, 0.9);
-        padding: 5px 10px;
-        border-radius: 8px;
-        min-width: 150px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        transition: transform 0.3s ease;
-    }
-
-    .buffet-option:hover {
-        transform: translateY(-5px);
-    }
-
-    .buffet-option i {
-        font-size: 1.8rem;
-        color: var(--primary-color);
-    }
-
-    .buffet-subtitle {
-        color: var(--secondary-color);
-        margin: 0;
-        font-size: 1.1rem;
-        font-weight: 600;
-    }
-    </style>
-    <link rel="stylesheet" href="cardapio.css">
+    <link rel="stylesheet" href="cardapio.css?v=20261030-2">
     </head>
     <body>
         <header class="hero">
@@ -702,7 +233,7 @@
                             <?php if ($imagemDestaqueAusente): ?>
                                 <span class="featured-image-placeholder" aria-hidden="true"><i class="fas fa-fire"></i></span>
                             <?php else: ?>
-                                <img src="<?= htmlspecialchars($imagemDestaque, ENT_QUOTES, 'UTF-8') ?>" alt="" loading="<?= $indice < 2 ? 'eager' : 'lazy' ?>" onerror="this.onerror=null; this.src='images/menu/default.png'">
+                                <img class="featured-photo" src="<?= htmlspecialchars($imagemDestaque, ENT_QUOTES, 'UTF-8') ?>" alt="" loading="<?= $indice < 2 ? 'eager' : 'lazy' ?>">
                             <?php endif; ?>
                             <span class="featured-shade" aria-hidden="true"></span>
                             <span class="featured-copy">
@@ -800,8 +331,7 @@
                                                     src="<?= htmlspecialchars($imagemUrl, ENT_QUOTES, 'UTF-8') ?>"
                                                     alt="<?= htmlspecialchars($apresentacao['nome'], ENT_QUOTES, 'UTF-8') ?>"
                                                     class="item-img"
-                                                    loading="lazy"
-                                                    onerror="this.onerror=null; this.src='images/menu/default.png'">
+                                                    loading="lazy">
                                             <?php endif; ?>
                                         </div>
                                         <div class="item-info">
@@ -885,6 +415,26 @@
         </footer>
 
         <script>
+            document.querySelectorAll('.featured-photo, .item-img').forEach(function (image) {
+                image.addEventListener('error', function () {
+                    const placeholder = document.createElement('div');
+                    const isFeatured = image.classList.contains('featured-photo');
+                    placeholder.className = isFeatured ? 'featured-image-placeholder' : 'item-image-placeholder';
+                    placeholder.setAttribute('role', 'img');
+                    placeholder.setAttribute(
+                        'aria-label',
+                        isFeatured ? 'Foto do produto não cadastrada' : 'Foto de ' + image.alt + ' não cadastrada'
+                    );
+                    placeholder.innerHTML = '<i class="fas fa-fire" aria-hidden="true"></i>';
+                    if (!isFeatured) {
+                        const brand = document.createElement('span');
+                        brand.textContent = 'Espetinho do Júnior';
+                        placeholder.append(brand);
+                    }
+                    image.replaceWith(placeholder);
+                }, { once: true });
+            });
+
             const hubBackdrop = document.getElementById('hubBackdrop');
             const siteHub = document.getElementById('siteHub');
             const openHub = document.getElementById('openHub');
