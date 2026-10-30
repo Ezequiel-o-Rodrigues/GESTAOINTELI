@@ -335,7 +335,7 @@
                                             <?php endif; ?>
                                         </div>
                                         <div class="item-info">
-                                            <span class="item-kind"><?= $apresentacao['principal'] ? 'Produto' : 'Opção · mesmo preço' ?></span>
+                                            <span class="item-kind"><?= $apresentacao['principal'] ? 'Produto' : 'Opção' ?></span>
                                             <div class="item-heading">
                                                 <h3 class="item-name"><?= htmlspecialchars($apresentacao['nome'], ENT_QUOTES, 'UTF-8') ?></h3>
                                                 <p class="item-price"><?= number_format((float) $produto['preco'], 2, ',', '.') ?></p>
@@ -369,7 +369,9 @@
             </section>
 
             <div class="delivery-sticky">
-                <button class="delivery-trigger" type="button" data-delivery-trigger>Pedir agora</button>
+                <button class="delivery-trigger" type="button" data-delivery-trigger>
+                    <i class="fas fa-motorcycle" aria-hidden="true"></i> Pedir Delivery
+                </button>
             </div>
 
             <div id="deliveryModal" class="delivery-modal" aria-hidden="true">
