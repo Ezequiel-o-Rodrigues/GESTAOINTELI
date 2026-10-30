@@ -95,10 +95,11 @@
     <html lang="pt-BR">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Espetinho do Júnior</title>
-        <link rel="stylesheet" href="estilo.css">
-        <link href="https://fonts.googleapis.com/css2?family=Palanquin+Dark:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:wght@400;500;600&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
         <style>
         :root {
@@ -569,20 +570,26 @@
         font-size: 1.1rem;
         font-weight: 600;
     }
-
-
     </style>
+    <link rel="stylesheet" href="cardapio.css">
     </head>
     <body>
-        <header>
-            <div class="container">
+        <header class="hero">
+            <div class="hero-content">
+                <span class="hero-kicker">Brasa, tempero e tradição</span>
                 <h1>ESPETINHO DO JÚNIOR</h1>
                 <p class="header-subtitle">EXCELÊNCIA EM SERVIR DESDE 2005</p>
+                <div class="hero-actions">
+                    <span class="delivery-hours"><i class="far fa-clock" aria-hidden="true"></i> Delivery · 18h às 23h</span>
+                    <button class="delivery-trigger delivery-trigger--hero" type="button" data-delivery-trigger>
+                        <i class="fas fa-motorcycle" aria-hidden="true"></i> Pedir pelo delivery
+                    </button>
+                </div>
             </div>
         </header>
         
         <!-- Menu de navegação -->
-        <nav class="menu-navegacao">
+        <nav class="menu-navegacao" aria-label="Categorias do cardápio">
             <ul>
                 <?php foreach ($produtosPorCategoria as $categoria): ?>
                     <li><a href="#categoria-<?= $categoria['id'] ?>"><?= htmlspecialchars($categoria['nome'], ENT_QUOTES, 'UTF-8') ?></a></li>
@@ -599,7 +606,16 @@
             <?php elseif (!empty($produtosPorCategoria)): ?>
                 <?php foreach ($produtosPorCategoria as $categoria): ?>
                     <section id="categoria-<?= $categoria['id'] ?>" class="menu-section">
-                        <h2 class="section-title"><?= htmlspecialchars($categoria['nome'], ENT_QUOTES, 'UTF-8') ?></h2>
+                        <?php
+                        $quantidadeItens = 0;
+                        foreach ($categoria['produtos'] as $produto) {
+                            $quantidadeItens += 1 + count($produto['cards']);
+                        }
+                        ?>
+                        <div class="section-heading">
+                            <h2 class="section-title"><?= htmlspecialchars($categoria['nome'], ENT_QUOTES, 'UTF-8') ?></h2>
+                            <span class="section-count"><?= $quantidadeItens ?> <?= $quantidadeItens === 1 ? 'item' : 'itens' ?></span>
+                        </div>
                         <div class="menu-grid">
                             <?php foreach ($categoria['produtos'] as $produto): ?>
                                 <?php
@@ -607,9 +623,11 @@
                                     'nome' => $produto['nome_publico'] ?: $produto['nome'],
                                     'descricao' => $produto['descricao_publica'],
                                     'imagem' => $produto['imagem'],
-                                    'imagem_url' => $produto['imagem_url']
+                                    'imagem_url' => $produto['imagem_url'],
+                                    'principal' => true
                                 ]];
                                 foreach ($produto['cards'] as $card) {
+                                    $card['principal'] = false;
                                     $apresentacoes[] = $card;
                                 }
                                 ?>
@@ -630,7 +648,7 @@
                                         );
                                     }
                                     ?>
-                                    <article class="menu-item">
+                                    <article class="menu-item <?= $apresentacao['principal'] ? 'menu-item--principal' : 'menu-item--opcao' ?>">
                                         <div class="item-img-container">
                                             <img
                                                 src="<?= htmlspecialchars($imagemUrl, ENT_QUOTES, 'UTF-8') ?>"
@@ -640,11 +658,17 @@
                                                 onerror="this.onerror=null; this.src='images/menu/default.png'">
                                         </div>
                                         <div class="item-info">
-                                            <h3 class="item-name"><?= htmlspecialchars($apresentacao['nome'], ENT_QUOTES, 'UTF-8') ?></h3>
+                                            <span class="item-kind"><?= $apresentacao['principal'] ? 'Produto' : 'Opção · mesmo preço' ?></span>
+                                            <div class="item-heading">
+                                                <h3 class="item-name"><?= htmlspecialchars($apresentacao['nome'], ENT_QUOTES, 'UTF-8') ?></h3>
+                                                <p class="item-price"><?= number_format((float) $produto['preco'], 2, ',', '.') ?></p>
+                                            </div>
                                             <?php if (!empty($apresentacao['descricao'])): ?>
                                                 <p class="item-desc"><?= htmlspecialchars($apresentacao['descricao'], ENT_QUOTES, 'UTF-8') ?></p>
                                             <?php endif; ?>
-                                            <p class="item-price"><?= number_format((float) $produto['preco'], 2, ',', '.') ?></p>
+                                            <?php if (!$apresentacao['principal']): ?>
+                                                <span class="item-price-note">Preço do produto principal</span>
+                                            <?php endif; ?>
                                         </div>
                                     </article>
                                 <?php endforeach; ?>
@@ -658,58 +682,39 @@
                 </section>
             <?php endif; ?>
             <!-- Seção Delivery -->
-            <section id="delivery" class="menu-section" style="text-align: center; margin-top: 60px;">
-                <button id="deliveryBtn" style="background-color: var(--accent-color); color: var(--secondary-color); 
-                border: none; padding: 15px 30px; font-size: 1.2rem; border-radius: 50px; 
-                cursor: pointer; font-weight: bold; transition: all 0.3s; box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-                display: flex; align-items: center; margin: 0 auto;">
-            <i class="fas fa-motorcycle" style="margin-right: 10px;"></i>
-            Fazemos Delivery Também!
-        </button>
-        
-<!-- Modal Delivery (hidden by default) -->
-<div id="deliveryModal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; 
-        width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); overflow: auto;">
-    <div style="background-color: white; margin: 10% auto; padding: 30px; 
-            border-radius: 10px; max-width: 500px; position: relative; text-align: center;">
-        <span id="closeModal" style="position: absolute; right: 20px; top: 10px; 
-                font-size: 28px; cursor: pointer;">&times;</span>
-        
-        <h2 style="color: var(--primary-color); font-family: 'Playfair Display', serif; 
-                margin-bottom: 30px;">Escolha sua plataforma</h2>
-        
-        <div style="display: flex; flex-direction: column; gap: 20px;">
-            <a href="https://www.ifood.com.br/delivery/morrinhos-go/espetinho-do-junior-jantinhas-vila-santos-dumont-i/5ef0eab0-bc60-4bd1-8ec5-69cdc4314be4" 
-            target="_blank" 
-            style="background-color: #ea1d2c; color: white; padding: 15px; 
-                    border-radius: 8px; text-decoration: none; font-weight: bold;
-                    display: flex; align-items: center; justify-content: center;
-                    transition: transform 0.3s;">
-                <img src="https://t2.tudocdn.net/652297?w=646&h=284" 
-                style="width: 30px; margin-right: 10px;" alt="iFood">
-                Pedir pelo iFood
-            </a>
-            
-            <a href="https://wa.me/556492397675" 
-            target="_blank" 
-            style="background-color: #25D366; color: white; padding: 15px; 
-                    border-radius: 8px; text-decoration: none; font-weight: bold;
-                    display: flex; align-items: center; justify-content: center;
-                    transition: transform 0.3s;">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" 
-                style="width: 30px; margin-right: 10px;" alt="WhatsApp">
-                Pedir pelo WhatsApp
-            </a>
-        </div>
-        
-        <p style="margin-top: 30px; color: #666; font-size: 0.9rem;">
-            Horário de Delivery: 18h às 23h
-        </p>
-    </div>
-</div>
-</section>
+            <section id="delivery" class="menu-section delivery-section">
+                <span class="eyebrow">Peça do seu jeito</span>
+                <h2 class="section-title">Brasa boa chega até você</h2>
+                <p>Consulte as opções de pedido pelo iFood ou WhatsApp. Delivery · 18h às 23h.</p>
+                <button class="delivery-trigger" type="button" data-delivery-trigger>
+                    <i class="fas fa-motorcycle" aria-hidden="true"></i> Escolher canal de delivery
+                </button>
+            </section>
 
-            <a href="#" id="backToTop"><i class="fas fa-arrow-up"></i></a>
+            <div class="delivery-sticky">
+                <button class="delivery-trigger" type="button" data-delivery-trigger>Pedir agora</button>
+            </div>
+
+            <div id="deliveryModal" class="delivery-modal" aria-hidden="true">
+                <section class="delivery-modal-content" role="dialog" aria-modal="true" aria-labelledby="deliveryTitle">
+                    <button id="closeModal" class="close-modal" type="button" aria-label="Fechar">&times;</button>
+                    <span class="eyebrow">Delivery · 18h às 23h</span>
+                    <h2 id="deliveryTitle">Escolha onde pedir</h2>
+                    <div class="delivery-options">
+                        <a class="delivery-option delivery-option--ifood" href="https://www.ifood.com.br/delivery/morrinhos-go/espetinho-do-junior-jantinhas-vila-santos-dumont-i/5ef0eab0-bc60-4bd1-8ec5-69cdc4314be4" target="_blank" rel="noopener noreferrer">
+                            <i class="fas fa-utensils" aria-hidden="true"></i> Pedir pelo iFood
+                        </a>
+                        <a class="delivery-option delivery-option--whatsapp" href="https://wa.me/556492397675" target="_blank" rel="noopener noreferrer">
+                            <i class="fab fa-whatsapp" aria-hidden="true"></i> Pedir pelo WhatsApp
+                        </a>
+                    </div>
+                    <p class="delivery-hours"><i class="far fa-clock" aria-hidden="true"></i> Horário de Delivery: 18h às 23h</p>
+                </section>
+            </div>
+
+            <button type="button" id="backToTop" aria-label="Voltar ao topo" hidden>
+                <i class="fas fa-arrow-up" aria-hidden="true"></i>
+            </button>
         </main>
 
         <footer>
@@ -718,21 +723,14 @@
                 <p class="footer-info"><i class="fas fa-map-marker-alt"></i> Av. 101, 474-524, Morrinhos GO, 75654-252, Brazil.</p>
                 <p class="footer-info"><i class="fas fa-phone"></i> (64) 99239-7675</p>
                 <p class="footer-info"><i class="fas fa-envelope"></i> espetinhojunior2@gmail.com</p>
-                
-                <div class="social-icons">
-                    <a href="#" class="social-icon"><i class="fab fa-facebook-f"></i></a>
-                    <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
-                </div>
-                
-                <p class="footer-info" style="margin-top: 30px; font-size: 0.9rem;">
+                <p class="footer-info footer-legal">
                     &copy; <?= date('Y') ?> Churrascaria do Júnior. Todos os direitos reservados.
                     <br>
                 </p>
-                <p class="footer-info" style="margin-top: 30px; font-size: 0.9rem;">
+                <p class="footer-info footer-credit">
                     &copy; <?= date('Y') ?> Site desenvolvido por: 
                     <a href="https://www.instagram.com/ezequiel.o.rod?igsh=MTVvcGd2YXN2cDY4YQ%3D%3D" 
-                    target="_blank" 
-                    style="color: var(--accent-color); text-decoration: none; font-weight: 600;">
+                    target="_blank" rel="noopener noreferrer">
                     Ezequiel Oliveira
                     </a>
                 </p>
@@ -740,43 +738,85 @@
         </footer>
 
         <script>
-            // Botão Voltar ao Topo
-            window.addEventListener('scroll', function() {
-                var backToTop = document.getElementById('backToTop');
-                if (window.pageYOffset > 300) {
-                    backToTop.style.display = 'block';
-                } else {
-                    backToTop.style.display = 'none';
-                }
-            });
-            
-            document.getElementById('backToTop').addEventListener('click', function(e) {
-                e.preventDefault();
-                window.scrollTo({top: 0, behavior: 'smooth'});
-            });
-
-            // Script para controlar o modal
-            const deliveryBtn = document.getElementById('deliveryBtn');
             const deliveryModal = document.getElementById('deliveryModal');
             const closeModal = document.getElementById('closeModal');
-            
-            deliveryBtn.addEventListener('click', function() {
-                deliveryModal.style.display = 'block';
-                document.body.style.overflow = 'hidden';
+            const deliveryTriggers = document.querySelectorAll('[data-delivery-trigger]');
+            const backToTop = document.getElementById('backToTop');
+            let lastDeliveryTrigger = null;
+
+            function closeDeliveryModal() {
+                deliveryModal.setAttribute('aria-hidden', 'true');
+                document.body.classList.remove('modal-open');
+                if (lastDeliveryTrigger) {
+                    lastDeliveryTrigger.focus();
+                }
+            }
+
+            deliveryTriggers.forEach(function (trigger) {
+                trigger.addEventListener('click', function () {
+                    lastDeliveryTrigger = trigger;
+                    deliveryModal.setAttribute('aria-hidden', 'false');
+                    document.body.classList.add('modal-open');
+                    closeModal.focus();
+                });
             });
-            
-            closeModal.addEventListener('click', function() {
-                deliveryModal.style.display = 'none';
-                document.body.style.overflow = 'auto';
+
+            closeModal.addEventListener('click', closeDeliveryModal);
+            deliveryModal.addEventListener('click', function (event) {
+                if (event.target === deliveryModal) {
+                    closeDeliveryModal();
+                }
             });
-            
-            window.addEventListener('click', function(event) {
-                if (event.target == deliveryModal) {
-                    deliveryModal.style.display = 'none';
-                    document.body.style.overflow = 'auto';
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && deliveryModal.getAttribute('aria-hidden') === 'false') {
+                    closeDeliveryModal();
+                    return;
+                }
+                if (event.key === 'Tab' && deliveryModal.getAttribute('aria-hidden') === 'false') {
+                    const focusableElements = deliveryModal.querySelectorAll('button, a[href]');
+                    const firstElement = focusableElements[0];
+                    const lastElement = focusableElements[focusableElements.length - 1];
+                    if (event.shiftKey && document.activeElement === firstElement) {
+                        event.preventDefault();
+                        lastElement.focus();
+                    } else if (!event.shiftKey && document.activeElement === lastElement) {
+                        event.preventDefault();
+                        firstElement.focus();
+                    }
                 }
             });
 
+            backToTop.addEventListener('click', function () {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+
+            window.addEventListener('scroll', function () {
+                backToTop.hidden = window.scrollY < 600;
+            }, { passive: true });
+
+            const categorySections = document.querySelectorAll('.menu-section[id]');
+            const categoryLinks = document.querySelectorAll('.menu-navegacao a[href^="#"]');
+            if ('IntersectionObserver' in window) {
+                const sectionObserver = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (entry) {
+                        if (!entry.isIntersecting) {
+                            return;
+                        }
+                        categoryLinks.forEach(function (link) {
+                            const isCurrent = link.getAttribute('href') === '#' + entry.target.id;
+                            if (isCurrent) {
+                                link.setAttribute('aria-current', 'true');
+                                link.scrollIntoView({ block: 'nearest', inline: 'center' });
+                            } else {
+                                link.removeAttribute('aria-current');
+                            }
+                        });
+                    });
+                }, { rootMargin: '-25% 0px -65% 0px' });
+                categorySections.forEach(function (section) {
+                    sectionObserver.observe(section);
+                });
+            }
         </script>
     </body>
     </html>
