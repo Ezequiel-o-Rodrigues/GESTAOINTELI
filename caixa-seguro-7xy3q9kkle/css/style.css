@@ -57,65 +57,31 @@ main {
 }
 
 .dashboard-user-button {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    padding: 4px 0 4px 8px;
+    display: grid;
+    width: 40px;
+    height: 40px;
+    place-items: center;
+    padding: 0;
     border: 0;
+    border-radius: 9px;
     background: transparent;
-    color: #fff;
-    text-align: left;
-    transition: opacity 0.2s ease;
+    color: #e2e8f0;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .dashboard-user-button:hover,
 .dashboard-user-button[aria-expanded="true"] {
     color: #fff;
-    opacity: 0.88;
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .dashboard-user-button.dropdown-toggle::after {
     display: none;
 }
 
-.dashboard-user-copy {
-    display: grid;
-    gap: 2px;
-}
-
-.dashboard-user-name {
-    max-width: 150px;
-    overflow: hidden;
-    color: #f8fafc;
-    font-size: 0.78rem;
-    font-weight: 700;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.dashboard-user-last-access {
-    color: #94a3b8;
-    font-size: 0.68rem;
-    white-space: nowrap;
-}
-
-.dashboard-avatar {
-    display: grid;
-    width: 36px;
-    height: 36px;
-    flex: 0 0 36px;
-    place-items: center;
-    border-radius: 50%;
-    background: #f97316;
-    color: #fff;
-    font-size: 0.75rem;
-    font-weight: 700;
-}
-
-.dashboard-user-chevron {
-    width: 15px;
-    height: 15px;
-    color: #64748b;
+.dashboard-user-menu-icon {
+    width: 22px;
+    height: 22px;
 }
 
 .welcome-section {

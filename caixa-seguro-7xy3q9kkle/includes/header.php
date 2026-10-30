@@ -139,13 +139,8 @@ $urlGerenciarCardapio = rtrim(dirname(PathConfig::url()), '/') . '/admin-seguro-
             <?php if ($usuarioLogado): ?>
             <div class="flex items-center justify-self-end gap-3">
                 <div class="dropdown dashboard-user-dropdown">
-                    <button type="button" class="dashboard-user-button dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Abrir menu de <?= htmlspecialchars($usuarioNome, ENT_QUOTES, 'UTF-8') ?>">
-                        <span class="dashboard-user-copy hidden text-right sm:block">
-                            <span class="dashboard-user-name"><?= htmlspecialchars($usuarioNome, ENT_QUOTES, 'UTF-8') ?></span>
-                            <span class="dashboard-user-last-access">Último acesso: <?= date('H:i') ?></span>
-                        </span>
-                        <span class="dashboard-avatar" aria-hidden="true"><?= getInitials($usuarioNome) ?></span>
-                        <i data-lucide="chevron-down" class="dashboard-user-chevron" aria-hidden="true"></i>
+                    <button type="button" class="dashboard-user-button dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Abrir menu do usuário">
+                        <i data-lucide="menu" class="dashboard-user-menu-icon" aria-hidden="true"></i>
                     </button>
                     
                     <ul class="dropdown-menu dropdown-menu-end">
