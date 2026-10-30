@@ -10,35 +10,12 @@ try {
     }
 
     $stmt = $db->query(
-        "SELECT id, nome, descricao FROM categorias
-         ORDER BY CASE nome
-            WHEN 'Espetos' THEN 1
-            WHEN 'Porções' THEN 2
-            WHEN 'Jantinhas e Marmitas' THEN 3
-            WHEN 'Bebidas não alcoólicas' THEN 4
-            WHEN 'Cervejas' THEN 5
-            WHEN 'Outros' THEN 6
-            ELSE 7
-         END, nome"
-    );
-    $categorias = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    $stmt = $db->query(
-        "SELECT p.id, p.nome, p.nome_publico, p.descricao_publica, p.preco, p.imagem, p.ativo, p.categoria_id, c.nome AS categoria_nome
+        "SELECT p.id, p.categoria_id, p.nome, p.nome_publico, p.descricao_publica, p.preco,
+                p.estoque_minimo, p.estoque_atual, p.imagem, c.nome AS categoria_nome
          FROM produtos p
          INNER JOIN categorias c ON c.id = p.categoria_id
-         ORDER BY
-            CASE c.nome
-                WHEN 'Espetos' THEN 1
-                WHEN 'Porções' THEN 2
-                WHEN 'Jantinhas e Marmitas' THEN 3
-                WHEN 'Bebidas não alcoólicas' THEN 4
-                WHEN 'Cervejas' THEN 5
-                WHEN 'Outros' THEN 6
-                ELSE 7
-            END,
-            c.nome,
-            p.nome"
+         WHERE p.ativo = 1
+         ORDER BY c.nome, p.nome"
     );
     $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -47,18 +24,23 @@ try {
          FROM produto_cards
          ORDER BY produto_id, ordem, id'
     );
-    $cardsPorProduto = [];
-    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $card) {
-        $cardsPorProduto[(int) $card['produto_id']][] = $card;
+    $opcoesPorProduto = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $opcao) {
+        $opcoesPorProduto[(int) $opcao['produto_id']][] = [
+            'id' => (int) $opcao['id'],
+            'nome_exibicao' => $opcao['nome_exibicao'],
+            'descricao' => $opcao['descricao'] ?? '',
+            'imagem' => $opcao['imagem'] ?? ''
+        ];
     }
 } catch (Throwable $e) {
     error_log('Erro ao carregar gerenciador do cardápio: ' . $e->getMessage());
     http_response_code(503);
-    exit('Não foi possível carregar o gerenciador. Confira a conexão com o banco do caixa e, se necessário, faça backup e execute migracao_cardapio_integrado.sql no phpMyAdmin desse banco.');
+    exit('Não foi possível carregar os produtos do cardápio. Confira a conexão e execute migracao_cardapio_integrado.sql no banco do caixa, se ainda não foi aplicada.');
 }
 
-if (!isset($_SESSION['csrf_cardapio'])) {
-    $_SESSION['csrf_cardapio'] = bin2hex(random_bytes(32));
+if (!isset($_SESSION['csrf_produto'])) {
+    $_SESSION['csrf_produto'] = bin2hex(random_bytes(32));
 }
 
 $mensagem = $_GET['msg'] ?? '';
@@ -69,51 +51,78 @@ $erro = $_GET['erro'] ?? '';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Gerenciar produtos do cardápio</title>
+    <title>Editar cardápio público</title>
     <style>
-        body { margin: 0; padding: 24px; background: #f3f4f6; color: #1f2937; font: 16px Arial, sans-serif; }
-        main { max-width: 1000px; margin: 0 auto; }
-        header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
-        h1 { margin: 0; font-size: 1.7rem; }
-        .back, button { display: inline-block; border: 0; border-radius: 6px; padding: 10px 14px; background: #4a6fa5; color: #fff; text-decoration: none; font-weight: 700; cursor: pointer; }
-        .notice { margin: 12px 0; padding: 12px; border-radius: 6px; background: #dcfce7; }
-        .error { margin: 12px 0; padding: 12px; border-radius: 6px; background: #fee2e2; }
-        .warning { margin: 16px 0; padding: 14px; border-radius: 6px; background: #fef3c7; }
-        .category { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto auto; gap: 10px; align-items: end; margin: 10px 0; padding: 12px; background: #fff; border: 1px solid #e5e7eb; border-radius: 7px; }
-        .ack { display: flex; grid-column: 1 / -1; align-items: flex-start; gap: 8px; }
-        .ack input { width: auto; margin-top: 3px; }
-        .product { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 16px; margin: 14px 0; padding: 16px; border-radius: 8px; background: #fff; box-shadow: 0 2px 6px #00000012; }
-        .product img { width: 140px; height: 110px; object-fit: cover; border-radius: 6px; background: #eee; }
-        .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-        label { display: grid; gap: 5px; font-size: .9rem; font-weight: 700; }
-        input, select { box-sizing: border-box; width: 100%; padding: 9px; border: 1px solid #cbd5e1; border-radius: 5px; font: inherit; }
-        .status { margin: 0 0 10px; color: #4b5563; font-size: .9rem; }
-        .actions { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
-        .cards { grid-column: 1 / -1; margin-top: 8px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
-        .cards h2 { margin: 0 0 8px; font-size: 1.15rem; }
-        .card-help { margin: 0 0 14px; color: #4b5563; font-size: .9rem; }
-        .menu-card { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 14px; margin: 12px 0; padding: 12px; border: 1px solid #e5e7eb; border-radius: 7px; }
-        .menu-card img { width: 100px; height: 85px; }
-        .menu-card form + form { margin-top: 8px; }
-        .add-card { margin-top: 18px; padding-top: 14px; border-top: 1px dashed #cbd5e1; }
-        .delete-button { background: #b91c1c; }
+        :root { color-scheme: light; font-family: Arial, sans-serif; color: #1f2937; background: #f3f4f6; }
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 24px; }
+        main { max-width: 1100px; margin: 0 auto; }
+        header, .toolbar, .product-main, .modal-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+        header { margin-bottom: 20px; }
+        h1 { margin: 0 0 8px; font-size: 1.7rem; }
+        h2 { margin: 0 0 16px; }
+        p { line-height: 1.5; }
+        .back, button { display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 7px; padding: 10px 14px; background: #4a6fa5; color: #fff; text-decoration: none; font: inherit; font-weight: 700; cursor: pointer; }
+        button.secondary { background: #e5e7eb; color: #1f2937; }
+        button.danger { background: #b91c1c; }
+        button:disabled { opacity: .6; cursor: wait; }
+        .help, .muted { color: #64748b; }
+        .notice, .error, .warning { margin: 14px 0; padding: 12px 14px; border-radius: 7px; }
+        .notice { background: #dcfce7; }
+        .error { background: #fee2e2; color: #991b1b; }
+        .warning { background: #fef3c7; }
+        .toolbar { margin: 20px 0 12px; }
+        input, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; }
+        #searchProducts { max-width: 380px; }
+        .product-list { display: grid; gap: 10px; }
+        .product { display: grid; grid-template-columns: 90px minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 14px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; }
+        .product img { width: 90px; height: 72px; border-radius: 7px; object-fit: cover; background: #e5e7eb; }
+        .product-main { justify-content: flex-start; }
+        .product-name { margin: 0 0 5px; font-weight: 700; }
+        .product-meta { margin: 0; color: #64748b; font-size: .92rem; }
+        .empty { padding: 28px; border-radius: 10px; background: #fff; text-align: center; }
+        dialog { width: min(680px, calc(100% - 24px)); max-height: 90vh; padding: 0; border: 0; border-radius: 12px; box-shadow: 0 20px 60px #0f172a40; }
+        dialog::backdrop { background: #0f172a80; }
+        .editor { padding: 22px; overflow-y: auto; }
+        .editor-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+        .editor-header h2 { margin: 0 0 5px; }
+        .close-button { padding: 6px 10px; background: transparent; color: #475569; font-size: 1.4rem; }
+        .field { display: grid; gap: 6px; margin: 14px 0; }
+        .field label, .option label { font-weight: 700; }
+        .field small, .section-help { color: #64748b; }
+        .product-details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px; border-radius: 8px; background: #f8fafc; }
+        .product-details p { margin: 0; }
+        .options-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 20px; }
+        .options-heading h3 { margin: 0; }
+        .option { margin: 12px 0; padding: 14px; border: 1px solid #e2e8f0; border-radius: 8px; }
+        .option-image { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+        .option-image img { width: 68px; height: 56px; border-radius: 6px; object-fit: cover; background: #e5e7eb; }
+        .modal-actions { justify-content: flex-end; margin-top: 22px; }
         @media (max-width: 600px) {
             body { padding: 14px; }
-            .product { grid-template-columns: 1fr; }
-            .product img { width: 100%; height: 180px; }
-            .fields { grid-template-columns: 1fr; }
-            .category { grid-template-columns: 1fr; }
-            .menu-card { grid-template-columns: 1fr; }
-            .menu-card img { width: 100%; height: 160px; }
+            header, .toolbar { align-items: stretch; flex-direction: column; }
+            .product { grid-template-columns: 64px minmax(0, 1fr); gap: 10px; }
+            .product img { width: 64px; height: 60px; }
+            .product button { grid-column: 1 / -1; }
+            .product-details { grid-template-columns: 1fr; }
+            .option-image { align-items: stretch; flex-direction: column; }
+            .option-image img { width: 100%; height: 140px; }
         }
     </style>
 </head>
 <body>
 <main>
     <header>
-        <h1>Gerenciar produtos do cardápio</h1>
-        <a class="back" href="../caixa-seguro-7xy3q9kkle/">Voltar ao sistema de caixa</a>
+        <div>
+            <h1>Cardápio público</h1>
+            <p class="help">Edite a apresentação dos produtos ativos. Nome, preço e categoria oficiais vêm do sistema de caixa.</p>
+        </div>
+        <a class="back" href="../caixa-seguro-7xy3q9kkle/">Voltar ao sistema</a>
     </header>
+
+    <p class="warning">
+        As opções são subdivisões visuais do produto: não criam produtos, preços ou estoque. Todas compartilham o preço do produto no caixa.
+    </p>
 
     <?php if ($mensagem !== ''): ?>
         <p class="notice"><?= htmlspecialchars($mensagem, ENT_QUOTES, 'UTF-8') ?></p>
@@ -122,196 +131,241 @@ $erro = $_GET['erro'] ?? '';
         <p class="error"><?= htmlspecialchars($erro, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
 
-    <p>Produtos ativos aparecem no cardápio público e usam nome, preço e categoria oficiais do estoque. As apresentações públicas e opções são informativas: não criam produtos, preços ou estoque próprios.</p>
+    <div class="toolbar">
+        <h2>Produtos que aparecem no cardápio (<?= count($produtos) ?>)</h2>
+        <input id="searchProducts" type="search" placeholder="Buscar produto..." aria-label="Buscar produto">
+    </div>
 
-    <section class="warning">
-        <strong>Categorias compartilhadas com estoque, caixa e relatórios.</strong>
-        Alterar o nome de uma categoria ou reclassificar produtos também altera como as vendas históricas são agrupadas nos relatórios. Excluir uma categoria com produtos é bloqueado até que todos sejam reclassificados no estoque.
-    </section>
-
-    <section>
-        <h2>Categorias</h2>
-        <?php foreach ($categorias as $categoria): ?>
-            <div class="category">
-                <form method="post" action="salvar_cardapio.php" class="fields" style="grid-column: 1 / 3;">
-                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_cardapio'], ENT_QUOTES, 'UTF-8') ?>">
-                    <input type="hidden" name="acao" value="salvar_categoria">
-                    <input type="hidden" name="categoria_id" value="<?= (int) $categoria['id'] ?>">
-                    <label>
-                        Nome
-                        <input type="text" name="nome_categoria" maxlength="50" required value="<?= htmlspecialchars($categoria['nome'], ENT_QUOTES, 'UTF-8') ?>">
-                    </label>
-                    <label>
-                        Descrição (opcional)
-                        <input type="text" name="descricao_categoria" maxlength="1000" value="<?= htmlspecialchars($categoria['descricao'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-                    </label>
-                    <label class="ack">
-                        <input type="checkbox" name="backup_confirmado" value="1" required>
-                        Confirmo que fiz backup e entendo o impacto do nome compartilhado nos relatórios históricos.
-                    </label>
-                    <button type="submit">Salvar categoria</button>
-                </form>
-                <form method="post" action="salvar_cardapio.php" onsubmit="return confirm('Excluir esta categoria? A operação será bloqueada se houver produtos vinculados.');">
-                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_cardapio'], ENT_QUOTES, 'UTF-8') ?>">
-                    <input type="hidden" name="acao" value="excluir_categoria">
-                    <input type="hidden" name="categoria_id" value="<?= (int) $categoria['id'] ?>">
-                    <label class="ack">
-                        <input type="checkbox" name="backup_confirmado" value="1" required>
-                        Backup feito
-                    </label>
-                    <button class="delete-button" type="submit">Excluir</button>
-                </form>
-            </div>
-        <?php endforeach; ?>
-        <form method="post" action="salvar_cardapio.php" class="category">
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_cardapio'], ENT_QUOTES, 'UTF-8') ?>">
-            <input type="hidden" name="acao" value="salvar_categoria">
-            <label>
-                Nova categoria
-                <input type="text" name="nome_categoria" maxlength="50" required>
-            </label>
-            <label>
-                Descrição (opcional)
-                <input type="text" name="descricao_categoria" maxlength="1000">
-            </label>
-            <button type="submit">Criar categoria</button>
-        </form>
-    </section>
-
-    <?php foreach ($produtos as $produto): ?>
-        <?php
-        $imagemRelativa = str_replace('\\', '/', (string) ($produto['imagem'] ?? ''));
-        $imagemValida = $imagemRelativa !== ''
-            && strpos($imagemRelativa, '..') === false
-            && $imagemRelativa[0] !== '/'
-            && file_exists(__DIR__ . '/../public/images/menu/' . $imagemRelativa);
-        $imagemUrl = $imagemValida
-            ? '../public/images/menu/' . $imagemRelativa
-            : '../public/images/menu/default.png';
-        ?>
-        <section class="product">
-            <img src="<?= htmlspecialchars($imagemUrl, ENT_QUOTES, 'UTF-8') ?>" alt="">
-            <div>
-                <p class="status">
-                    Produto #<?= (int) $produto['id'] ?> · <?= $produto['ativo'] ? 'Ativo e visível no cardápio' : 'Inativo e oculto no cardápio' ?>
-                </p>
-                <p>
-                    <strong>Produto no caixa:</strong> <?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?><br>
-                    <strong>Preço oficial:</strong> R$ <?= number_format((float) $produto['preco'], 2, ',', '.') ?><br>
-                    <strong>Categoria compartilhada:</strong> <?= htmlspecialchars($produto['categoria_nome'], ENT_QUOTES, 'UTF-8') ?>
-                </p>
-                <p>
-                    <strong>Nome público:</strong> <?= htmlspecialchars($produto['nome_publico'] ?: $produto['nome'], ENT_QUOTES, 'UTF-8') ?><br>
-                    <strong>Descrição pública:</strong> <?= htmlspecialchars($produto['descricao_publica'] ?? '', ENT_QUOTES, 'UTF-8') ?>
-                </p>
-                <form method="post" action="salvar_cardapio.php" enctype="multipart/form-data">
-                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_cardapio'], ENT_QUOTES, 'UTF-8') ?>">
-                    <input type="hidden" name="acao" value="salvar_imagem_produto">
-                    <input type="hidden" name="id" value="<?= (int) $produto['id'] ?>">
-                    <div class="fields">
-                        <label>
-                            Imagem (JPG, PNG, GIF ou WebP; até 5 MB)
-                            <input type="file" name="imagem" accept="image/jpeg,image/png,image/gif,image/webp">
-                        </label>
-                    </div>
-                    <div class="actions">
-                        <button type="submit">Atualizar imagem do produto</button>
-                        <a href="../caixa-seguro-7xy3q9kkle/modules/estoque/">Editar produto no estoque</a>
-                    </div>
-                </form>
-            </div>
-            <div class="cards">
-                <h2>Cards públicos</h2>
-                <p class="card-help">
-                    <?php if (!empty($cardsPorProduto[(int) $produto['id']])): ?>
-                        Estas opções aparecem como apresentações relacionadas. São informativas e compartilham o preço do produto no caixa.
-                    <?php else: ?>
-                        Sem opções relacionadas: o cardápio usa o nome público configurado no estoque (ou o nome oficial) e a imagem do produto.
-                    <?php endif; ?>
-                </p>
-
-                <?php foreach ($cardsPorProduto[(int) $produto['id']] ?? [] as $card): ?>
-                    <?php
-                    $imagemFonteCard = !empty($card['imagem']) ? $card['imagem'] : $produto['imagem'];
-                    $imagemCard = str_replace('\\', '/', (string) ($imagemFonteCard ?? ''));
-                    $imagemCardValida = $imagemCard !== ''
-                        && strpos($imagemCard, '..') === false
-                        && $imagemCard[0] !== '/'
-                        && file_exists(__DIR__ . '/../public/images/menu/' . $imagemCard);
-                    $imagemCardUrl = $imagemCardValida
-                        ? '../public/images/menu/' . $imagemCard
-                        : '../public/images/menu/default.png';
-                    ?>
-                    <div class="menu-card">
-                        <img src="<?= htmlspecialchars($imagemCardUrl, ENT_QUOTES, 'UTF-8') ?>" alt="">
+    <?php if ($produtos): ?>
+        <div class="product-list" id="productList">
+            <?php foreach ($produtos as $produto): ?>
+                <?php
+                $produtoId = (int) $produto['id'];
+                $opcoes = $opcoesPorProduto[$produtoId] ?? [];
+                $imagemRelativa = str_replace('\\', '/', (string) ($produto['imagem'] ?? ''));
+                $imagemValida = $imagemRelativa !== ''
+                    && strpos($imagemRelativa, '..') === false
+                    && $imagemRelativa[0] !== '/'
+                    && file_exists(__DIR__ . '/../public/images/menu/' . $imagemRelativa);
+                $imagemUrl = $imagemValida
+                    ? '../public/images/menu/' . $imagemRelativa
+                    : '../public/images/menu/default.png';
+                $dadosProduto = [
+                    'id' => $produtoId,
+                    'categoria_id' => (int) $produto['categoria_id'],
+                    'nome' => $produto['nome'],
+                    'nome_publico' => $produto['nome_publico'] ?? '',
+                    'descricao_publica' => $produto['descricao_publica'] ?? '',
+                    'preco' => $produto['preco'],
+                    'categoria' => $produto['categoria_nome'],
+                    'estoque_minimo' => $produto['estoque_minimo'],
+                    'estoque_atual' => $produto['estoque_atual'],
+                    'imagem' => $produto['imagem'] ?? '',
+                    'imagem_url' => $imagemUrl,
+                    'opcoes' => $opcoes
+                ];
+                $jsonProduto = json_encode($dadosProduto, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+                ?>
+                <?php
+                $termoPesquisa = $produto['nome'] . ' ' . $produto['categoria_nome'];
+                $termoPesquisa = function_exists('mb_strtolower')
+                    ? mb_strtolower($termoPesquisa, 'UTF-8')
+                    : strtolower($termoPesquisa);
+                ?>
+                <article class="product" data-search="<?= htmlspecialchars($termoPesquisa, ENT_QUOTES, 'UTF-8') ?>">
+                    <img src="<?= htmlspecialchars($imagemUrl, ENT_QUOTES, 'UTF-8') ?>" alt="" loading="lazy">
+                    <div class="product-main">
                         <div>
-                            <form method="post" action="salvar_cardapio.php" enctype="multipart/form-data">
-                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_cardapio'], ENT_QUOTES, 'UTF-8') ?>">
-                                <input type="hidden" name="acao" value="salvar_card">
-                                <input type="hidden" name="produto_id" value="<?= (int) $produto['id'] ?>">
-                                <input type="hidden" name="card_id" value="<?= (int) $card['id'] ?>">
-                                <div class="fields">
-                                    <label>
-                                        Nome exibido
-                                        <input type="text" name="nome_exibicao" maxlength="100" required value="<?= htmlspecialchars($card['nome_exibicao'], ENT_QUOTES, 'UTF-8') ?>">
-                                    </label>
-                                    <label>
-                                        Ordem
-                                        <input type="number" name="ordem" min="0" max="100000" required value="<?= (int) $card['ordem'] ?>">
-                                    </label>
-                                    <label>
-                                        Descrição (opcional)
-                                        <input type="text" name="descricao" maxlength="1000" value="<?= htmlspecialchars($card['descricao'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-                                    </label>
-                                    <label>
-                                        Trocar imagem (opcional)
-                                        <input type="file" name="imagem" accept="image/jpeg,image/png,image/gif,image/webp">
-                                    </label>
-                                </div>
-                                <div class="actions">
-                                    <button type="submit">Salvar card</button>
-                                </div>
-                            </form>
-                            <form method="post" action="salvar_cardapio.php" onsubmit="return confirm('Excluir apenas este card de apresentação? O produto e o estoque serão mantidos.');">
-                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_cardapio'], ENT_QUOTES, 'UTF-8') ?>">
-                                <input type="hidden" name="acao" value="excluir_card">
-                                <input type="hidden" name="produto_id" value="<?= (int) $produto['id'] ?>">
-                                <input type="hidden" name="card_id" value="<?= (int) $card['id'] ?>">
-                                <button class="delete-button" type="submit">Excluir card</button>
-                            </form>
+                            <p class="product-name"><?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?></p>
+                            <p class="product-meta">
+                                <?= htmlspecialchars($produto['categoria_nome'], ENT_QUOTES, 'UTF-8') ?>
+                                · R$ <?= number_format((float) $produto['preco'], 2, ',', '.') ?>
+                                · <?= count($opcoes) ?> <?= count($opcoes) === 1 ? 'subcategoria' : 'subcategorias' ?>
+                            </p>
+                            <?php if (!empty($produto['nome_publico'])): ?>
+                                <p class="product-meta">Nome no cardápio: <?= htmlspecialchars($produto['nome_publico'], ENT_QUOTES, 'UTF-8') ?></p>
+                            <?php endif; ?>
                         </div>
                     </div>
-                <?php endforeach; ?>
-
-                <form class="add-card" method="post" action="salvar_cardapio.php" enctype="multipart/form-data">
-                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_cardapio'], ENT_QUOTES, 'UTF-8') ?>">
-                    <input type="hidden" name="acao" value="salvar_card">
-                    <input type="hidden" name="produto_id" value="<?= (int) $produto['id'] ?>">
-                    <div class="fields">
-                        <label>
-                            Novo nome para o card
-                            <input type="text" name="nome_exibicao" maxlength="100" required>
-                        </label>
-                        <label>
-                            Ordem
-                            <input type="number" name="ordem" min="0" max="100000" value="<?= count($cardsPorProduto[(int) $produto['id']] ?? []) + 1 ?>" required>
-                        </label>
-                        <label>
-                            Descrição (opcional)
-                            <input type="text" name="descricao" maxlength="1000">
-                        </label>
-                        <label>
-                            Imagem (opcional; JPG, PNG, GIF ou WebP; até 5 MB)
-                            <input type="file" name="imagem" accept="image/jpeg,image/png,image/gif,image/webp">
-                        </label>
-                    </div>
-                    <div class="actions">
-                        <button type="submit">Adicionar card</button>
-                    </div>
-                </form>
-            </div>
-        </section>
-    <?php endforeach; ?>
+                    <button type="button" class="edit-product" data-product="<?= htmlspecialchars($jsonProduto, ENT_QUOTES, 'UTF-8') ?>">Editar</button>
+                </article>
+            <?php endforeach; ?>
+        </div>
+        <p class="empty" id="noSearchResults" hidden>Nenhum produto corresponde à busca.</p>
+    <?php else: ?>
+        <p class="empty">Não há produtos ativos para exibir. Ative os produtos no estoque para que apareçam aqui e no cardápio público.</p>
+    <?php endif; ?>
 </main>
+
+<dialog id="productEditor" aria-labelledby="editorTitle">
+    <form class="editor" id="productEditorForm">
+        <div class="editor-header">
+            <div>
+                <h2 id="editorTitle">Editar apresentação</h2>
+                <p class="help">O produto, o preço e a categoria não são alterados por este formulário.</p>
+            </div>
+            <button type="button" class="close-button" data-close-editor aria-label="Fechar">×</button>
+        </div>
+
+        <input type="hidden" id="productId">
+        <div class="product-details">
+            <p><strong>Produto:</strong> <span id="officialName"></span></p>
+            <p><strong>Preço:</strong> <span id="officialPrice"></span></p>
+            <p><strong>Categoria:</strong> <span id="officialCategory"></span></p>
+        </div>
+
+        <div class="field">
+            <label for="publicName">Nome no cardápio (opcional)</label>
+            <input id="publicName" type="text" maxlength="100">
+        </div>
+        <div class="field">
+            <label for="publicDescription">Descrição (opcional)</label>
+            <textarea id="publicDescription" rows="3" maxlength="1000"></textarea>
+        </div>
+        <div class="field">
+            <label for="productImage">Imagem do produto (opcional, JPG/PNG/GIF/WebP, até 5 MB)</label>
+            <input id="productImage" type="file" accept="image/jpeg,image/png,image/gif,image/webp">
+            <small>A imagem atual será mantida se nenhum arquivo for selecionado.</small>
+        </div>
+
+        <section>
+            <div class="options-heading">
+                <h3>Subcategorias do produto</h3>
+                <button type="button" class="secondary" id="addOption">Adicionar</button>
+            </div>
+            <p class="section-help">Use, por exemplo, para listar sabores ou apresentações. Todas usam o mesmo produto e preço.</p>
+            <div id="productOptions"></div>
+        </section>
+
+        <p class="error" id="editorError" hidden></p>
+        <div class="modal-actions">
+            <button type="button" class="secondary" data-close-editor>Cancelar</button>
+            <button type="submit" id="saveProduct">Salvar apresentação</button>
+        </div>
+    </form>
+</dialog>
+
+<script>
+(() => {
+    const editor = document.getElementById('productEditor');
+    const form = document.getElementById('productEditorForm');
+    const optionsContainer = document.getElementById('productOptions');
+    const errorBox = document.getElementById('editorError');
+    let currentProduct = null;
+
+    const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    }[character]));
+
+    function addOption(option = {}) {
+        const row = document.createElement('div');
+        row.className = 'option';
+        row.dataset.id = option.id || '';
+        row.innerHTML = `
+            <div class="field">
+                <label>Nome da subcategoria</label>
+                <input class="option-name" type="text" maxlength="100" required value="${escapeHtml(option.nome_exibicao || '')}">
+            </div>
+            <div class="field">
+                <label>Descrição (opcional)</label>
+                <textarea class="option-description" rows="2" maxlength="1000">${escapeHtml(option.descricao || '')}</textarea>
+            </div>
+            <button type="button" class="danger remove-option">Remover subcategoria</button>
+        `;
+        row.querySelector('.remove-option').addEventListener('click', () => row.remove());
+        optionsContainer.append(row);
+    }
+
+    document.querySelectorAll('.edit-product').forEach((button) => {
+        button.addEventListener('click', () => {
+            currentProduct = JSON.parse(button.dataset.product);
+            form.reset();
+            errorBox.hidden = true;
+            optionsContainer.replaceChildren();
+
+            document.getElementById('productId').value = currentProduct.id;
+            document.getElementById('officialName').textContent = currentProduct.nome;
+            document.getElementById('officialPrice').textContent =
+                'R$ ' + Number(currentProduct.preco).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+            document.getElementById('officialCategory').textContent = currentProduct.categoria;
+            document.getElementById('publicName').value = currentProduct.nome_publico;
+            document.getElementById('publicDescription').value = currentProduct.descricao_publica;
+            currentProduct.opcoes.forEach(addOption);
+            editor.showModal();
+        });
+    });
+
+    document.querySelectorAll('[data-close-editor]').forEach((button) => {
+        button.addEventListener('click', () => editor.close());
+    });
+
+    document.getElementById('addOption').addEventListener('click', () => addOption());
+
+    document.getElementById('searchProducts').addEventListener('input', (event) => {
+        const query = event.target.value.trim().toLocaleLowerCase('pt-BR');
+        let visibleCount = 0;
+        document.querySelectorAll('.product').forEach((product) => {
+            const matches = product.dataset.search.includes(query);
+            product.hidden = !matches;
+            if (matches) visibleCount++;
+        });
+        const noResults = document.getElementById('noSearchResults');
+        if (noResults) noResults.hidden = visibleCount > 0;
+    });
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        errorBox.hidden = true;
+        const saveButton = document.getElementById('saveProduct');
+        saveButton.disabled = true;
+        saveButton.textContent = 'Salvando...';
+
+        const data = new FormData();
+        data.append('id', String(currentProduct.id));
+        data.append('nome', currentProduct.nome);
+        data.append('categoria_id', String(currentProduct.categoria_id || ''));
+        data.append('preco', String(currentProduct.preco));
+        data.append('estoque_minimo', String(currentProduct.estoque_minimo));
+        data.append('estoque_inicial', String(currentProduct.estoque_atual));
+        data.append('csrf_token', <?= json_encode($_SESSION['csrf_produto']) ?>);
+        data.append('nome_publico', document.getElementById('publicName').value);
+        data.append('descricao_publica', document.getElementById('publicDescription').value);
+
+        const image = document.getElementById('productImage').files[0];
+        if (image) data.append('imagem', image);
+
+        const options = Array.from(optionsContainer.querySelectorAll('.option')).map((row) => ({
+                id: row.dataset.id || null,
+                nome_exibicao: row.querySelector('.option-name').value,
+                descricao: row.querySelector('.option-description').value
+            }));
+        data.append('opcoes_json', JSON.stringify(options));
+
+        try {
+            const response = await fetch('../../caixa-seguro-7xy3q9kkle/api/salvar_produto.php', {
+                method: 'POST',
+                body: data
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Não foi possível salvar as alterações.');
+            }
+
+            editor.close();
+            window.location.reload();
+        } catch (error) {
+            errorBox.textContent = error.message;
+            errorBox.hidden = false;
+        } finally {
+            saveButton.disabled = false;
+            saveButton.textContent = 'Salvar apresentação';
+        }
+    });
+})();
+</script>
 </body>
 </html>
