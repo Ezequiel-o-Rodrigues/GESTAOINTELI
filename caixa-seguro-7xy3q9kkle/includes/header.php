@@ -8,6 +8,8 @@ $usuarioNome = $_SESSION['usuario_nome'] ?? '';
 $usuarioEmail = $_SESSION['usuario_email'] ?? '';
 $usuarioPerfil = $_SESSION['usuario_perfil'] ?? '';
 $tituloPagina = $tituloPagina ?? 'Sistema Restaurante';
+$scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
+$paginaInicio = rtrim(dirname($scriptName), '/.') === rtrim(PathConfig::url(), '/');
 
 ?>
 <!DOCTYPE html>
@@ -113,7 +115,7 @@ $tituloPagina = $tituloPagina ?? 'Sistema Restaurante';
             </a>
 
             <nav class="main-nav dashboard-nav flex items-center justify-center gap-1" aria-label="Navegação principal">
-                <a href="<?= PathConfig::url('index.php') ?>" aria-current="page" class="dashboard-nav-link flex items-center gap-2 rounded-lg border-b-2 border-orange-500 px-3 py-3 text-sm font-medium text-orange-400 no-underline">
+                <a href="<?= PathConfig::url('index.php') ?>"<?= $paginaInicio ? ' aria-current="page"' : '' ?> class="dashboard-nav-link flex items-center gap-2 rounded-lg <?= $paginaInicio ? 'border-b-2 border-orange-500 text-orange-400' : 'text-slate-300' ?> px-3 py-3 text-sm font-medium no-underline">
                     <i data-lucide="layout-dashboard" class="h-4 w-4"></i><span>Início</span>
                 </a>
                 <a href="<?= PathConfig::modules('caixa/') ?>" class="dashboard-nav-link flex items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium text-slate-300 no-underline">

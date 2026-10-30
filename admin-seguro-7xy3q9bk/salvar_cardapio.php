@@ -118,7 +118,7 @@ try {
         if (!$arquivoNovo) {
             throw new RuntimeException('Selecione uma imagem antes de salvar.');
         }
-        $stmt = $db->prepare('UPDATE produtos SET imagem = :imagem WHERE id = :id');
+        $stmt = $db->prepare('UPDATE produtos SET imagem = :imagem, imagem_url = NULL WHERE id = :id');
         $stmt->execute([
             ':imagem' => $arquivoNovo['relativo'],
             ':id' => $idProduto
@@ -159,7 +159,8 @@ try {
         if ($cardId) {
             $stmt = $db->prepare(
                 'UPDATE produto_cards
-                 SET nome_exibicao = :nome, descricao = :descricao, imagem = :imagem, ordem = :ordem
+                 SET nome_exibicao = :nome, descricao = :descricao, imagem = :imagem,
+                     imagem_url = NULL, ordem = :ordem
                  WHERE id = :id AND produto_id = :produto_id'
             );
             $stmt->execute([

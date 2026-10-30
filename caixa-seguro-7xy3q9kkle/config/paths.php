@@ -20,6 +20,11 @@ class PathConfig {
 
     private static function baseUrl() {
         $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
+        $adminPosition = strpos($scriptName, '/admin-seguro-7xy3q9bk');
+        if ($adminPosition !== false) {
+            return substr($scriptName, 0, $adminPosition) . '/caixa-seguro-7xy3q9kkle';
+        }
+
         $subdirectoryPositions = array_filter([
             strpos($scriptName, '/modules/'),
             strpos($scriptName, '/api/')

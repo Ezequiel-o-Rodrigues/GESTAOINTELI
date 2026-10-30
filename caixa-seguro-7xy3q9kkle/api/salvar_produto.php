@@ -139,6 +139,13 @@ if ($hasMenuFields) {
     if ($imagemProdutoUrl !== '' && !menuIsValidImageUrl($imagemProdutoUrl)) {
         responderErro('Informe uma URL HTTPS pública que aponte diretamente para uma imagem.', 400);
     }
+    $imagemProdutoOrigem = $input['imagem_origem'] ?? '';
+    if (!is_string($imagemProdutoOrigem) || !in_array($imagemProdutoOrigem, ['', 'arquivo', 'url'], true)) {
+        responderErro('A origem da imagem do produto é inválida.', 400);
+    }
+    if ($imagemProdutoOrigem === 'url' && !$imagemProdutoUrlInformada) {
+        responderErro('Informe a URL da imagem do produto.', 400);
+    }
     $opcoesInput = json_decode((string) ($input['opcoes_json'] ?? '[]'), true);
     if (!is_array($opcoesInput) || count($opcoesInput) > 50) {
         responderErro('A lista de opções é inválida ou excede o limite de 50 itens.', 400);
@@ -180,12 +187,20 @@ if ($hasMenuFields) {
         if ($imagemOpcaoUrl !== '' && !menuIsValidImageUrl($imagemOpcaoUrl)) {
             responderErro('Informe uma URL HTTPS pública que aponte diretamente para a imagem da subcategoria.', 400);
         }
+        $imagemOpcaoOrigem = $opcao['imagem_origem'] ?? '';
+        if (!is_string($imagemOpcaoOrigem) || !in_array($imagemOpcaoOrigem, ['', 'arquivo', 'url'], true)) {
+            responderErro('A origem da imagem da subcategoria é inválida.', 400);
+        }
+        if ($imagemOpcaoOrigem === 'url' && !array_key_exists('imagem_url', $opcao)) {
+            responderErro('Informe a URL da imagem da subcategoria.', 400);
+        }
         $opcoes[] = [
             'id' => $opcaoId,
             'nome' => $opcaoNome,
             'descricao' => $opcaoDescricao === '' ? null : $opcaoDescricao,
             'imagem_url' => $imagemOpcaoUrl,
-            'imagem_url_informada' => array_key_exists('imagem_url', $opcao)
+            'imagem_url_informada' => array_key_exists('imagem_url', $opcao),
+            'imagem_origem' => $imagemOpcaoOrigem
         ];
     }
 }
@@ -262,9 +277,26 @@ try {
         $uploadProduto = $_FILES['imagem'] ?? null;
         $temUploadProduto = is_array($uploadProduto)
             && ($uploadProduto['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+        if (
+            ($imagemProdutoOrigem === 'url' && $temUploadProduto)
+            || ($imagemProdutoOrigem === 'arquivo' && !$temUploadProduto)
+        ) {
+            throw new InvalidArgumentException('Confira a imagem selecionada para o produto.');
+        }
         if ($temUploadProduto) {
             $arquivoNovo = menuPrepareUploadedImage($_FILES['imagem'], $produtoId);
         }
+
+        $stmt = $db->prepare('SELECT imagem_url FROM produtos WHERE id = :id');
+        $stmt->execute([':id' => $produtoId]);
+        $imagemProdutoAtual = $stmt->fetchColumn();
+        if ($imagemProdutoAtual === false) {
+            throw new OutOfBoundsException('Produto não encontrado.');
+        }
+        $imagemProdutoUrlAlterada = $imagemProdutoUrlInformada
+            && $imagemProdutoUrl !== (string) ($imagemProdutoAtual ?? '');
+        $urlSelecionadaParaProduto = $imagemProdutoOrigem === 'url'
+            || (!$arquivoNovo && $imagemProdutoUrlAlterada);
 
         $query = 'UPDATE produtos SET nome_publico = :nome_publico, descricao_publica = :descricao_publica';
         $params = [
@@ -272,23 +304,28 @@ try {
             ':descricao_publica' => $descricaoPublica,
             ':id' => $produtoId
         ];
-        if ($imagemProdutoUrlInformada) {
+        if ($arquivoNovo) {
+            $query .= ', imagem = :imagem, imagem_url = NULL';
+            $params[':imagem'] = $arquivoNovo['relativo'];
+        } elseif ($urlSelecionadaParaProduto) {
+            $query .= ', imagem = NULL, imagem_url = :imagem_url';
+            $params[':imagem_url'] = $imagemProdutoUrl === '' ? null : $imagemProdutoUrl;
+        } elseif ($imagemProdutoUrlInformada) {
             $query .= ', imagem_url = :imagem_url';
             $params[':imagem_url'] = $imagemProdutoUrl === '' ? null : $imagemProdutoUrl;
-        }
-        if ($arquivoNovo) {
-            $query .= ', imagem = :imagem';
-            $params[':imagem'] = $arquivoNovo['relativo'];
         }
         $query .= ' WHERE id = :id';
         $stmt = $db->prepare($query);
         $stmt->execute($params);
 
-        $stmt = $db->prepare('SELECT id, imagem FROM produto_cards WHERE produto_id = :produto_id');
+        $stmt = $db->prepare('SELECT id, imagem, imagem_url FROM produto_cards WHERE produto_id = :produto_id');
         $stmt->execute([':produto_id' => $produtoId]);
         $opcoesAtuais = [];
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $opcaoAtual) {
-            $opcoesAtuais[(int) $opcaoAtual['id']] = $opcaoAtual['imagem'];
+            $opcoesAtuais[(int) $opcaoAtual['id']] = [
+                'imagem' => $opcaoAtual['imagem'],
+                'imagem_url' => $opcaoAtual['imagem_url']
+            ];
         }
         $idsAtuais = array_keys($opcoesAtuais);
         $idsEnviados = [];
@@ -299,6 +336,12 @@ try {
             $uploadOpcao = $_FILES[$campoImagem] ?? null;
             $temUpload = is_array($uploadOpcao)
                 && ($uploadOpcao['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+            if (
+                ($opcao['imagem_origem'] === 'url' && $temUpload)
+                || ($opcao['imagem_origem'] === 'arquivo' && !$temUpload)
+            ) {
+                throw new InvalidArgumentException('Confira a imagem selecionada para a subcategoria.');
+            }
             if ($temUpload) {
                 $arquivoOpcao = menuPrepareUploadedImage($uploadOpcao, $produtoId);
             }
@@ -314,21 +357,34 @@ try {
                     throw new InvalidArgumentException('Uma opção foi enviada mais de uma vez.');
                 }
                 $idsEnviados[] = $opcao['id'];
-                $imagem = $arquivoOpcao ? $arquivoOpcao['relativo'] : $opcoesAtuais[$opcao['id']];
+                $opcaoAtual = $opcoesAtuais[$opcao['id']];
+                $urlOpcaoAlterada = $opcao['imagem_url_informada']
+                    && $opcao['imagem_url'] !== (string) ($opcaoAtual['imagem_url'] ?? '');
+                $urlSelecionadaParaOpcao = $opcao['imagem_origem'] === 'url'
+                    || (!$arquivoOpcao && $urlOpcaoAlterada);
+                $imagem = $opcaoAtual['imagem'];
+                $imagemUrl = $opcaoAtual['imagem_url'];
+                if ($arquivoOpcao) {
+                    $imagem = $arquivoOpcao['relativo'];
+                    $imagemUrl = null;
+                } elseif ($urlSelecionadaParaOpcao) {
+                    $imagem = null;
+                    $imagemUrl = $opcao['imagem_url'] === '' ? null : $opcao['imagem_url'];
+                } elseif ($opcao['imagem_url_informada']) {
+                    $imagemUrl = $opcao['imagem_url'] === '' ? null : $opcao['imagem_url'];
+                }
                 $query = 'UPDATE produto_cards
-                          SET nome_exibicao = :nome, descricao = :descricao, imagem = :imagem, ordem = :ordem';
+                          SET nome_exibicao = :nome, descricao = :descricao, imagem = :imagem,
+                              imagem_url = :imagem_url, ordem = :ordem';
                 $params = [
                     ':nome' => $opcao['nome'],
                     ':descricao' => $opcao['descricao'],
                     ':imagem' => $imagem,
+                    ':imagem_url' => $imagemUrl,
                     ':ordem' => $indice + 1,
                     ':id' => $opcao['id'],
                     ':produto_id' => $produtoId
                 ];
-                if ($opcao['imagem_url_informada']) {
-                    $query .= ', imagem_url = :imagem_url';
-                    $params[':imagem_url'] = $opcao['imagem_url'] === '' ? null : $opcao['imagem_url'];
-                }
                 $query .= ' WHERE id = :id AND produto_id = :produto_id';
                 $stmt = $db->prepare($query);
                 $stmt->execute($params);
@@ -342,7 +398,9 @@ try {
                     ':nome' => $opcao['nome'],
                     ':descricao' => $opcao['descricao'],
                     ':imagem' => $arquivoOpcao ? $arquivoOpcao['relativo'] : null,
-                    ':imagem_url' => $opcao['imagem_url'] === '' ? null : $opcao['imagem_url'],
+                    ':imagem_url' => $arquivoOpcao && $opcao['imagem_origem'] !== 'url'
+                        ? null
+                        : ($opcao['imagem_url'] === '' ? null : $opcao['imagem_url']),
                     ':ordem' => $indice + 1
                 ]);
             }

@@ -34,18 +34,13 @@ try {
             __DIR__ . '/../public/images/menu',
             '../public/images/menu/'
         );
-        $imagemLocalValida = menuHasLocalImage(
-            $opcao['imagem'] ?? '',
-            __DIR__ . '/../public/images/menu'
-        );
         $opcoesPorProduto[(int) $opcao['produto_id']][] = [
             'id' => (int) $opcao['id'],
             'nome_exibicao' => $opcao['nome_exibicao'],
             'descricao' => $opcao['descricao'] ?? '',
             'imagem' => $opcao['imagem'] ?? '',
             'imagem_url' => $opcao['imagem_url'] ?? '',
-            'imagem_preview' => $imagemPreview,
-            'imagem_local_valida' => $imagemLocalValida
+            'imagem_preview' => $imagemPreview
         ];
     }
 } catch (Throwable $e) {
@@ -206,16 +201,11 @@ require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/header.php';
                 <?php
                 $produtoId = (int) $produto['id'];
                 $opcoes = $opcoesPorProduto[$produtoId] ?? [];
-                $imagemRelativa = str_replace('\\', '/', (string) ($produto['imagem'] ?? ''));
                 $imagemUrl = menuResolveImageSource(
                     $produto['imagem'] ?? '',
                     $produto['imagem_url'] ?? '',
                     __DIR__ . '/../public/images/menu',
                     '../public/images/menu/'
-                );
-                $imagemLocalValida = menuHasLocalImage(
-                    $produto['imagem'] ?? '',
-                    __DIR__ . '/../public/images/menu'
                 );
                 $dadosProduto = [
                     'id' => $produtoId,
@@ -230,7 +220,6 @@ require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/header.php';
                     'imagem' => $produto['imagem'] ?? '',
                     'imagem_url' => $imagemUrl,
                     'imagem_url_original' => $produto['imagem_url'] ?? '',
-                    'imagem_local_valida' => $imagemLocalValida,
                     'opcoes' => $opcoes
                 ];
                 $jsonProduto = json_encode($dadosProduto, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
@@ -302,7 +291,7 @@ require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/header.php';
                 <input id="productImageUrl" type="url" maxlength="2048" placeholder="https://site.com/imagem.jpg">
                 <a id="productGoogleImageSearch" href="#" target="_blank" rel="noopener noreferrer">Pesquisar no Google Imagens</a>
             </div>
-            <small>Um arquivo salvo e válido tem prioridade sobre o link. Se não houver arquivo local, o cardápio usa a URL HTTPS; sem ambos, mostra a imagem padrão. Na busca, copie o endereço direto do arquivo. Use apenas imagens que tenha autorização para publicar.</small>
+            <small>A imagem adicionada por último, seja arquivo ou link, será usada no cardápio. Sem imagem, será exibida a imagem padrão. Na busca, copie o endereço direto do arquivo. Use apenas imagens que tenha autorização para publicar.</small>
         </div>
 
         <section>
@@ -310,7 +299,7 @@ require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/header.php';
                 <h3>Subcategorias do produto</h3>
                 <button type="button" class="secondary" id="addOption">Adicionar</button>
             </div>
-            <p class="section-help">Use para listar sabores ou apresentações. Cada subcategoria pode ter foto própria, mas compartilha produto e preço. Um arquivo salvo e válido tem prioridade sobre a URL HTTPS; sem arquivo, o link é usado e, sem ambos, aparece a imagem padrão. Use apenas imagens que tenha autorização para publicar.</p>
+            <p class="section-help">Use para listar sabores ou apresentações. Cada subcategoria pode ter foto própria, mas compartilha produto e preço. A imagem adicionada por último, seja arquivo ou link, será usada; sem imagem, aparece a imagem padrão. Use apenas imagens que tenha autorização para publicar.</p>
             <div id="productOptions"></div>
         </section>
 
@@ -343,7 +332,7 @@ require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/header.php';
         const row = document.createElement('div');
         row.className = 'option';
         row.dataset.id = option.id || '';
-        row.dataset.localImage = option.imagem_local_valida ? 'true' : 'false';
+        row.dataset.imageSource = '';
         row.innerHTML = `
             <div class="field">
                 <label>Nome da subcategoria</label>
@@ -382,17 +371,16 @@ require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/header.php';
         row.querySelector('.option-file').addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
+                row.dataset.imageSource = 'arquivo';
+                row.querySelector('.option-image-url').value = '';
                 row.querySelector('.option-image img').src = URL.createObjectURL(file);
             }
         });
         row.querySelector('.option-image-url').addEventListener('input', (event) => {
-            if (
-                event.target.value.trim()
-                && !row.querySelector('.option-file').files[0]
-                && row.dataset.localImage !== 'true'
-            ) {
-                row.querySelector('.option-image img').src = event.target.value.trim();
-            }
+            row.dataset.imageSource = 'url';
+            row.querySelector('.option-file').value = '';
+            row.querySelector('.option-image img').src = event.target.value.trim()
+                || '../public/images/menu/default.png';
         });
         const externalImageUrl = row.querySelector('.option-image-url');
         externalImageUrl.value = option.imagem_url || '';
@@ -403,6 +391,7 @@ require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/header.php';
         button.addEventListener('click', () => {
             currentProduct = JSON.parse(button.dataset.product);
             form.reset();
+            form.dataset.imageSource = '';
             errorBox.hidden = true;
             optionsContainer.replaceChildren();
 
@@ -432,18 +421,17 @@ require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/header.php';
     document.getElementById('productImage').addEventListener('change', (event) => {
         const file = event.target.files[0];
         if (file) {
+            form.dataset.imageSource = 'arquivo';
+            document.getElementById('productImageUrl').value = '';
             document.getElementById('productImagePreview').src = URL.createObjectURL(file);
         }
     });
 
     document.getElementById('productImageUrl').addEventListener('input', (event) => {
-        if (
-            event.target.value.trim()
-            && !document.getElementById('productImage').files[0]
-            && !currentProduct.imagem_local_valida
-        ) {
-            document.getElementById('productImagePreview').src = event.target.value.trim();
-        }
+        form.dataset.imageSource = 'url';
+        document.getElementById('productImage').value = '';
+        document.getElementById('productImagePreview').src = event.target.value.trim()
+            || '../public/images/menu/default.png';
     });
 
     document.querySelectorAll('[data-close-editor]').forEach((button) => {
@@ -509,12 +497,14 @@ require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/header.php';
         const image = document.getElementById('productImage').files[0];
         if (image) data.append('imagem', image);
         data.append('imagem_url', document.getElementById('productImageUrl').value.trim());
+        data.append('imagem_origem', form.dataset.imageSource || '');
 
         const options = Array.from(optionsContainer.querySelectorAll('.option')).map((row) => ({
                 id: row.dataset.id || null,
                 nome_exibicao: row.querySelector('.option-name').value,
                 descricao: row.querySelector('.option-description').value,
-                imagem_url: row.querySelector('.option-image-url').value.trim()
+                imagem_url: row.querySelector('.option-image-url').value.trim(),
+                imagem_origem: row.dataset.imageSource || ''
             }));
         data.append('opcoes_json', JSON.stringify(options));
         options.forEach((option, index) => {
