@@ -452,7 +452,7 @@ $erro = $_GET['erro'] ?? '';
         });
 
         try {
-            const response = await fetch('../../caixa-seguro-7xy3q9kkle/api/salvar_produto.php', {
+            const response = await fetch('../caixa-seguro-7xy3q9kkle/api/salvar_produto.php', {
                 method: 'POST',
                 body: data
             });
