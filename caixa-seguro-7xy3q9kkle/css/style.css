@@ -56,12 +56,67 @@ main {
     background: rgba(255,255,255,0.08);
 }
 
-.dashboard-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
+.dashboard-user-button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 8px 5px 12px;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.42);
+    color: #fff;
+    text-align: left;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.dashboard-user-button:hover,
+.dashboard-user-button[aria-expanded="true"] {
+    border-color: rgba(148, 163, 184, 0.42);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.dashboard-user-button.dropdown-toggle::after {
+    display: none;
+}
+
+.dashboard-user-copy {
+    display: grid;
+    gap: 2px;
+}
+
+.dashboard-user-name {
+    max-width: 150px;
+    overflow: hidden;
+    font-size: 0.8rem;
     font-weight: 700;
-    cursor: pointer;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dashboard-user-last-access {
+    color: #94a3b8;
+    font-size: 0.68rem;
+    white-space: nowrap;
+}
+
+.dashboard-avatar {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    place-items: center;
+    border-radius: 9px;
+    background: #f97316;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.dashboard-user-chevron {
+    width: 15px;
+    height: 15px;
+    color: #94a3b8;
 }
 
 .welcome-section {

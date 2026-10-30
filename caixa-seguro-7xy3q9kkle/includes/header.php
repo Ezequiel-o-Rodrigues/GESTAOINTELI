@@ -10,6 +10,7 @@ $usuarioPerfil = $_SESSION['usuario_perfil'] ?? '';
 $tituloPagina = $tituloPagina ?? 'Sistema Restaurante';
 $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
 $paginaInicio = rtrim(dirname($scriptName), '/.') === rtrim(PathConfig::url(), '/');
+$urlGerenciarCardapio = rtrim(dirname(PathConfig::url()), '/') . '/admin-seguro-7xy3q9bk/gerenciar_cardapio.php';
 
 ?>
 <!DOCTYPE html>
@@ -118,6 +119,9 @@ $paginaInicio = rtrim(dirname($scriptName), '/.') === rtrim(PathConfig::url(), '
                 <a href="<?= PathConfig::url('index.php') ?>"<?= $paginaInicio ? ' aria-current="page"' : '' ?> class="dashboard-nav-link flex items-center gap-2 rounded-lg <?= $paginaInicio ? 'border-b-2 border-orange-500 text-orange-400' : 'text-slate-300' ?> px-3 py-3 text-sm font-medium no-underline">
                     <i data-lucide="layout-dashboard" class="h-4 w-4"></i><span>Início</span>
                 </a>
+                <a href="<?= htmlspecialchars($urlGerenciarCardapio, ENT_QUOTES, 'UTF-8') ?>" class="dashboard-nav-link flex items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium text-slate-300 no-underline">
+                    <i data-lucide="book-open" class="h-4 w-4"></i><span>Cardápio</span>
+                </a>
                 <a href="<?= PathConfig::modules('caixa/') ?>" class="dashboard-nav-link flex items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium text-slate-300 no-underline">
                     <i data-lucide="wallet" class="h-4 w-4"></i><span>Caixa</span>
                 </a>
@@ -134,13 +138,14 @@ $paginaInicio = rtrim(dirname($scriptName), '/.') === rtrim(PathConfig::url(), '
 
             <?php if ($usuarioLogado): ?>
             <div class="flex items-center justify-self-end gap-3">
-                <div class="hidden text-right sm:block">
-                    <div class="text-sm font-semibold text-white"><?= htmlspecialchars($usuarioNome) ?></div>
-                    <div class="text-xs text-slate-400">Último acesso: <?= date('H:i') ?></div>
-                </div>
-                <div class="dropdown">
-                    <button type="button" class="user-avatar dashboard-avatar dropdown-toggle border-0 bg-orange-500 text-white" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Abrir menu do usuário">
-                        <?= getInitials($usuarioNome) ?>
+                <div class="dropdown dashboard-user-dropdown">
+                    <button type="button" class="dashboard-user-button dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Abrir menu de <?= htmlspecialchars($usuarioNome, ENT_QUOTES, 'UTF-8') ?>">
+                        <span class="dashboard-user-copy hidden text-right sm:block">
+                            <span class="dashboard-user-name"><?= htmlspecialchars($usuarioNome, ENT_QUOTES, 'UTF-8') ?></span>
+                            <span class="dashboard-user-last-access">Último acesso: <?= date('H:i') ?></span>
+                        </span>
+                        <span class="dashboard-avatar" aria-hidden="true"><?= getInitials($usuarioNome) ?></span>
+                        <i data-lucide="chevron-down" class="dashboard-user-chevron" aria-hidden="true"></i>
                     </button>
                     
                     <ul class="dropdown-menu dropdown-menu-end">
