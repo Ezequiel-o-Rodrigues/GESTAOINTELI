@@ -97,6 +97,28 @@
                     'imagem' => $produto['imagem'],
                     'imagem_url' => $produto['imagem_url']
                 ];
+                $ultimoIndice = array_key_last($produtosDestaque);
+                $imagemDestaque = menuResolveImageSource(
+                    $produto['imagem'] ?? '',
+                    $produto['imagem_url'] ?? '',
+                    __DIR__ . '/images/menu',
+                    'images/menu/'
+                );
+                if ($imagemDestaque === 'images/menu/default.png') {
+                    foreach ($produto['cards'] as $card) {
+                        $imagemOpcao = menuResolveImageSource(
+                            $card['imagem'] ?? '',
+                            $card['imagem_url'] ?? '',
+                            __DIR__ . '/images/menu',
+                            'images/menu/'
+                        );
+                        if ($imagemOpcao !== 'images/menu/default.png') {
+                            $produtosDestaque[$ultimoIndice]['imagem'] = $card['imagem'];
+                            $produtosDestaque[$ultimoIndice]['imagem_url'] = $card['imagem_url'];
+                            break;
+                        }
+                    }
+                }
                 if (count($produtosDestaque) === 6) {
                     break 2;
                 }
@@ -674,9 +696,14 @@
                             __DIR__ . '/images/menu',
                             'images/menu/'
                         );
+                        $imagemDestaqueAusente = $imagemDestaque === 'images/menu/default.png';
                         ?>
-                        <a class="featured-card" href="#categoria-<?= $produto['categoria_id'] ?>" aria-label="<?= htmlspecialchars($produto['nome'] . ', ' . $produto['categoria_nome'] . ', R$ ' . number_format((float) $produto['preco'], 2, ',', '.'), ENT_QUOTES, 'UTF-8') ?>">
-                            <img src="<?= htmlspecialchars($imagemDestaque, ENT_QUOTES, 'UTF-8') ?>" alt="" loading="<?= $indice < 2 ? 'eager' : 'lazy' ?>" onerror="this.onerror=null; this.src='images/menu/default.png'">
+                        <a class="featured-card<?= $imagemDestaqueAusente ? ' featured-card--without-image' : '' ?>" href="#categoria-<?= $produto['categoria_id'] ?>" aria-label="<?= htmlspecialchars($produto['nome'] . ', ' . $produto['categoria_nome'] . ', R$ ' . number_format((float) $produto['preco'], 2, ',', '.'), ENT_QUOTES, 'UTF-8') ?>">
+                            <?php if ($imagemDestaqueAusente): ?>
+                                <span class="featured-image-placeholder" aria-hidden="true"><i class="fas fa-fire"></i></span>
+                            <?php else: ?>
+                                <img src="<?= htmlspecialchars($imagemDestaque, ENT_QUOTES, 'UTF-8') ?>" alt="" loading="<?= $indice < 2 ? 'eager' : 'lazy' ?>" onerror="this.onerror=null; this.src='images/menu/default.png'">
+                            <?php endif; ?>
                             <span class="featured-shade" aria-hidden="true"></span>
                             <span class="featured-copy">
                                 <span class="featured-category"><?= htmlspecialchars($produto['categoria_nome'], ENT_QUOTES, 'UTF-8') ?></span>
@@ -751,6 +778,7 @@
                                             'images/menu/'
                                         );
                                     }
+                                    $imagemAusente = $imagemUrl === 'images/menu/default.png';
                                     ?>
                                     <?php
                                     $termosPesquisa = implode(' ', [
@@ -760,14 +788,21 @@
                                         $categoria['nome']
                                     ]);
                                     ?>
-                                    <article class="menu-item <?= $apresentacao['principal'] ? 'menu-item--principal' : 'menu-item--opcao' ?>" data-search="<?= htmlspecialchars($termosPesquisa, ENT_QUOTES, 'UTF-8') ?>">
+                                    <article class="menu-item <?= $apresentacao['principal'] ? 'menu-item--principal' : 'menu-item--opcao' ?><?= $imagemAusente ? ' menu-item--without-image' : '' ?>" data-search="<?= htmlspecialchars($termosPesquisa, ENT_QUOTES, 'UTF-8') ?>">
                                         <div class="item-img-container">
-                                            <img
-                                                src="<?= htmlspecialchars($imagemUrl, ENT_QUOTES, 'UTF-8') ?>"
-                                                alt="<?= htmlspecialchars($apresentacao['nome'], ENT_QUOTES, 'UTF-8') ?>"
-                                                class="item-img"
-                                                loading="lazy"
-                                                onerror="this.onerror=null; this.src='images/menu/default.png'">
+                                            <?php if ($imagemAusente): ?>
+                                                <div class="item-image-placeholder" role="img" aria-label="Foto de <?= htmlspecialchars($apresentacao['nome'], ENT_QUOTES, 'UTF-8') ?> não cadastrada">
+                                                    <i class="fas fa-fire" aria-hidden="true"></i>
+                                                    <span>Espetinho do Júnior</span>
+                                                </div>
+                                            <?php else: ?>
+                                                <img
+                                                    src="<?= htmlspecialchars($imagemUrl, ENT_QUOTES, 'UTF-8') ?>"
+                                                    alt="<?= htmlspecialchars($apresentacao['nome'], ENT_QUOTES, 'UTF-8') ?>"
+                                                    class="item-img"
+                                                    loading="lazy"
+                                                    onerror="this.onerror=null; this.src='images/menu/default.png'">
+                                            <?php endif; ?>
                                         </div>
                                         <div class="item-info">
                                             <span class="item-kind"><?= $apresentacao['principal'] ? 'Produto' : 'Opção · mesmo preço' ?></span>
