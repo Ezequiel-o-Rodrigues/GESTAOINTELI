@@ -60,82 +60,104 @@ if (!isset($_SESSION['csrf_produto'])) {
 
 $mensagem = $_GET['msg'] ?? '';
 $erro = $_GET['erro'] ?? '';
+$produtosPorCategoria = [];
+foreach ($produtos as $produto) {
+    $categoriaId = (int) $produto['categoria_id'];
+    if (!isset($produtosPorCategoria[$categoriaId])) {
+        $produtosPorCategoria[$categoriaId] = [
+            'nome' => $produto['categoria_nome'],
+            'produtos' => []
+        ];
+    }
+    $produtosPorCategoria[$categoriaId]['produtos'][] = $produto;
+}
+
+$tituloPagina = 'Editar cardápio público';
+require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/functions.php';
+require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Editar cardápio público</title>
+<div class="menu-admin">
     <style>
-        :root { color-scheme: light; font-family: Arial, sans-serif; color: #1f2937; background: #f3f4f6; }
-        * { box-sizing: border-box; }
-        body { margin: 0; padding: 24px; }
-        main { max-width: 1100px; margin: 0 auto; }
-        header, .toolbar, .product-main, .modal-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-        header { margin-bottom: 20px; }
-        h1 { margin: 0 0 8px; font-size: 1.7rem; }
-        h2 { margin: 0 0 16px; }
-        p { line-height: 1.5; }
-        .back, button { display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 7px; padding: 10px 14px; background: #4a6fa5; color: #fff; text-decoration: none; font: inherit; font-weight: 700; cursor: pointer; }
-        button.secondary { background: #e5e7eb; color: #1f2937; }
-        button.danger { background: #b91c1c; }
-        button:disabled { opacity: .6; cursor: wait; }
-        .help, .muted { color: #64748b; }
-        .notice, .error, .warning { margin: 14px 0; padding: 12px 14px; border-radius: 7px; }
-        .notice { background: #dcfce7; }
-        .error { background: #fee2e2; color: #991b1b; }
-        .warning { background: #fef3c7; }
-        .toolbar { margin: 20px 0 12px; }
-        input, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; }
-        #searchProducts { max-width: 380px; }
-        .product-list { display: grid; gap: 10px; }
-        .product { display: grid; grid-template-columns: 90px minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 14px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; }
-        .product img { width: 90px; height: 72px; border-radius: 7px; object-fit: cover; background: #e5e7eb; }
-        .product-main { justify-content: flex-start; }
-        .product-name { margin: 0 0 5px; font-weight: 700; }
-        .product-meta { margin: 0; color: #64748b; font-size: .92rem; }
-        .empty { padding: 28px; border-radius: 10px; background: #fff; text-align: center; }
-        dialog { width: min(680px, calc(100% - 24px)); max-height: 90vh; padding: 0; border: 0; border-radius: 12px; box-shadow: 0 20px 60px #0f172a40; }
-        dialog::backdrop { background: #0f172a80; }
-        .editor { padding: 22px; overflow-y: auto; }
-        .editor-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
-        .editor-header h2 { margin: 0 0 5px; }
-        .close-button { padding: 6px 10px; background: transparent; color: #475569; font-size: 1.4rem; }
-        .field { display: grid; gap: 6px; margin: 14px 0; }
-        .field label, .option label { font-weight: 700; }
-        .field small, .section-help { color: #64748b; }
-        .product-details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px; border-radius: 8px; background: #f8fafc; }
-        .product-details p { margin: 0; }
-        .options-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 20px; }
-        .options-heading h3 { margin: 0; }
-        .option { margin: 12px 0; padding: 14px; border: 1px solid #e2e8f0; border-radius: 8px; }
-        .option-image { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
-        .option-image img { width: 68px; height: 56px; border-radius: 6px; object-fit: cover; background: #e5e7eb; }
-        .option-search { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-        .option-search a { display: inline-flex; border-radius: 6px; padding: 9px 12px; background: #e5e7eb; color: #1f2937; text-decoration: none; font-weight: 700; }
-        .product-image-preview { width: 140px; height: 110px; border-radius: 7px; object-fit: cover; background: #e5e7eb; }
-        .modal-actions { justify-content: flex-end; margin-top: 22px; }
-        @media (max-width: 600px) {
-            body { padding: 14px; }
-            header, .toolbar { align-items: stretch; flex-direction: column; }
-            .product { grid-template-columns: 64px minmax(0, 1fr); gap: 10px; }
-            .product img { width: 64px; height: 60px; }
-            .product button { grid-column: 1 / -1; }
-            .product-details { grid-template-columns: 1fr; }
-            .option-image { align-items: stretch; flex-direction: column; }
-            .option-image img { width: 100%; height: 140px; }
+        .menu-admin { padding: 2rem 0 3rem; color: #1e293b; }
+        .menu-admin [hidden] { display: none !important; }
+        .menu-admin h1, .menu-admin h2, .menu-admin h3 { color: #0f172a; font-weight: 700; }
+        .menu-admin h1 { margin: 0 0 .5rem; font-size: 1.875rem; }
+        .menu-admin h2 { margin: 0; font-size: 1.25rem; }
+        .menu-admin p { line-height: 1.5; }
+        .menu-admin .page-heading { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 1.5rem; }
+        .menu-admin .page-icon { display: grid; width: 48px; height: 48px; flex: 0 0 auto; place-items: center; border-radius: 14px; background: #fff7ed; color: #ea580c; }
+        .menu-admin .page-description, .menu-admin .muted { margin: 0; color: #64748b; }
+        .menu-admin .notice, .menu-admin .error, .menu-admin .warning { margin: 1rem 0; padding: 14px 16px; border-radius: 10px; }
+        .menu-admin .notice { border: 1px solid #bbf7d0; background: #f0fdf4; color: #166534; }
+        .menu-admin .error { border: 1px solid #fecaca; background: #fef2f2; color: #991b1b; }
+        .menu-admin .warning { border: 1px solid #fde68a; background: #fffbeb; color: #92400e; }
+        .menu-admin .filter-panel { margin: 1.5rem 0; padding: 1.25rem; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; box-shadow: 0 1px 3px #0f172a0a; }
+        .menu-admin .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+        .menu-admin .toolbar-summary { color: #64748b; font-size: .9rem; }
+        .menu-admin .filter-controls { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(220px, 1fr); gap: 12px; }
+        .menu-admin .filter-field { position: relative; }
+        .menu-admin .filter-field i { position: absolute; top: 50%; left: 13px; color: #94a3b8; transform: translateY(-50%); pointer-events: none; }
+        .menu-admin input, .menu-admin select, .menu-admin textarea { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #1e293b; font: inherit; }
+        .menu-admin .filter-field input { padding-left: 40px; }
+        .menu-admin input:focus, .menu-admin select:focus, .menu-admin textarea:focus { border-color: #f97316; outline: 3px solid #fed7aa80; }
+        .menu-admin button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 9px 14px; border: 0; border-radius: 8px; background: #f97316; color: #fff; font: inherit; font-weight: 700; cursor: pointer; transition: background .2s ease, transform .2s ease; }
+        .menu-admin button:hover { background: #ea580c; transform: translateY(-1px); }
+        .menu-admin button.secondary { background: #e2e8f0; color: #334155; }
+        .menu-admin button.secondary:hover { background: #cbd5e1; }
+        .menu-admin button.danger { background: #dc2626; }
+        .menu-admin button.danger:hover { background: #b91c1c; }
+        .menu-admin button:disabled { opacity: .6; cursor: wait; transform: none; }
+        .menu-admin .category-section { margin: 1.75rem 0; }
+        .menu-admin .category-heading { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; }
+        .menu-admin .category-heading::before { width: 4px; height: 24px; border-radius: 4px; background: #f97316; content: ''; }
+        .menu-admin .category-count { margin-left: auto; color: #64748b; font-size: .85rem; font-weight: 500; }
+        .menu-admin .product-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 12px; }
+        .menu-admin .product { display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; align-items: center; gap: 14px; min-width: 0; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; box-shadow: 0 1px 2px #0f172a08; transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+        .menu-admin .product:hover { transform: translateY(-2px); border-color: #fed7aa; box-shadow: 0 8px 20px #0f172a0d; }
+        .menu-admin .product > img { width: 76px; height: 68px; border-radius: 9px; object-fit: cover; background: #f1f5f9; }
+        .menu-admin .product-main { min-width: 0; }
+        .menu-admin .product-name { overflow: hidden; margin: 0 0 5px; color: #0f172a; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+        .menu-admin .product-meta { margin: 0; color: #64748b; font-size: .86rem; }
+        .menu-admin .product .edit-product { min-height: 38px; padding: 8px 12px; }
+        .menu-admin .empty { padding: 28px; border: 1px dashed #cbd5e1; border-radius: 12px; background: #fff; color: #64748b; text-align: center; }
+        .menu-admin dialog { width: min(680px, calc(100% - 24px)); max-height: 90vh; padding: 0; border: 0; border-radius: 14px; box-shadow: 0 20px 60px #0f172a40; }
+        .menu-admin dialog::backdrop { background: #0f172a80; }
+        .menu-admin .editor { padding: 22px; overflow-y: auto; }
+        .menu-admin .editor-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+        .menu-admin .editor-header h2 { margin: 0 0 5px; }
+        .menu-admin .close-button { padding: 4px 10px; background: transparent; color: #475569; font-size: 1.4rem; }
+        .menu-admin .field { display: grid; gap: 6px; margin: 14px 0; }
+        .menu-admin .field label, .menu-admin .option label { font-weight: 700; }
+        .menu-admin .field small, .menu-admin .section-help { color: #64748b; }
+        .menu-admin .product-details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px; border-radius: 8px; background: #f8fafc; }
+        .menu-admin .product-details p { margin: 0; }
+        .menu-admin .options-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 20px; }
+        .menu-admin .options-heading h3 { margin: 0; }
+        .menu-admin .option { margin: 12px 0; padding: 14px; border: 1px solid #e2e8f0; border-radius: 8px; }
+        .menu-admin .option-image { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+        .menu-admin .option-image img { width: 68px; height: 56px; border-radius: 6px; object-fit: cover; background: #e5e7eb; }
+        .menu-admin .option-search { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .menu-admin .option-search a { display: inline-flex; border-radius: 6px; padding: 9px 12px; background: #e2e8f0; color: #334155; text-decoration: none; font-weight: 700; }
+        .menu-admin .product-image-preview { width: 140px; height: 110px; border-radius: 7px; object-fit: cover; background: #e5e7eb; }
+        .menu-admin .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+        @media (max-width: 640px) {
+            .menu-admin { padding: 1.25rem 0 2rem; }
+            .menu-admin .filter-controls { grid-template-columns: 1fr; }
+            .menu-admin .toolbar { align-items: flex-start; flex-direction: column; }
+            .menu-admin .product { grid-template-columns: 60px minmax(0, 1fr); gap: 10px; }
+            .menu-admin .product > img { width: 60px; height: 58px; }
+            .menu-admin .product .edit-product { grid-column: 1 / -1; }
+            .menu-admin .product-details { grid-template-columns: 1fr; }
+            .menu-admin .option-image { align-items: stretch; flex-direction: column; }
+            .menu-admin .option-image img { width: 100%; height: 140px; }
         }
     </style>
-</head>
-<body>
-<main>
-    <header>
+    <header class="page-heading">
+        <span class="page-icon" aria-hidden="true"><i data-lucide="utensils"></i></span>
         <div>
             <h1>Cardápio público</h1>
-            <p class="help">Edite a apresentação dos produtos ativos. Nome, preço e categoria oficiais vêm do sistema de caixa.</p>
+            <p class="page-description">Edite a apresentação dos produtos ativos. Nome, preço e categoria oficiais vêm do sistema de caixa.</p>
         </div>
-        <a class="back" href="../caixa-seguro-7xy3q9kkle/">Voltar ao sistema</a>
     </header>
 
     <p class="warning">
@@ -149,14 +171,38 @@ $erro = $_GET['erro'] ?? '';
         <p class="error"><?= htmlspecialchars($erro, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
 
-    <div class="toolbar">
-        <h2>Produtos que aparecem no cardápio (<?= count($produtos) ?>)</h2>
-        <input id="searchProducts" type="search" placeholder="Buscar produto..." aria-label="Buscar produto">
-    </div>
+    <section class="filter-panel" aria-label="Filtros de produtos">
+        <div class="toolbar">
+            <h2>Produtos que aparecem no cardápio</h2>
+            <span class="toolbar-summary" id="visibleProductCount"><?= count($produtos) ?> <?= count($produtos) === 1 ? 'produto' : 'produtos' ?></span>
+        </div>
+        <div class="filter-controls">
+            <label class="filter-field">
+                <i data-lucide="search" aria-hidden="true"></i>
+                <input id="searchProducts" type="search" placeholder="Buscar por nome, descrição ou categoria..." aria-label="Buscar produtos">
+            </label>
+            <label>
+                <span class="visually-hidden">Filtrar por categoria</span>
+                <select id="categoryFilter" aria-label="Filtrar por categoria">
+                    <option value="">Todas as categorias</option>
+                    <?php foreach ($produtosPorCategoria as $categoriaId => $categoria): ?>
+                        <option value="<?= (int) $categoriaId ?>"><?= htmlspecialchars($categoria['nome'], ENT_QUOTES, 'UTF-8') ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+        </div>
+    </section>
 
     <?php if ($produtos): ?>
-        <div class="product-list" id="productList">
-            <?php foreach ($produtos as $produto): ?>
+        <div id="productList">
+            <?php foreach ($produtosPorCategoria as $categoriaId => $categoria): ?>
+                <section class="category-section" data-category-section="<?= (int) $categoriaId ?>">
+                    <h2 class="category-heading">
+                        <?= htmlspecialchars($categoria['nome'], ENT_QUOTES, 'UTF-8') ?>
+                        <span class="category-count"><?= count($categoria['produtos']) ?> <?= count($categoria['produtos']) === 1 ? 'produto' : 'produtos' ?></span>
+                    </h2>
+                    <div class="product-list">
+                    <?php foreach ($categoria['produtos'] as $produto): ?>
                 <?php
                 $produtoId = (int) $produto['id'];
                 $opcoes = $opcoesPorProduto[$produtoId] ?? [];
@@ -190,12 +236,13 @@ $erro = $_GET['erro'] ?? '';
                 $jsonProduto = json_encode($dadosProduto, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
                 ?>
                 <?php
-                $termoPesquisa = $produto['nome'] . ' ' . $produto['categoria_nome'];
+                $termoPesquisa = $produto['nome'] . ' ' . ($produto['nome_publico'] ?? '') . ' '
+                    . ($produto['descricao_publica'] ?? '') . ' ' . $produto['categoria_nome'];
                 $termoPesquisa = function_exists('mb_strtolower')
                     ? mb_strtolower($termoPesquisa, 'UTF-8')
                     : strtolower($termoPesquisa);
                 ?>
-                <article class="product" data-search="<?= htmlspecialchars($termoPesquisa, ENT_QUOTES, 'UTF-8') ?>">
+                <article class="product" data-search="<?= htmlspecialchars($termoPesquisa, ENT_QUOTES, 'UTF-8') ?>" data-category="<?= (int) $categoriaId ?>">
                     <img src="<?= htmlspecialchars($imagemUrl, ENT_QUOTES, 'UTF-8') ?>" alt="" loading="lazy" onerror="this.onerror=null; this.src='../public/images/menu/default.png'">
                     <div class="product-main">
                         <div>
@@ -212,14 +259,15 @@ $erro = $_GET['erro'] ?? '';
                     </div>
                     <button type="button" class="edit-product" data-product="<?= htmlspecialchars($jsonProduto, ENT_QUOTES, 'UTF-8') ?>">Editar</button>
                 </article>
+                    <?php endforeach; ?>
+                    </div>
+                </section>
             <?php endforeach; ?>
         </div>
-        <p class="empty" id="noSearchResults" hidden>Nenhum produto corresponde à busca.</p>
+        <p class="empty" id="noSearchResults" hidden>Nenhum produto corresponde aos filtros selecionados.</p>
     <?php else: ?>
         <p class="empty">Não há produtos ativos para exibir. Ative os produtos no estoque para que apareçam aqui e no cardápio público.</p>
     <?php endif; ?>
-</main>
-
 <dialog id="productEditor" aria-labelledby="editorTitle">
     <form class="editor" id="productEditorForm">
         <div class="editor-header">
@@ -273,6 +321,7 @@ $erro = $_GET['erro'] ?? '';
         </div>
     </form>
 </dialog>
+</div>
 
 <script>
 (() => {
@@ -403,17 +452,41 @@ $erro = $_GET['erro'] ?? '';
 
     document.getElementById('addOption').addEventListener('click', () => addOption());
 
-    document.getElementById('searchProducts').addEventListener('input', (event) => {
-        const query = event.target.value.trim().toLocaleLowerCase('pt-BR');
+    const searchProducts = document.getElementById('searchProducts');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const visibleProductCount = document.getElementById('visibleProductCount');
+    const normalizeSearch = (value) => String(value)
+        .toLocaleLowerCase('pt-BR')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+
+    function filterProducts() {
+        const query = normalizeSearch(searchProducts.value.trim());
+        const selectedCategory = categoryFilter.value;
         let visibleCount = 0;
-        document.querySelectorAll('.product').forEach((product) => {
-            const matches = product.dataset.search.includes(query);
-            product.hidden = !matches;
-            if (matches) visibleCount++;
+        document.querySelectorAll('.category-section').forEach((section) => {
+            let categoryCount = 0;
+            section.querySelectorAll('.product').forEach((product) => {
+                const matchesSearch = normalizeSearch(product.dataset.search).includes(query);
+                const matchesCategory = !selectedCategory || product.dataset.category === selectedCategory;
+                const matches = matchesSearch && matchesCategory;
+                product.hidden = !matches;
+                if (matches) {
+                    visibleCount++;
+                    categoryCount++;
+                }
+            });
+            section.hidden = categoryCount === 0;
+            const countLabel = section.querySelector('.category-count');
+            countLabel.textContent = `${categoryCount} ${categoryCount === 1 ? 'produto' : 'produtos'}`;
         });
+        visibleProductCount.textContent = `${visibleCount} ${visibleCount === 1 ? 'produto' : 'produtos'}`;
         const noResults = document.getElementById('noSearchResults');
         if (noResults) noResults.hidden = visibleCount > 0;
-    });
+    }
+
+    searchProducts.addEventListener('input', filterProducts);
+    categoryFilter.addEventListener('change', filterProducts);
 
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -473,5 +546,4 @@ $erro = $_GET['erro'] ?? '';
     });
 })();
 </script>
-</body>
-</html>
+<?php require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/footer.php'; ?>
