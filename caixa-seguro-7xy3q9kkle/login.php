@@ -10,7 +10,7 @@ if (isset($_SESSION['usuario_logado']) && $_SESSION['usuario_logado'] === true) 
         $destinoCardapioPermitido = $destinoCardapio && $perfilSessao === 'admin';
         header('Location: ' . ($destinoCardapioPermitido
             ? '../admin-seguro-7xy3q9bk/gerenciar_cardapio.php'
-            : '/'));
+            : 'index.php'));
         exit;
     }
 
@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         header('Location: ' . ($destinoCardapio
                             ? '../admin-seguro-7xy3q9bk/gerenciar_cardapio.php'
-                            : '/'));
+                            : 'index.php'));
                         exit;
                     }
                 } else {

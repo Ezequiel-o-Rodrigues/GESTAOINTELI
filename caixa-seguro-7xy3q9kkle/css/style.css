@@ -26,7 +26,8 @@ main {
 }
 
 .container {
-    max-width: 1200px;
+    width: 100%;
+    max-width: none;
     margin: 0 auto;
     padding: 0 20px;
 }
@@ -39,7 +40,7 @@ main {
 
 .dashboard-header-inner {
     display: grid;
-    width: min(100%, 1440px);
+    width: 100%;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
     gap: 24px;
@@ -309,7 +310,7 @@ main {
 
 .dashboard-footer-inner {
     display: flex;
-    width: min(100%, 1440px);
+    width: 100%;
     align-items: center;
     justify-content: space-between;
     gap: 8px 20px;
@@ -616,7 +617,7 @@ main {
 }
 
 .dashboard-page {
-    max-width: 1440px;
+    width: 100%;
     margin: 0 auto;
     padding: 36px 24px 56px;
 }
@@ -727,7 +728,8 @@ main {
 }
 
 .page-layout main > .container-fluid {
-    width: min(100% - 32px, 1440px);
+    width: calc(100% - 32px);
+    max-width: none;
     margin-right: auto;
     margin-left: auto;
     padding-right: 0;

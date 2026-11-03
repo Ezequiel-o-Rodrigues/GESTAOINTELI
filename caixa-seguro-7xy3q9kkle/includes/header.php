@@ -51,7 +51,7 @@ $urlGerenciarCardapio = rtrim(dirname(PathConfig::url()), '/') . '/admin-seguro-
                 font-weight: 500;
             }
             .main-nav a:hover { text-decoration: underline; }
-            .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+            .container { width: 100%; max-width: none; margin: 0 auto; padding: 20px; }
             .footer { background: #343a40; color: white; padding: 1rem; text-align: center; margin-top: 2rem; }
             
             /* Estilos para a bolinha do usuário */

@@ -43,7 +43,8 @@ body {
 }
 
 .container {
-    max-width: 1200px;
+    width: 100%;
+    max-width: none;
     margin: 0 auto;
     padding: 20px;
 }

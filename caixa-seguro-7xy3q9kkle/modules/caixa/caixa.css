@@ -19,7 +19,7 @@ body.cash-register .mini-header {
 
 .mini-header-inner {
     display: flex;
-    width: min(100%, 1440px);
+    width: 100%;
     min-height: 68px;
     align-items: center;
     justify-content: space-between;
@@ -138,7 +138,7 @@ body.cash-register .btn:disabled {
 }
 
 body.cash-register .conteudo-principal {
-    width: min(100%, 1440px);
+    width: 100%;
     height: auto;
     min-height: 0;
     gap: 14px;
