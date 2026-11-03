@@ -344,7 +344,8 @@ if (window.CaixaSystemAlreadyLoaded) {
                 <span class="item-quantidade">${item.quantidade}x</span>
                 <span class="item-subtotal">R$ ${parseFloat(item.subtotal).toFixed(2)}</span>
             </div>
-            <button class="btn-remover-item" data-item-id="${item.id}" type="button" aria-label="Remover item">
+            <button class="btn-remover-item" data-item-id="${item.id}" type="button" aria-label="Remover ${this.escapeHtml(nomeProduto)}">
+                <i class="bi bi-trash" aria-hidden="true"></i>
                 Remover
             </button>
         `;
@@ -367,7 +368,9 @@ if (window.CaixaSystemAlreadyLoaded) {
             <span class="item-nome">${this.escapeHtml(nomeProduto)}</span>
             <span class="item-quantidade" data-item-id="${item.id}" title="Clique para alterar quantidade">${item.quantidade}</span>
             <span class="item-preco">R$ ${preco}</span>
-            <button class="btn-remover" data-item-id="${item.id}" type="button" aria-label="Remover item">Remover</button>
+            <button class="btn-remover" data-item-id="${item.id}" type="button" aria-label="Remover ${this.escapeHtml(nomeProduto)}">
+                <i class="bi bi-trash" aria-hidden="true"></i> Remover
+            </button>
         `;
         
         const btnRemover = div.querySelector('.btn-remover');
@@ -396,7 +399,7 @@ if (window.CaixaSystemAlreadyLoaded) {
         
         const qtd = parseInt(novaQuantidade);
         if (isNaN(qtd) || qtd <= 0) {
-            alert('Quantidade inválida');
+            this.mostrarToast('Informe uma quantidade válida.', 'warning');
             return;
         }
         
@@ -548,6 +551,7 @@ if (window.CaixaSystemAlreadyLoaded) {
                     
                     // Mostrar modal
                     modal.style.display = 'flex';
+                    modal.setAttribute('aria-hidden', 'false');
                 }
                 
                 // Limpar comanda
@@ -744,27 +748,42 @@ if (window.CaixaSystemAlreadyLoaded) {
         
         const toast = document.createElement('div');
         toast.className = `toast toast-${tipo}`;
-        toast.textContent = mensagem;
+        toast.setAttribute('role', tipo === 'error' ? 'alert' : 'status');
+        toast.setAttribute('aria-live', tipo === 'error' ? 'assertive' : 'polite');
+        const toastIcons = {
+            success: 'bi-check-circle',
+            error: 'bi-exclamation-triangle',
+            warning: 'bi-exclamation-circle',
+            info: 'bi-info-circle'
+        };
+        const icon = document.createElement('i');
+        icon.className = `bi ${toastIcons[tipo] || toastIcons.info}`;
+        icon.setAttribute('aria-hidden', 'true');
+        toast.append(icon, document.createTextNode(mensagem));
         
         // Estilos do toast
         const cores = {
-            success: '#27ae60',
-            error: '#e74c3c',
-            warning: '#f39c12',
-            info: '#3498db'
+            success: '#047857',
+            error: '#b91c1c',
+            warning: '#b45309',
+            info: '#0369a1'
         };
         
         toast.style.cssText = `
             background: ${cores[tipo] || cores.info};
             color: white;
-            padding: 12px 16px;
-            border-radius: 6px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 13px 16px;
+            border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            font-size: 14px;
-            max-width: 300px;
-            word-wrap: break-word;
+            font-size: 0.9rem;
+            max-width: min(420px, calc(100vw - 32px));
+            line-height: 1.45;
             animation: slideIn 0.3s ease;
         `;
+        icon.style.cssText = 'flex: 0 0 auto; margin-top: 2px;';
         
         toastContainer.appendChild(toast);
         
@@ -818,6 +837,7 @@ if (window.CaixaSystemAlreadyLoaded) {
         console.log('Mostrando modal...');
         // Mostrar modal
         modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
         
         // Armazenar comprovante_id para uso nos botões
         modal.dataset.comprovanteId = comprovanteId;
@@ -829,6 +849,7 @@ if (window.CaixaSystemAlreadyLoaded) {
         const modal = document.getElementById('modalComprovante');
         if (modal) {
             modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
         }
     }
     

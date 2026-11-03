@@ -236,10 +236,10 @@ require_once '../../includes/header.php';
     <div class="card mb-4">
         <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2 py-3">
             <div>
-                <h2 class="h5 mb-1">Usuários do sistema</h2>
+                <h2 class="h5 mb-1"><i class="bi bi-people" aria-hidden="true"></i> Usuários do sistema</h2>
                 <p class="mb-0 text-muted small">Gerencie contas e atribua um dos três perfis de acesso.</p>
             </div>
-            <button type="button" class="btn btn-primary" id="btn-novo-usuario">Novo usuário</button>
+            <button type="button" class="btn btn-primary" id="btn-novo-usuario"><i class="bi bi-person-plus" aria-hidden="true"></i> Novo usuário</button>
         </div>
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
@@ -279,18 +279,18 @@ require_once '../../includes/header.php';
                                     data-email="<?= htmlspecialchars($usuario['email'], ENT_QUOTES, 'UTF-8') ?>"
                                     data-perfil="<?= htmlspecialchars($usuario['perfil'], ENT_QUOTES, 'UTF-8') ?>"
                                     data-ativo="<?= (int) $usuario['ativo'] ?>"
-                                >Editar</button>
+                                ><i class="bi bi-pencil" aria-hidden="true"></i> Editar</button>
                                 <form method="POST" class="d-inline" onsubmit="return confirm('Alterar o status deste usuário?')">
                                     <input type="hidden" name="action" value="toggle_user">
                                     <input type="hidden" name="id" value="<?= (int) $usuario['id'] ?>">
                                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_admin_user'], ENT_QUOTES, 'UTF-8') ?>">
-                                    <button type="submit" class="btn btn-sm btn-outline-warning"><?= $usuario['ativo'] ? 'Desativar' : 'Ativar' ?></button>
+                                    <button type="submit" class="btn btn-sm btn-outline-warning"><i class="bi <?= $usuario['ativo'] ? 'bi-person-slash' : 'bi-person-check' ?>" aria-hidden="true"></i> <?= $usuario['ativo'] ? 'Desativar' : 'Ativar' ?></button>
                                 </form>
                                 <form method="POST" class="d-inline" onsubmit="return confirm('Remover este usuário? A ação não pode ser desfeita.')">
                                     <input type="hidden" name="action" value="delete_user">
                                     <input type="hidden" name="id" value="<?= (int) $usuario['id'] ?>">
                                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_admin_user'], ENT_QUOTES, 'UTF-8') ?>">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Remover</button>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash" aria-hidden="true"></i> Remover</button>
                                 </form>
                             </div>
                         </td>
@@ -306,7 +306,7 @@ require_once '../../includes/header.php';
             <div class="modal-content">
                 <div class="modal-header">
                     <div>
-                        <h2 class="modal-title fs-5" id="userModalTitle">Novo usuário</h2>
+                        <h2 class="modal-title fs-5" id="userModalTitle"><i class="bi bi-person-plus" aria-hidden="true"></i> Novo usuário</h2>
                         <p class="mb-0 mt-1 small text-muted">Defina os dados de acesso e o perfil da conta.</p>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
@@ -344,8 +344,8 @@ require_once '../../includes/header.php';
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Salvar usuário</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><i class="bi bi-x-circle" aria-hidden="true"></i> Cancelar</button>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle" aria-hidden="true"></i> Salvar usuário</button>
                     </div>
                 </form>
             </div>
@@ -355,7 +355,7 @@ require_once '../../includes/header.php';
     <!-- Card: Configurações -->
     <div class="card mb-4">
         <div class="card-body">
-            <h5 class="card-title">Configurações do Sistema</h5>
+            <h5 class="card-title"><i class="bi bi-sliders" aria-hidden="true"></i> Configurações do sistema</h5>
             <form method="POST" class="row g-3">
                 <input type="hidden" name="action" value="save_commission">
                 <div class="col-md-4">
@@ -368,7 +368,7 @@ require_once '../../includes/header.php';
                     <div class="form-text">Taxa atual: <?= number_format($current_commission * 100, 1) ?>%</div>
                 </div>
                 <div class="col-12">
-                    <button type="submit" class="btn btn-primary">Salvar Configuração</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle" aria-hidden="true"></i> Salvar configuração</button>
                 </div>
             </form>
         </div>
@@ -378,7 +378,7 @@ require_once '../../includes/header.php';
     <div class="card mb-4">
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="card-title mb-0">Desempenho dos Garçons</h5>
+                <h5 class="card-title mb-0"><i class="bi bi-graph-up" aria-hidden="true"></i> Desempenho dos garçons</h5>
                 <div class="d-flex gap-2 align-items-center flex-wrap">
                     <div class="btn-group btn-group-sm" role="group">
                         <button type="button" class="btn btn-outline-secondary" onclick="setPeriodoRapido('hoje')">Hoje</button>
@@ -387,7 +387,7 @@ require_once '../../includes/header.php';
                     </div>
                     <input type="date" id="data-inicio-garcons" class="form-control form-control-sm" value="<?= date('Y-m-d') ?>" style="width: 150px;">
                     <input type="date" id="data-fim-garcons" class="form-control form-control-sm" value="<?= date('Y-m-d') ?>" style="width: 150px;">
-                    <button class="btn btn-primary btn-sm" onclick="atualizarDesempenhoGarcons()">Atualizar</button>
+                    <button class="btn btn-primary btn-sm" onclick="atualizarDesempenhoGarcons()"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Atualizar</button>
                 </div>
             </div>
             <div id="garcons-performance">
@@ -400,8 +400,8 @@ require_once '../../includes/header.php';
     <div class="card mb-4">
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="card-title mb-0">Gerenciar Garçons</h5>
-                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#garcomModal" onclick="novoGarcom()">Novo Garçom</button>
+                <h5 class="card-title mb-0"><i class="bi bi-person-lines-fill" aria-hidden="true"></i> Gerenciar garçons</h5>
+                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#garcomModal" onclick="novoGarcom()"><i class="bi bi-person-plus" aria-hidden="true"></i> Novo garçom</button>
             </div>
             <div class="table-responsive">
                 <table class="table table-sm">
@@ -431,16 +431,16 @@ require_once '../../includes/header.php';
                             </td>
                             <td><?= date('d/m/Y', strtotime($garcom['created_at'])) ?></td>
                             <td>
-                                <button class="btn btn-sm btn-outline-primary" onclick="editarGarcom(<?= $garcom['id'] ?>, '<?= htmlspecialchars($garcom['nome']) ?>', '<?= htmlspecialchars($garcom['codigo'] ?? '') ?>', <?= $garcom['ativo'] ?>)" data-bs-toggle="modal" data-bs-target="#garcomModal">Editar</button>
+                                <button class="btn btn-sm btn-outline-primary" onclick="editarGarcom(<?= $garcom['id'] ?>, '<?= htmlspecialchars($garcom['nome']) ?>', '<?= htmlspecialchars($garcom['codigo'] ?? '') ?>', <?= $garcom['ativo'] ?>)" data-bs-toggle="modal" data-bs-target="#garcomModal"><i class="bi bi-pencil" aria-hidden="true"></i> Editar</button>
                                 <form method="POST" class="d-inline" onsubmit="return confirm('Alternar status?')">
                                     <input type="hidden" name="action" value="toggle_garcom">
                                     <input type="hidden" name="id" value="<?= $garcom['id'] ?>">
-                                    <button type="submit" class="btn btn-sm btn-outline-warning">Alternar status</button>
+                                    <button type="submit" class="btn btn-sm btn-outline-warning"><i class="bi bi-arrow-left-right" aria-hidden="true"></i> Alternar status</button>
                                 </form>
                                 <form method="POST" class="d-inline" onsubmit="return confirm('Remover este garçom da lista? O histórico será preservado.')">
                                     <input type="hidden" name="action" value="remove_garcom">
                                     <input type="hidden" name="id" value="<?= $garcom['id'] ?>">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Remover</button>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash" aria-hidden="true"></i> Remover</button>
                                 </form>
                             </td>
                         </tr>
@@ -457,7 +457,7 @@ require_once '../../includes/header.php';
         <div class="modal-content">
             <div class="modal-header">
                 <div>
-                    <h5 class="modal-title" id="garcomModalTitle">Novo Garçom</h5>
+                    <h5 class="modal-title" id="garcomModalTitle"><i class="bi bi-person-badge" aria-hidden="true"></i> Novo Garçom</h5>
                     <p class="mb-0 mt-1 small text-muted">Cadastre os dados usados para identificar o atendimento.</p>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
@@ -483,8 +483,8 @@ require_once '../../includes/header.php';
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><i class="bi bi-x-circle" aria-hidden="true"></i> Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle" aria-hidden="true"></i> Salvar garçom</button>
                 </div>
             </form>
         </div>
@@ -602,18 +602,26 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function novoGarcom() {
-    document.getElementById('garcomModalTitle').textContent = 'Novo Garçom';
+    definirTituloGarcom('Novo garçom', 'bi-person-plus');
     document.getElementById('garcomForm').reset();
     document.getElementById('garcom_id').value = '';
     document.getElementById('garcom_ativo').checked = true;
 }
 
 function editarGarcom(id, nome, codigo, ativo) {
-    document.getElementById('garcomModalTitle').textContent = 'Editar Garçom';
+    definirTituloGarcom('Editar garçom', 'bi-pencil-square');
     document.getElementById('garcom_id').value = id;
     document.getElementById('garcom_nome').value = nome;
     document.getElementById('garcom_codigo').value = codigo;
     document.getElementById('garcom_ativo').checked = ativo == 1;
+}
+
+function definirTituloGarcom(texto, icone) {
+    const titulo = document.getElementById('garcomModalTitle');
+    const elementoIcone = document.createElement('i');
+    elementoIcone.className = `bi ${icone}`;
+    elementoIcone.setAttribute('aria-hidden', 'true');
+    titulo.replaceChildren(elementoIcone, document.createTextNode(` ${texto}`));
 }
 </script>
 

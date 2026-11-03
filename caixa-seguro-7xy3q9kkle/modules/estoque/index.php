@@ -107,11 +107,11 @@ $stockReactCategories = array_map(static function ($categoria) {
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <h1 class="h3">
-                    <i class="fas fa-boxes text-primary"></i> Gestão de Estoque
+                    <i class="bi bi-box-seam text-primary" aria-hidden="true"></i> Gestão de estoque
                 </h1>
                 <div>
-                    <button class="btn btn-primary" onclick="estoqueManager.showProductModal()">Novo Produto</button>
-                    <button class="btn btn-info ms-2" onclick="abrirModalInventario()">Inventário físico</button>
+                    <button class="btn btn-primary" onclick="estoqueManager.showProductModal()"><i class="bi bi-plus-circle" aria-hidden="true"></i> Novo produto</button>
+                    <button class="btn btn-outline-primary ms-2" onclick="abrirModalInventario()"><i class="bi bi-clipboard-check" aria-hidden="true"></i> Inventário físico</button>
                 </div>
             </div>
         </div>
@@ -124,13 +124,13 @@ $stockReactCategories = array_map(static function ($categoria) {
             <div class="alert alert-warning" id="alertaEstoque">
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="alert-heading mb-0">
-                        <i class="fas fa-exclamation-triangle"></i> 
+                        <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> 
                         Alertas de Estoque (<?= $alertas_count ?>)
                     </h5>
                     <div>
                         <span class="badge bg-danger"><?= $alertas_count ?></span>
                         <button class="btn btn-sm btn-dark ms-2" onclick="toggleAlertaEstoque()" id="btnToggleAlerta" title="Minimizar alertas">
-                            Recolher
+                            <i class="bi bi-chevron-up" aria-hidden="true"></i> Recolher
                         </button>
                     </div>
                 </div>
@@ -138,13 +138,13 @@ $stockReactCategories = array_map(static function ($categoria) {
                 <div class="row" id="conteudoAlerta">
                     <?php if (!empty($alertas_criticos)): ?>
                     <div class="col-md-6">
-                        <h6><i class="fas fa-skull-crossbones text-danger"></i> Crítico</h6>
+                        <h6><i class="bi bi-exclamation-octagon text-danger" aria-hidden="true"></i> Crítico</h6>
                         <?php foreach($alertas_criticos as $produto): ?>
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span><?= htmlspecialchars($produto['nome']) ?></span>
                             <div>
                                 <span class="badge bg-danger">Zerado</span>
-                                <button class="btn btn-sm btn-outline-primary ms-2" onclick="estoqueManager.showEntryModal(<?= $produto['id'] ?>)">Registrar entrada</button>
+                                <button class="btn btn-sm btn-outline-primary ms-2" onclick="estoqueManager.showEntryModal(<?= $produto['id'] ?>)"><i class="bi bi-box-arrow-in-down" aria-hidden="true"></i> Registrar entrada</button>
                             </div>
                         </div>
                         <?php endforeach; ?>
@@ -153,13 +153,13 @@ $stockReactCategories = array_map(static function ($categoria) {
                     
                     <?php if (!empty($alertas_aviso)): ?>
                     <div class="col-md-6">
-                        <h6><i class="fas fa-exclamation-triangle text-warning"></i> Atenção</h6>
+                        <h6><i class="bi bi-exclamation-triangle text-warning" aria-hidden="true"></i> Atenção</h6>
                         <?php foreach($alertas_aviso as $produto): ?>
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span><?= htmlspecialchars($produto['nome']) ?></span>
                             <div>
                                 <span class="badge bg-warning">Baixo</span>
-                                <button class="btn btn-sm btn-outline-primary ms-2" onclick="estoqueManager.showEntryModal(<?= $produto['id'] ?>)">Registrar entrada</button>
+                                <button class="btn btn-sm btn-outline-primary ms-2" onclick="estoqueManager.showEntryModal(<?= $produto['id'] ?>)"><i class="bi bi-box-arrow-in-down" aria-hidden="true"></i> Registrar entrada</button>
                             </div>
                         </div>
                         <?php endforeach; ?>
@@ -187,7 +187,7 @@ $stockReactCategories = array_map(static function ($categoria) {
         <div class="modal-content">
             <div class="modal-header">
                 <div>
-                    <h5 class="modal-title" id="entryModalLabel">Registrar entrada</h5>
+                    <h5 class="modal-title" id="entryModalLabel"><i class="bi bi-box-arrow-in-down" aria-hidden="true"></i> Registrar entrada</h5>
                     <p class="mb-0 mt-1 small text-muted">Atualize o estoque com os dados do recebimento.</p>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
@@ -219,8 +219,9 @@ $stockReactCategories = array_map(static function ($categoria) {
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><i class="bi bi-x-circle" aria-hidden="true"></i> Cancelar</button>
                 <button type="button" class="btn btn-primary" onclick="estoqueManager.registerEntry()">
+                    <i class="bi bi-box-arrow-in-down" aria-hidden="true"></i>
                     Registrar Entrada
                 </button>
             </div>
@@ -234,7 +235,7 @@ $stockReactCategories = array_map(static function ($categoria) {
         <div class="modal-content">
             <div class="modal-header">
                 <div>
-                    <h5 class="modal-title" id="productModalLabel">Novo produto</h5>
+                    <h5 class="modal-title" id="productModalLabel"><i class="bi bi-box-seam" aria-hidden="true"></i> Novo produto</h5>
                     <p class="mb-0 mt-1 small text-muted">Cadastre os dados do item e sua apresentação no cardápio.</p>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
@@ -242,7 +243,7 @@ $stockReactCategories = array_map(static function ($categoria) {
             <div class="modal-body">
                 <form id="productForm" data-csrf-token="<?= htmlspecialchars($_SESSION['csrf_produto'], ENT_QUOTES, 'UTF-8') ?>">
                     <input type="hidden" id="productId">
-                    <h6 class="stock-form-section-title">Dados do produto</h6>
+                    <h6 class="stock-form-section-title"><i class="bi bi-card-list" aria-hidden="true"></i> Dados do produto</h6>
                     <div class="mb-3">
                         <label for="productName" class="form-label">Nome</label>
                         <input type="text" id="productName" class="form-control" required>
@@ -270,7 +271,7 @@ $stockReactCategories = array_map(static function ($categoria) {
                         <input type="number" id="productInitialStock" class="form-control" min="0" step="1" value="0">
                     </div>
                     <hr>
-                    <h6 class="stock-form-section-title">Apresentação no cardápio público</h6>
+                    <h6 class="stock-form-section-title"><i class="bi bi-card-image" aria-hidden="true"></i> Apresentação no cardápio público</h6>
                     <p class="form-text">Nome e descrição são informativos. Preço e categoria continuam vindo do produto no caixa. Se houver opções relacionadas, elas aparecem no lugar do card principal.</p>
                     <div class="mb-3">
                         <label for="productPublicName" class="form-label">Nome público (opcional)</label>
@@ -288,14 +289,16 @@ $stockReactCategories = array_map(static function ($categoria) {
                         <label class="form-label">Opções relacionadas (informativas; compartilham produto, preço e estoque)</label>
                         <div id="productOptions"></div>
                         <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="estoqueManager.addProductOption()">
+                            <i class="bi bi-plus-circle" aria-hidden="true"></i>
                             Adicionar opção
                         </button>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><i class="bi bi-x-circle" aria-hidden="true"></i> Cancelar</button>
                 <button type="button" class="btn btn-primary" onclick="estoqueManager.saveProduct()">
+                    <i class="bi bi-check2-circle" aria-hidden="true"></i>
                     Salvar Produto
                 </button>
             </div>
@@ -309,7 +312,7 @@ $stockReactCategories = array_map(static function ($categoria) {
         <div class="modal-content">
             <div class="modal-header">
                 <div>
-                    <h5 class="modal-title" id="inventarioModalLabel">Registrar inventário físico</h5>
+                    <h5 class="modal-title" id="inventarioModalLabel"><i class="bi bi-clipboard-check" aria-hidden="true"></i> Registrar inventário físico</h5>
                     <p class="mb-0 mt-1 small text-muted">Compare a contagem física com o saldo registrado.</p>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
@@ -399,9 +402,11 @@ $stockReactCategories = array_map(static function ($categoria) {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle" aria-hidden="true"></i>
                         Cancelar
                     </button>
                     <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check2-circle" aria-hidden="true"></i>
                         Registrar inventário
                     </button>
                 </div>
@@ -409,9 +414,6 @@ $stockReactCategories = array_map(static function ($categoria) {
         </div>
     </div>
 </div>
-
-<!-- FontAwesome -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -597,11 +599,19 @@ function toggleAlertaEstoque() {
     
     if (conteudo.style.display === 'none') {
         conteudo.style.display = 'block';
-        btn.textContent = 'Recolher';
+        btn.replaceChildren(
+            Object.assign(document.createElement('i'), { className: 'bi bi-chevron-up' }),
+            document.createTextNode(' Recolher')
+        );
+        btn.querySelector('i').setAttribute('aria-hidden', 'true');
         btn.title = 'Minimizar alertas';
     } else {
         conteudo.style.display = 'none';
-        btn.textContent = 'Expandir';
+        btn.replaceChildren(
+            Object.assign(document.createElement('i'), { className: 'bi bi-chevron-down' }),
+            document.createTextNode(' Expandir')
+        );
+        btn.querySelector('i').setAttribute('aria-hidden', 'true');
         btn.title = 'Expandir alertas';
     }
 }

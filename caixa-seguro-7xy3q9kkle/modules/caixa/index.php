@@ -78,6 +78,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Caixa - Sistema Restaurante</title>
     <link rel="stylesheet" href="<?= htmlspecialchars(PathConfig::url('css/style.css'), ENT_QUOTES, 'UTF-8') ?>">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
         * {
             margin: 0;
@@ -544,7 +545,7 @@ try {
             <span class="comanda-numero" id="numero-comanda">
                 <?php echo $comanda_aberta ? '#' . $comanda_aberta['id'] : '--'; ?>
             </span>
-            <button class="btn btn-primary" onclick="novaComanda()">Nova</button>
+            <button class="btn btn-primary" onclick="novaComanda()"><i class="bi bi-plus-circle" aria-hidden="true"></i> Nova comanda</button>
         </div>
         
         <div class="itens-comanda-horizontal" id="itens-comanda">
@@ -559,7 +560,7 @@ try {
             </span>
             <button class="btn btn-success" onclick="finalizarComanda()" id="btn-finalizar" 
                     <?php echo (!$comanda_aberta) ? 'disabled' : ''; ?>>
-                Finalizar venda
+                <i class="bi bi-check2-circle" aria-hidden="true"></i> Finalizar venda
             </button>
         </div>
     </div>
@@ -567,13 +568,19 @@ try {
     <!-- CONTEÚDO PRINCIPAL - MAIS ESPAÇO PARA PRODUTOS -->
     <div class="conteudo-principal">
         <div class="filtros-container">
-            <input type="text" id="search-produto" class="search-input" placeholder="Buscar produto...">
-            <select id="filtro-categoria" class="categoria-filtro">
+            <label class="cash-filter-search" for="search-produto">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input type="text" id="search-produto" class="search-input" placeholder="Buscar produto...">
+            </label>
+            <label class="cash-filter-category" for="filtro-categoria">
+                <i class="bi bi-funnel" aria-hidden="true"></i>
+                <select id="filtro-categoria" class="categoria-filtro">
                 <option value="">Todas categorias</option>
                 <?php foreach($categorias as $categoria): ?>
                 <option value="<?= $categoria['id'] ?>"><?= htmlspecialchars($categoria['nome']) ?></option>
                 <?php endforeach; ?>
-            </select>
+                </select>
+            </label>
             <span id="contador-produtos" class="contador-produtos"></span>
         </div>
 
@@ -606,6 +613,7 @@ try {
                     <div class="produto-estoque <?= $produto['estoque_atual'] <= $produto['estoque_minimo'] ? 'estoque-baixo' : '' ?>">
                         Est: <?= $produto['estoque_atual'] ?>
                     </div>
+                    <span class="cash-product-add"><i class="bi bi-cart-plus" aria-hidden="true"></i> Adicionar</span>
                 </div>
                 <?php endforeach; ?>
             </div>
@@ -632,16 +640,16 @@ try {
     </script>   
 
         <!-- === MODAL SELECÃO GARÇOM DINÂMICO - BUSCA DO BD === -->
-    <div id="modalGarcom" class="cash-modal" role="dialog" aria-modal="true" aria-labelledby="modalGarcomTitle" style="display: none;">
+    <div id="modalGarcom" class="cash-modal" role="dialog" aria-modal="true" aria-labelledby="modalGarcomTitle" aria-hidden="true" style="display: none;">
         <div class="cash-modal-card">
-            <h2 id="modalGarcomTitle" class="cash-modal-title">Selecione o garçom</h2>
+            <h2 id="modalGarcomTitle" class="cash-modal-title"><i class="bi bi-person-badge" aria-hidden="true"></i> Selecione o garçom</h2>
             <p class="cash-modal-description">Escolha quem será responsável pelo atendimento.</p>
             
             <!-- Grid de Botões dos Garçons - DINÂMICO -->
             <div id="gridGarcons" class="cash-waiter-grid">
                 <?php if (!empty($garcons)): ?>
                     <?php foreach($garcons as $garcom): ?>
-                    <button class="btn-garcom" data-garcom="<?= $garcom['codigo'] ?>" onclick="selecionarGarcom('<?= $garcom['codigo'] ?>', '<?= addslashes($garcom['nome']) ?>')">
+                    <button type="button" class="btn-garcom" data-garcom="<?= htmlspecialchars((string) $garcom['codigo'], ENT_QUOTES, 'UTF-8') ?>" data-garcom-name="<?= htmlspecialchars($garcom['nome'], ENT_QUOTES, 'UTF-8') ?>" aria-pressed="false">
                         <span class="cash-waiter-code"><?= htmlspecialchars($garcom['codigo']) ?></span>
                         <span class="cash-waiter-name"><?= htmlspecialchars($garcom['nome']) ?></span>
                     </button>
@@ -649,7 +657,8 @@ try {
                 <?php else: ?>
                     <div class="cash-waiter-empty">
                         <p>Nenhum garçom cadastrado</p>
-                        <button class="cash-button cash-button--secondary" onclick="fecharModalGarcom()">
+                        <button type="button" class="cash-button cash-button--secondary" onclick="fecharModalGarcom()">
+                            <i class="bi bi-x-circle" aria-hidden="true"></i>
                             Fechar
                         </button>
                     </div>
@@ -657,7 +666,8 @@ try {
             </div>
 
             <div class="cash-modal-actions">
-                <button class="cash-button cash-button--secondary" onclick="fecharModalGarcom()">
+                <button type="button" class="cash-button cash-button--secondary" onclick="fecharModalGarcom()">
+                    <i class="bi bi-x-circle" aria-hidden="true"></i>
                     Cancelar
                 </button>
             </div>
@@ -665,17 +675,19 @@ try {
     </div>
 
     <!-- MODAL COMPROVANTE -->
-    <div id="modalComprovante" class="cash-modal" role="dialog" aria-modal="true" aria-labelledby="modalComprovanteTitle" style="display: none;">
+    <div id="modalComprovante" class="cash-modal" role="dialog" aria-modal="true" aria-labelledby="modalComprovanteTitle" aria-hidden="true" style="display: none;">
         <div class="cash-modal-card cash-modal-card--receipt">
-            <h2 id="modalComprovanteTitle" class="cash-modal-title">Venda finalizada</h2>
+            <h2 id="modalComprovanteTitle" class="cash-modal-title"><i class="bi bi-check-circle" aria-hidden="true"></i> Venda finalizada</h2>
             <p id="totalVenda" class="cash-modal-total">Total: <strong>R$ 0,00</strong></p>
             <p class="cash-modal-description">Deseja imprimir o comprovante?</p>
             
             <div class="cash-modal-actions cash-modal-actions--center">
                 <button id="btnImprimirComprovante" class="cash-button cash-button--primary">
+                    <i class="bi bi-printer" aria-hidden="true"></i>
                     Imprimir
                 </button>
                 <button id="btnPularImpressao" class="cash-button cash-button--secondary">
+                    <i class="bi bi-check2" aria-hidden="true"></i>
                     Não imprimir
                 </button>
             </div>
@@ -688,20 +700,31 @@ try {
         let garcomSelecionado = null;
         let garcomNomeSelecionado = null;
 
+        function notificarCaixa(mensagem, tipo) {
+            if (window.caixaSystem && typeof window.caixaSystem.mostrarToast === 'function') {
+                window.caixaSystem.mostrarToast(mensagem, tipo);
+                return;
+            }
+            alert(mensagem);
+        }
+
         function abrirModalGarcom() {
-            document.getElementById('modalGarcom').style.display = 'flex';
+            const modal = document.getElementById('modalGarcom');
+            modal.style.display = 'flex';
+            modal.setAttribute('aria-hidden', 'false');
             garcomSelecionado = null;
             garcomNomeSelecionado = null;
             // Resetar seleção visual
             document.querySelectorAll('.btn-garcom').forEach(btn => {
-                btn.style.background = '#f8f9fa';
-                btn.style.borderColor = '#ddd';
-                btn.style.color = 'inherit';
+                btn.classList.remove('is-selected');
+                btn.setAttribute('aria-pressed', 'false');
             });
         }
 
         function fecharModalGarcom() {
-            document.getElementById('modalGarcom').style.display = 'none';
+            const modal = document.getElementById('modalGarcom');
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
             garcomSelecionado = null;
             garcomNomeSelecionado = null;
         }
@@ -712,15 +735,9 @@ try {
             
             // Efeito visual de seleção
             document.querySelectorAll('.btn-garcom').forEach(btn => {
-                if (btn.getAttribute('data-garcom') === codigo) {
-                    btn.style.background = '#3498db';
-                    btn.style.borderColor = '#2980b9';
-                    btn.style.color = 'white';
-                } else {
-                    btn.style.background = '#f8f9fa';
-                    btn.style.borderColor = '#ddd';
-                    btn.style.color = 'inherit';
-                }
+                const selecionado = btn.getAttribute('data-garcom') === codigo;
+                btn.classList.toggle('is-selected', selecionado);
+                btn.setAttribute('aria-pressed', String(selecionado));
             });
             
             // Criar comanda automaticamente após 300ms (feedback visual)
@@ -729,9 +746,16 @@ try {
             }, 300);
         }
 
+        document.getElementById('gridGarcons').addEventListener('click', function(event) {
+            const button = event.target.closest('.btn-garcom');
+            if (button) {
+                selecionarGarcom(button.dataset.garcom, button.dataset.garcomName);
+            }
+        });
+
         async function criarComandaComGarcom() {
             if (!garcomSelecionado) {
-                alert('Selecione um garçom primeiro!');
+                notificarCaixa('Selecione um garçom para continuar.', 'warning');
                 return;
             }
             
@@ -768,7 +792,7 @@ try {
                 }
             } catch (error) {
                 console.error('Erro ao criar comanda:', error);
-                alert('Erro ao criar comanda: ' + error.message);
+                notificarCaixa('Erro ao criar comanda: ' + error.message, 'error');
                 fecharModalGarcom();
             }
         }
@@ -815,7 +839,7 @@ try {
             if (window.caixaSystem && typeof window.caixaSystem.finalizarComanda === 'function') {
                 window.caixaSystem.finalizarComanda();
             } else {
-                alert('Sistema ainda não está pronto. Tente novamente em alguns momentos.');
+                notificarCaixa('O caixa ainda está carregando. Tente novamente em alguns instantes.', 'warning');
             }
         }
 

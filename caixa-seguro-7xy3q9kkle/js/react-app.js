@@ -138,7 +138,10 @@
                         h('span', { className: 'dashboard-brand-subtitle' }, 'Atendimento e comandas')
                     )
                 ),
-                h('a', { className: 'cash-home-link', href: root.dataset.homeUrl }, 'Voltar ao início')
+                h('a', { className: 'cash-home-link', href: root.dataset.homeUrl },
+                    h('i', { className: 'bi bi-house', 'aria-hidden': 'true' }),
+                    ' Voltar ao início'
+                )
             )
         );
     }
@@ -211,22 +214,22 @@
                             type: 'button',
                             className: 'btn btn-sm btn-outline-primary',
                             onClick: () => window.estoqueManager.editProduct(Number(product.id))
-                        }, 'Editar'),
+                        }, h('i', { className: 'bi bi-pencil', 'aria-hidden': 'true' }), 'Editar'),
                         h('button', {
                             type: 'button',
                             className: 'btn btn-sm btn-outline-success',
                             onClick: () => window.estoqueManager.showEntryModal(Number(product.id))
-                        }, 'Registrar entrada'),
+                        }, h('i', { className: 'bi bi-box-arrow-in-down', 'aria-hidden': 'true' }), 'Registrar entrada'),
                         h('button', {
                             type: 'button',
                             className: 'btn btn-sm btn-outline-info',
                             onClick: () => window.abrirModalInventarioProduto(Number(product.id))
-                        }, 'Inventário'),
+                        }, h('i', { className: 'bi bi-clipboard-check', 'aria-hidden': 'true' }), 'Inventário'),
                         h('button', {
                             type: 'button',
                             className: 'btn btn-sm btn-outline-warning',
                             onClick: () => window.estoqueManager.toggleProduct(Number(product.id), 0)
-                        }, 'Desativar')
+                        }, h('i', { className: 'bi bi-slash-circle', 'aria-hidden': 'true' }), 'Desativar')
                     )
                 )
             );
@@ -235,7 +238,8 @@
         return h(React.Fragment, null,
             h('section', { className: 'card mb-4', 'aria-labelledby': 'stock-filter-title' },
                 h('div', { className: 'card-header' },
-                    h('h2', { id: 'stock-filter-title', className: 'h5 mb-0' }, 'Filtrar produtos')
+                    h('h2', { id: 'stock-filter-title', className: 'h5 mb-0' },
+                        h('i', { className: 'bi bi-funnel', 'aria-hidden': 'true' }), ' Filtrar produtos')
                 ),
                 h('div', { className: 'card-body' },
                     h('div', { className: 'stock-filter-grid' },
@@ -281,7 +285,8 @@
             ),
             h('section', { className: 'card', 'aria-labelledby': 'stock-list-title' },
                 h('div', { className: 'card-header d-flex align-items-center justify-content-between gap-2' },
-                    h('h2', { id: 'stock-list-title', className: 'h5 mb-0' }, 'Produtos'),
+                    h('h2', { id: 'stock-list-title', className: 'h5 mb-0' },
+                        h('i', { className: 'bi bi-box-seam', 'aria-hidden': 'true' }), ' Produtos'),
                     h('span', { className: 'text-muted small', 'aria-live': 'polite' },
                         `${filteredProducts.length} de ${products.length} produtos`
                     )

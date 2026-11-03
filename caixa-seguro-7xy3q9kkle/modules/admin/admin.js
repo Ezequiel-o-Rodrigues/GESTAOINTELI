@@ -26,7 +26,11 @@ function openUserModal(user) {
     }
 
     userSenha.required = !userId.value;
-    document.getElementById('userModalTitle').textContent = user ? 'Editar usuário' : 'Novo usuário';
+    const title = document.getElementById('userModalTitle');
+    const icon = document.createElement('i');
+    icon.className = `bi ${user ? 'bi-pencil-square' : 'bi-person-plus'}`;
+    icon.setAttribute('aria-hidden', 'true');
+    title.replaceChildren(icon, document.createTextNode(` ${user ? 'Editar usuário' : 'Novo usuário'}`));
     const modal = new bootstrap.Modal(modalEl);
     modal.show();
 }

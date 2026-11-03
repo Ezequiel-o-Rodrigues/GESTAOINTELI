@@ -103,10 +103,10 @@ class EstoqueManager {
             }
 
             if (productId) {
-                title.textContent = 'Editar Produto';
+                this.setModalTitle(title, 'Editar produto', 'bi-pencil-square');
                 this.loadProductData(productId);
             } else {
-                title.textContent = 'Novo Produto';
+                this.setModalTitle(title, 'Novo produto', 'bi-box-seam');
             }
             
             const modalElement = document.getElementById('productModal');
@@ -217,6 +217,13 @@ class EstoqueManager {
         }
     }
 
+    setModalTitle(element, text, iconClass) {
+        const icon = document.createElement('i');
+        icon.className = `bi ${iconClass}`;
+        icon.setAttribute('aria-hidden', 'true');
+        element.replaceChildren(icon, document.createTextNode(` ${text}`));
+    }
+
     async saveProduct() {
         this.log('Salvando produto...');
         
@@ -263,7 +270,7 @@ class EstoqueManager {
             }
 
             const originalText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span> Salvando...';
             button.disabled = true;
 
             const url = `${this.apiUrl}/salvar_produto.php`;
@@ -293,7 +300,7 @@ class EstoqueManager {
         } finally {
             const button = document.querySelector('#productModal .btn-primary');
             if (button) {
-                button.innerHTML = 'Salvar Produto';
+                button.innerHTML = '<i class="bi bi-check2-circle" aria-hidden="true"></i> Salvar Produto';
                 button.disabled = false;
             }
         }
@@ -339,7 +346,10 @@ class EstoqueManager {
         const removeButton = document.createElement('button');
         removeButton.type = 'button';
         removeButton.className = 'btn btn-outline-danger btn-sm mt-2';
-        removeButton.textContent = 'Remover opção';
+        const removeIcon = document.createElement('i');
+        removeIcon.className = 'bi bi-trash';
+        removeIcon.setAttribute('aria-hidden', 'true');
+        removeButton.append(removeIcon, document.createTextNode(' Remover opção'));
         removeButton.addEventListener('click', () => row.remove());
 
         row.append(nameLabel, descriptionLabel, removeButton);
@@ -395,7 +405,7 @@ class EstoqueManager {
             }
 
             const originalText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span> Registrando...';
             button.disabled = true;
 
             const response = await fetch(`${this.apiUrl}/registrar_entrada.php`, {
@@ -425,7 +435,7 @@ class EstoqueManager {
         } finally {
             const button = document.querySelector('#entryModal .btn-primary');
             if (button) {
-                button.innerHTML = 'Registrar Entrada';
+                button.innerHTML = '<i class="bi bi-box-arrow-in-down" aria-hidden="true"></i> Registrar Entrada';
                 button.disabled = false;
             }
         }
@@ -485,14 +495,53 @@ class EstoqueManager {
 
     showAlert(message, type = 'info') {
         this.log(`Exibindo alerta: ${message}`, { type });
-        
-        if (type === 'error') {
-            alert(message);
-        } else if (type === 'success') {
-            alert(message);
-        } else {
-            alert(message);
+
+        const appearance = {
+            success: { icon: 'bi-check-circle', title: 'Concluído' },
+            error: { icon: 'bi-exclamation-triangle', title: 'Não foi possível concluir' },
+            warning: { icon: 'bi-exclamation-circle', title: 'Atenção' },
+            info: { icon: 'bi-info-circle', title: 'Informação' }
+        }[type] || { icon: 'bi-info-circle', title: 'Informação' };
+
+        let container = document.getElementById('app-toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'app-toast-container';
+            container.className = 'app-toast-container';
+            container.setAttribute('aria-label', 'Notificações');
+            document.body.append(container);
         }
+
+        const toast = document.createElement('div');
+        toast.className = `app-toast app-toast--${type}`;
+        toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+        toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
+
+        const icon = document.createElement('i');
+        icon.className = `bi ${appearance.icon} app-toast-icon`;
+        icon.setAttribute('aria-hidden', 'true');
+
+        const content = document.createElement('div');
+        content.className = 'app-toast-content';
+        const title = document.createElement('strong');
+        title.textContent = appearance.title;
+        const text = document.createElement('span');
+        text.textContent = message;
+        content.append(title, text);
+
+        const closeButton = document.createElement('button');
+        closeButton.type = 'button';
+        closeButton.className = 'app-toast-close';
+        closeButton.setAttribute('aria-label', 'Fechar notificação');
+        const closeIcon = document.createElement('i');
+        closeIcon.className = 'bi bi-x-lg';
+        closeIcon.setAttribute('aria-hidden', 'true');
+        closeButton.append(closeIcon);
+        closeButton.addEventListener('click', () => toast.remove());
+
+        toast.append(icon, content, closeButton);
+        container.append(toast);
+        window.setTimeout(() => toast.remove(), type === 'error' ? 8000 : 5000);
     }
 
     showInventoryModal(productId = null) {

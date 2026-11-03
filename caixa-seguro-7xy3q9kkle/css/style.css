@@ -770,6 +770,21 @@ main {
     transform: translateY(-1px);
 }
 
+.page-layout .btn .bi {
+    margin-right: 6px;
+}
+
+.page-layout h1 .bi,
+.page-layout h2 .bi,
+.page-layout .card-title .bi {
+    margin-right: 7px;
+    color: #ea580c;
+}
+
+.page-layout .stock-row-actions .bi {
+    margin-right: 4px;
+}
+
 .page-layout .btn-primary {
     border-color: #ea580c;
     background: #ea580c;
@@ -797,6 +812,12 @@ main {
 .page-layout .modal-title {
     color: #0f172a;
     font-weight: 700;
+}
+
+.page-layout .modal-title .bi,
+.page-layout .modal-body .stock-form-section-title .bi {
+    margin-right: 7px;
+    color: #ea580c;
 }
 
 .page-layout .modal-body {
@@ -873,6 +894,93 @@ main {
     font-size: 0.8rem;
     font-weight: 700;
     letter-spacing: 0.025em;
+}
+
+.app-toast-container {
+    position: fixed;
+    z-index: 2000;
+    top: 20px;
+    right: 20px;
+    display: grid;
+    width: min(420px, calc(100vw - 32px));
+    gap: 10px;
+}
+
+.app-toast {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #0284c7;
+    border-radius: 12px;
+    background: #fff;
+    color: #334155;
+    box-shadow: 0 14px 36px rgba(15, 23, 42, 0.15);
+    animation: app-toast-enter 0.18s ease-out;
+}
+
+.app-toast--success { border-left-color: #059669; }
+.app-toast--error { border-left-color: #dc2626; }
+.app-toast--warning { border-left-color: #d97706; }
+
+.app-toast-icon {
+    margin-top: 2px;
+    color: #0284c7;
+    font-size: 1.15rem;
+}
+
+.app-toast--success .app-toast-icon { color: #059669; }
+.app-toast--error .app-toast-icon { color: #dc2626; }
+.app-toast--warning .app-toast-icon { color: #d97706; }
+
+.app-toast-content {
+    display: grid;
+    flex: 1;
+    gap: 3px;
+    line-height: 1.45;
+}
+
+.app-toast-content strong {
+    color: #0f172a;
+    font-size: 0.9rem;
+}
+
+.app-toast-content span {
+    color: #475569;
+    font-size: 0.88rem;
+}
+
+.app-toast-close {
+    display: grid;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+    place-items: center;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.app-toast-close:hover,
+.app-toast-close:focus-visible {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+@keyframes app-toast-enter {
+    from { transform: translateY(-5px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@media (max-width: 560px) {
+    .app-toast-container {
+        top: 12px;
+        right: 12px;
+        width: calc(100vw - 24px);
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
