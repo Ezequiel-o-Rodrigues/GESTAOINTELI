@@ -1,25 +1,69 @@
 <?php
+require_once __DIR__ . '/../../includes/permissions.php';
+requireModuleAccess('admin');
+
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 
 $database = new Database();
 $db = $database->getConnection();
 
+if (!isset($_SESSION['csrf_admin_user'])) {
+    $_SESSION['csrf_admin_user'] = bin2hex(random_bytes(32));
+}
+
+function ensureAnotherActiveAdmin(PDO $db, $userId) {
+    $stmt = $db->prepare("SELECT COUNT(*) FROM usuarios WHERE perfil = 'admin' AND ativo = 1 AND id <> ?");
+    $stmt->execute([(int) $userId]);
+
+    if ((int) $stmt->fetchColumn() < 1) {
+        throw new Exception('O sistema precisa manter pelo menos um administrador ativo.');
+    }
+}
+
 $action = $_POST['action'] ?? '';
 
 // Handlers: salvar/atualizar usuário, alternar ativo, deletar
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
+        if (in_array($action, ['save_user', 'toggle_user', 'delete_user'], true)
+            && !hash_equals($_SESSION['csrf_admin_user'], (string) ($_POST['csrf_token'] ?? ''))) {
+            throw new Exception('A sessão do formulário expirou. Atualize a página e tente novamente.');
+        }
+
         if ($action === 'save_user') {
             $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
-            $nome = $_POST['nome'] ?? '';
-            $email = $_POST['email'] ?? '';
-            $perfil = $_POST['perfil'] ?? 'usuario';
+            $nome = trim((string) ($_POST['nome'] ?? ''));
+            $email = trim((string) ($_POST['email'] ?? ''));
+            $perfil = strtolower(trim((string) ($_POST['perfil'] ?? 'caixa')));
             $ativo = isset($_POST['ativo']) ? 1 : 0;
-            $senha = $_POST['senha'] ?? '';
+            $senha = (string) ($_POST['senha'] ?? '');
+
+            if ($nome === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                throw new Exception('Informe um nome e um e-mail válido.');
+            }
+            if (!in_array($perfil, ['admin', 'caixa', 'estoque'], true)) {
+                throw new Exception('Perfil inválido. Use administrador, caixa ou estoque.');
+            }
+            if (($id === null || $senha !== '') && strlen($senha) < 8) {
+                throw new Exception('A senha deve ter pelo menos 8 caracteres.');
+            }
 
             if ($id) {
-                // update
+                $stmt = $db->prepare('SELECT perfil, ativo FROM usuarios WHERE id = ?');
+                $stmt->execute([$id]);
+                $usuarioAtual = $stmt->fetch(PDO::FETCH_ASSOC);
+                if (!$usuarioAtual) {
+                    throw new Exception('Usuário não encontrado.');
+                }
+                if ((int) $id === (int) ($_SESSION['usuario_id'] ?? 0) && ($perfil !== 'admin' || !$ativo)) {
+                    throw new Exception('Não é possível remover seu próprio acesso de administrador.');
+                }
+                if ($usuarioAtual['perfil'] === 'admin' && (int) $usuarioAtual['ativo'] === 1
+                    && ($perfil !== 'admin' || !$ativo)) {
+                    ensureAnotherActiveAdmin($db, $id);
+                }
+
                 if (!empty($senha)) {
                     $hash = password_hash($senha, PASSWORD_DEFAULT);
                     $stmt = $db->prepare("UPDATE usuarios SET nome = ?, email = ?, perfil = ?, ativo = ?, senha = ? WHERE id = ?");
@@ -30,7 +74,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 $_SESSION['sucesso'] = 'Usuário atualizado com sucesso.';
             } else {
-                // insert
                 if (empty($senha)) throw new Exception('Senha é obrigatória para novo usuário.');
                 $hash = password_hash($senha, PASSWORD_DEFAULT);
                 $stmt = $db->prepare("INSERT INTO usuarios (nome, email, senha, perfil, ativo, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
@@ -42,6 +85,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($action === 'toggle_user') {
             $id = (int)($_POST['id'] ?? 0);
+            if ($id === (int) ($_SESSION['usuario_id'] ?? 0)) {
+                throw new Exception('Não é possível desativar sua própria conta.');
+            }
+            $stmt = $db->prepare('SELECT perfil, ativo FROM usuarios WHERE id = ?');
+            $stmt->execute([$id]);
+            $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$usuario) {
+                throw new Exception('Usuário não encontrado.');
+            }
+            if ($usuario['perfil'] === 'admin' && (int) $usuario['ativo'] === 1) {
+                ensureAnotherActiveAdmin($db, $id);
+            }
             $stmt = $db->prepare('UPDATE usuarios SET ativo = NOT ativo WHERE id = ?');
             $stmt->execute([$id]);
             $_SESSION['sucesso'] = 'Status do usuário alterado.';
@@ -50,6 +105,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($action === 'delete_user') {
             $id = (int)($_POST['id'] ?? 0);
+            if ($id === (int) ($_SESSION['usuario_id'] ?? 0)) {
+                throw new Exception('Não é possível remover sua própria conta.');
+            }
+            $stmt = $db->prepare('SELECT perfil, ativo FROM usuarios WHERE id = ?');
+            $stmt->execute([$id]);
+            $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$usuario) {
+                throw new Exception('Usuário não encontrado.');
+            }
+            if ($usuario['perfil'] === 'admin' && (int) $usuario['ativo'] === 1) {
+                ensureAnotherActiveAdmin($db, $id);
+            }
             $stmt = $db->prepare('DELETE FROM usuarios WHERE id = ?');
             $stmt->execute([$id]);
             $_SESSION['sucesso'] = 'Usuário removido.';
@@ -147,7 +214,7 @@ require_once '../../includes/header.php';
 
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3">⚙️ Administração</h1>
+        <h1 class="h3">Administração</h1>
     </div>
 
     <?php if (isset($_SESSION['sucesso'])): ?>
@@ -166,10 +233,125 @@ require_once '../../includes/header.php';
         <?php unset($_SESSION['erro']); ?>
     <?php endif; ?>
 
+    <div class="card mb-4">
+        <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2 py-3">
+            <div>
+                <h2 class="h5 mb-1">Usuários do sistema</h2>
+                <p class="mb-0 text-muted small">Gerencie contas e atribua um dos três perfis de acesso.</p>
+            </div>
+            <button type="button" class="btn btn-primary" id="btn-novo-usuario">Novo usuário</button>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>E-mail</th>
+                        <th>Perfil</th>
+                        <th>Status</th>
+                        <th>Criado em</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($usuarios)): ?>
+                    <tr><td colspan="6" class="py-4 text-center text-muted">Nenhum usuário cadastrado.</td></tr>
+                    <?php endif; ?>
+                    <?php foreach ($usuarios as $usuario): ?>
+                    <tr>
+                        <td><?= htmlspecialchars($usuario['nome'], ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= htmlspecialchars($usuario['email'], ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= htmlspecialchars([
+                            'admin' => 'Administrador',
+                            'caixa' => 'Caixa',
+                            'estoque' => 'Estoque'
+                        ][strtolower(trim((string) $usuario['perfil']))] ?? 'Perfil inválido', ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><span class="badge bg-<?= $usuario['ativo'] ? 'success' : 'secondary' ?>"><?= $usuario['ativo'] ? 'Ativo' : 'Inativo' ?></span></td>
+                        <td><?= !empty($usuario['created_at']) ? date('d/m/Y', strtotime($usuario['created_at'])) : '-' ?></td>
+                        <td>
+                            <div class="d-flex flex-wrap gap-1">
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-outline-primary"
+                                    data-edit-user
+                                    data-id="<?= (int) $usuario['id'] ?>"
+                                    data-nome="<?= htmlspecialchars($usuario['nome'], ENT_QUOTES, 'UTF-8') ?>"
+                                    data-email="<?= htmlspecialchars($usuario['email'], ENT_QUOTES, 'UTF-8') ?>"
+                                    data-perfil="<?= htmlspecialchars($usuario['perfil'], ENT_QUOTES, 'UTF-8') ?>"
+                                    data-ativo="<?= (int) $usuario['ativo'] ?>"
+                                >Editar</button>
+                                <form method="POST" class="d-inline" onsubmit="return confirm('Alterar o status deste usuário?')">
+                                    <input type="hidden" name="action" value="toggle_user">
+                                    <input type="hidden" name="id" value="<?= (int) $usuario['id'] ?>">
+                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_admin_user'], ENT_QUOTES, 'UTF-8') ?>">
+                                    <button type="submit" class="btn btn-sm btn-outline-warning"><?= $usuario['ativo'] ? 'Desativar' : 'Ativar' ?></button>
+                                </form>
+                                <form method="POST" class="d-inline" onsubmit="return confirm('Remover este usuário? A ação não pode ser desfeita.')">
+                                    <input type="hidden" name="action" value="delete_user">
+                                    <input type="hidden" name="id" value="<?= (int) $usuario['id'] ?>">
+                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_admin_user'], ENT_QUOTES, 'UTF-8') ?>">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Remover</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalTitle" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5" id="userModalTitle">Novo usuário</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <form method="POST">
+                    <div class="modal-body">
+                        <input type="hidden" name="action" value="save_user">
+                        <input type="hidden" name="id" id="userId">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_admin_user'], ENT_QUOTES, 'UTF-8') ?>">
+                        <div class="mb-3">
+                            <label for="userNome" class="form-label">Nome</label>
+                            <input type="text" class="form-control" id="userNome" name="nome" required maxlength="120">
+                        </div>
+                        <div class="mb-3">
+                            <label for="userEmail" class="form-label">E-mail</label>
+                            <input type="email" class="form-control" id="userEmail" name="email" required maxlength="190">
+                        </div>
+                        <div class="mb-3">
+                            <label for="userPerfil" class="form-label">Perfil</label>
+                            <select class="form-select" id="userPerfil" name="perfil" required>
+                                <option value="admin">Administrador</option>
+                                <option value="caixa">Caixa</option>
+                                <option value="estoque">Estoque</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="userSenha" class="form-label">Senha</label>
+                            <input type="password" class="form-control" id="userSenha" name="senha" minlength="8" autocomplete="new-password">
+                            <div class="form-text">Obrigatória para novos usuários; deixe em branco para manter a senha atual.</div>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="userAtivo" name="ativo" checked>
+                            <label class="form-check-label" for="userAtivo">Conta ativa</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar usuário</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Card: Configurações -->
     <div class="card mb-4">
         <div class="card-body">
-            <h5 class="card-title">⚙️ Configurações do Sistema</h5>
+            <h5 class="card-title">Configurações do Sistema</h5>
             <form method="POST" class="row g-3">
                 <input type="hidden" name="action" value="save_commission">
                 <div class="col-md-4">
@@ -192,7 +374,7 @@ require_once '../../includes/header.php';
     <div class="card mb-4">
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="card-title mb-0">📈 Desempenho dos Garçons</h5>
+                <h5 class="card-title mb-0">Desempenho dos Garçons</h5>
                 <div class="d-flex gap-2 align-items-center flex-wrap">
                     <div class="btn-group btn-group-sm" role="group">
                         <button type="button" class="btn btn-outline-secondary" onclick="setPeriodoRapido('hoje')">Hoje</button>
@@ -214,7 +396,7 @@ require_once '../../includes/header.php';
     <div class="card mb-4">
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="card-title mb-0">👨‍🍳 Gerenciar Garçons</h5>
+                <h5 class="card-title mb-0">Gerenciar Garçons</h5>
                 <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#garcomModal" onclick="novoGarcom()">Novo Garçom</button>
             </div>
             <div class="table-responsive">
@@ -249,7 +431,7 @@ require_once '../../includes/header.php';
                                 <form method="POST" class="d-inline" onsubmit="return confirm('Alternar status?')">
                                     <input type="hidden" name="action" value="toggle_garcom">
                                     <input type="hidden" name="id" value="<?= $garcom['id'] ?>">
-                                    <button type="submit" class="btn btn-sm btn-outline-warning">Toggle</button>
+                                    <button type="submit" class="btn btn-sm btn-outline-warning">Alternar status</button>
                                 </form>
                                 <form method="POST" class="d-inline" onsubmit="return confirm('Remover este garçom da lista? O histórico será preservado.')">
                                     <input type="hidden" name="action" value="remove_garcom">

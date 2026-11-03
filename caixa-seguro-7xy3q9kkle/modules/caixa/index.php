@@ -1,14 +1,11 @@
 <?php
 require_once __DIR__ . '/../../config/paths.php';
+require_once __DIR__ . '/../../includes/permissions.php';
+requireModuleAccess('caixa');
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
 $base_path = rtrim(PathConfig::url(), '/') . '/';
-
-// Iniciar a sessão se necessário
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
 
 // INICIALIZAR VARIÁVEIS COM VALORES PADRÃO
 $comanda_aberta = null;
@@ -214,22 +211,25 @@ try {
             color: #27ae60;
         }
 
-        .btn-remover {
+        .btn-remover,
+        .btn-remover-item {
             background: #e74c3c;
             color: white;
             border: none;
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
+            border-radius: 6px;
+            min-width: 64px;
+            height: 30px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
+            font-weight: 600;
             cursor: pointer;
-            padding: 0;
+            padding: 0 8px;
         }
 
-        .btn-remover:hover {
+        .btn-remover:hover,
+        .btn-remover-item:hover {
             background: #c0392b;
         }
 
@@ -535,10 +535,7 @@ try {
 </head>
 <body>
     <!-- CABEÇALHO -->
-    <div class="mini-header">
-        <h1>💰 Caixa Rápido</h1>
-        <a href="<?= PathConfig::url('index.php') ?>">🏠 Início</a>
-    </div>
+    <div id="react-app" data-screen="cash-header" data-home-url="<?= htmlspecialchars(PathConfig::url('index.php'), ENT_QUOTES, 'UTF-8') ?>"></div>
 
     <!-- COMANDA HORIZONTAL - NOVA POSIÇÃO -->
     <div class="comanda-horizontal">
@@ -561,7 +558,7 @@ try {
             </span>
             <button class="btn btn-success" onclick="finalizarComanda()" id="btn-finalizar" 
                     <?php echo (!$comanda_aberta) ? 'disabled' : ''; ?>>
-                💰 Finalizar
+                Finalizar venda
             </button>
         </div>
     </div>
@@ -569,7 +566,7 @@ try {
     <!-- CONTEÚDO PRINCIPAL - MAIS ESPAÇO PARA PRODUTOS -->
     <div class="conteudo-principal">
         <div class="filtros-container">
-            <input type="text" id="search-produto" class="search-input" placeholder="🔍 Buscar...">
+            <input type="text" id="search-produto" class="search-input" placeholder="Buscar produto...">
             <select id="filtro-categoria" class="categoria-filtro">
                 <option value="">Todas categorias</option>
                 <?php foreach($categorias as $categoria): ?>
@@ -611,7 +608,6 @@ try {
         <?php endforeach; ?>
     <?php else: ?>
         <div style="text-align: center; padding: 40px; color: #7f8c8d;">
-            <div style="font-size: 3rem; margin-bottom: 10px;">📦</div>
             <h3>Nenhum produto cadastrado</h3>
             <p>Cadastre produtos no sistema primeiro</p>
         </div>
@@ -633,7 +629,6 @@ try {
         <!-- === MODAL SELECÃO GARÇOM DINÂMICO - BUSCA DO BD === -->
     <div id="modalGarcom" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
         <div style="background: white; padding: 25px; border-radius: 10px; width: 450px; max-width: 90vw; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); max-height: 80vh; overflow-y: auto;">
-            <div style="font-size: 2rem; margin-bottom: 10px;">🛎️</div>
             <h3 style="margin-bottom: 15px; color: #2c3e50;">Selecione o Garçom</h3>
             <p style="color: #7f8c8d; margin-bottom: 25px;">Clique no garçom responsável pelo atendimento:</p>
             
@@ -642,14 +637,12 @@ try {
                 <?php if (!empty($garcons)): ?>
                     <?php foreach($garcons as $garcom): ?>
                     <button class="btn-garcom" data-garcom="<?= $garcom['codigo'] ?>" onclick="selecionarGarcom('<?= $garcom['codigo'] ?>', '<?= addslashes($garcom['nome']) ?>')">
-                        <div style="font-size: 1.5rem; margin-bottom: 5px;">👨‍💼</div>
                         <div style="font-weight: bold; font-size: 1.1rem;"><?= htmlspecialchars($garcom['codigo']) ?></div>
                         <div style="font-size: 0.8rem; color: #7f8c8d;"><?= htmlspecialchars($garcom['nome']) ?></div>
                     </button>
                     <?php endforeach; ?>
                 <?php else: ?>
                     <div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: #7f8c8d;">
-                        <div style="font-size: 2rem; margin-bottom: 10px;">😕</div>
                         <p>Nenhum garçom cadastrado</p>
                         <button onclick="fecharModalGarcom()" style="background: #95a5a6; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-top: 10px; cursor: pointer;">
                             Fechar
@@ -661,7 +654,7 @@ try {
             <div style="border-top: 1px solid #ecf0f1; padding-top: 15px;">
                 <button onclick="fecharModalGarcom()" 
                         style="background: #95a5a6; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">
-                    ❌ Cancelar
+                    Cancelar
                 </button>
             </div>
         </div>
@@ -670,7 +663,6 @@ try {
     <!-- MODAL COMPROVANTE -->
     <div id="modalComprovante" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center;">
         <div style="background: white; padding: 30px; border-radius: 10px; width: 400px; max-width: 90vw; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
-            <div style="font-size: 3rem; margin-bottom: 15px; color: #27ae60;">✅</div>
             <h3 style="margin-bottom: 15px; color: #2c3e50;">Venda Finalizada!</h3>
             <p id="totalVenda" style="color: #7f8c8d; margin-bottom: 20px;">Total: <strong>R$ 0,00</strong></p>
             <p style="color: #7f8c8d; margin-bottom: 25px;">Deseja imprimir o comprovante?</p>
@@ -678,11 +670,11 @@ try {
             <div style="display: flex; gap: 15px; justify-content: center;">
                 <button id="btnImprimirComprovante" 
                         style="background: #3498db; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">
-                    🖨️ Imprimir
+                    Imprimir
                 </button>
                 <button id="btnPularImpressao" 
                         style="background: #95a5a6; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">
-                    ❌ Não Imprimir
+                    Não imprimir
                 </button>
             </div>
         </div>
@@ -844,7 +836,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Opcional: mostrar status da impressora
         const statusElement = document.createElement('div');
         statusElement.style.cssText = 'position: fixed; bottom: 10px; right: 10px; background: #f8f9fa; padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; border: 1px solid #dee2e6;';
-        statusElement.innerHTML = '🖨️ Web USB Disponível';
+        statusElement.textContent = 'Web USB disponível';
         document.body.appendChild(statusElement);
     } else {
         console.warn('Web USB não suportada');
@@ -888,13 +880,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     <script>
 // SISTEMA DE EMERGÊNCIA - Garante funcionamento mesmo com versão antiga
-console.log('🔧 Verificando serviço de impressão...');
+console.log('Verificando serviço de impressão...');
 
 // Aguardar carregamento completo
 setTimeout(function() {
     // Se o serviço não existe ou tem métodos USB, substituir
     if (!window.impressaoService || window.impressaoService.conectarImpressora) {
-        console.log('🔄 Substituindo serviço problemático...');
+        console.log('Substituindo serviço problemático...');
         
         // Remover serviço antigo
         if (window.impressaoService) {
@@ -904,7 +896,7 @@ setTimeout(function() {
         // Criar serviço novo
         window.impressaoService = {
             imprimirComprovante: function(conteudo) {
-                console.log('🎯 Imprimindo (emergência)...');
+                console.log('Imprimindo em modo de emergência.');
                 try {
                     const texto = conteudo.replace(/\x1B\[[0-9;]*[A-Za-z]/g, '').replace(/\x0A/g, '\n');
                     const janela = window.open('', '_blank', 'width=400,height=600');
@@ -919,12 +911,14 @@ setTimeout(function() {
             }
         };
         
-        console.log('✅ Serviço de emergência ativado!');
+        console.log('Serviço de emergência ativado.');
     } else {
-        console.log('✅ Serviço OK!');
+        console.log('Serviço OK.');
     }
 }, 1000);
 </script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+    <script src="<?= htmlspecialchars(PathConfig::url('js/react-app.js'), ENT_QUOTES, 'UTF-8') ?>?v=<?= filemtime(__DIR__ . '/../../js/react-app.js') ?>"></script>
 </body>
 </html>

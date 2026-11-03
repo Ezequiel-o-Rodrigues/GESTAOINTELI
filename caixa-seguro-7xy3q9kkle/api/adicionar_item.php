@@ -1,4 +1,5 @@
    <?php
+   require_once __DIR__ . '/../includes/api-auth.php';
    // ✅ CORRIGIDO
 require_once __DIR__ . '/../config/paths.php';
 require_once PathConfig::config('database.php'); 

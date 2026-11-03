@@ -57,7 +57,7 @@ class Relatorios {
         if (!container) return;
 
         if (!topPerdas || topPerdas.length === 0) {
-            container.innerHTML = '<div class="carregando">✅ Nenhuma perda significativa identificada</div>';
+            container.innerHTML = '<div class="carregando">Nenhuma perda significativa identificada</div>';
             return;
         }
 
@@ -319,7 +319,7 @@ class Relatorios {
             return '<div class="sem-dados">Nenhuma venda encontrada no período selecionado</div>';
         }
 
-        let html = `<h3>📈 Vendas por Período</h3>
+        let html = `<h3>Vendas por período</h3>
                    <div class="table-responsive">
                    <table class="table">
                    <thead>
@@ -354,7 +354,7 @@ class Relatorios {
             return '<div class="sem-dados">Nenhum produto encontrado no período selecionado</div>';
         }
 
-        let html = `<h3>📊 Produtos Mais Vendidos</h3>
+        let html = `<h3>Produtos mais vendidos</h3>
                    <div class="table-responsive">
                    <table class="table">
                    <thead>
@@ -570,7 +570,7 @@ class Relatorios {
      criarFiltrosAvancados() {
         return `
             <div class="filtros-avancados">
-                <h4>🎯 Filtros Avançados para Análise de Estoque</h4>
+                <h4>Filtros avançados para análise de estoque</h4>
                 <div class="filtros-grid-avancado">
                     <div class="filtro-group">
                         <label>Categoria:</label>
@@ -598,7 +598,7 @@ class Relatorios {
                     </div>
                     <div class="filtro-group">
                         <button class="btn btn-secondary" onclick="aplicarFiltrosAvancados()">
-                            🔄 Aplicar Filtros
+                            Aplicar filtros
                         </button>
                     </div>
                 </div>
@@ -649,7 +649,7 @@ class Relatorios {
                 // Atualizar interface do modal em tempo real
                 const statusCell = document.getElementById(`status-${perdaId}`);
                 if (statusCell) {
-                    statusCell.innerHTML = '<span class="text-success">✅ Visualizada</span>';
+                    statusCell.innerHTML = '<span class="text-success">Visualizada</span>';
                 }
                 
                 // Atualizar data de visualização na linha
@@ -711,7 +711,7 @@ class Relatorios {
                 <div class="modal-dialog modal-xl">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title">📋 Histórico de Perdas de Estoque</h5>
+                            <h5 class="modal-title">Histórico de perdas de estoque</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
@@ -722,7 +722,7 @@ class Relatorios {
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-outline-primary" onclick="exportarHistoricoPerdas()">
-                                📄 Exportar
+                                Exportar
                             </button>
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
                         </div>
@@ -747,7 +747,7 @@ class Relatorios {
 
     criarTabelaHistoricoPerdas(perdas) {
         if (!perdas || perdas.length === 0) {
-            return '<div class="text-center p-4">📊 Nenhuma perda registrada no histórico</div>';
+            return '<div class="text-center p-4">Nenhuma perda registrada no histórico</div>';
         }
 
         let html = `
@@ -774,10 +774,10 @@ class Relatorios {
                 new Date(perda.data_visualizacao).toLocaleDateString('pt-BR') : '-';
             let statusContent;
             if (perda.visualizada) {
-                statusContent = `<span class="text-success">✅ Visualizada</span>`;
+                statusContent = `<span class="text-success">Visualizada</span>`;
             } else {
                 statusContent = `<button class="btn btn-sm btn-success" onclick="marcarPerdaVisualizada(${perda.id})">
-                    ✓ Visualizar Perda
+                    Marcar como visualizada
                 </button>`;
             }
 
@@ -834,7 +834,7 @@ class Relatorios {
             <div class="filtros-data-container mb-4">
                 <div class="card">
                     <div class="card-header">
-                        <h6 class="mb-0">📅 Filtrar por Período</h6>
+                        <h6 class="mb-0">Filtrar por período</h6>
                     </div>
                     <div class="card-body">
                         <div class="row g-3">
@@ -856,17 +856,17 @@ class Relatorios {
                             <div class="col-md-3 d-flex align-items-end">
                                 <div class="btn-group w-100">
                                     <button class="btn btn-primary" onclick="aplicarFiltroData()">
-                                        🔍 Filtrar
+                                        Filtrar
                                     </button>
                                     <button class="btn btn-outline-secondary" onclick="limparFiltroData()">
-                                        🗑️ Limpar
+                                        Limpar
                                     </button>
                                 </div>
                             </div>
                         </div>
                         <div class="mt-2">
                             <small class="text-muted">
-                                📝 <strong>Dica:</strong> Use "Mês/Ano" para filtros rápidos ou "Data Início/Fim" para períodos específicos
+                                <strong>Dica:</strong> Use "Mês/Ano" para filtros rápidos ou "Data Início/Fim" para períodos específicos
                             </small>
                         </div>
                     </div>

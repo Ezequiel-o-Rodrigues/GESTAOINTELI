@@ -455,7 +455,7 @@ $tipos = ['espetos', 'porcoes', 'bebidas', 'cervejas', 'opcoes_buffet'];
 <body>
     <div class="container">
         <div class="header">
-            <h1 class="page-title">📷 Upload de Imagens - Cardápio JNR</h1>
+            <h1 class="page-title">Upload de imagens - Cardápio JNR</h1>
         </div>
         
         <?php if ($msg): ?>

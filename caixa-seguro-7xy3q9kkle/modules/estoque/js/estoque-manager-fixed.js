@@ -10,7 +10,7 @@ class EstoqueManager {
     }
 
     init() {
-        this.log('🚀 EstoqueManager inicializado');
+        this.log('EstoqueManager inicializado');
         this.initializeModals();
         this.setupEventListeners();
         this.loadInitialData();
@@ -23,7 +23,7 @@ class EstoqueManager {
     }
 
     error(message, error = null) {
-        console.error(`[Estoque] ❌ ${message}`, error || '');
+        console.error(`[Estoque] ${message}`, error || '');
     }
 
     initializeModals() {
@@ -514,11 +514,11 @@ class EstoqueManager {
         this.log(`Exibindo alerta: ${message}`, { type });
         
         if (type === 'error') {
-            alert('❌ ' + message);
+            alert(message);
         } else if (type === 'success') {
-            alert('✅ ' + message);
+            alert(message);
         } else {
-            alert('ℹ️ ' + message);
+            alert(message);
         }
     }
 

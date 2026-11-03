@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/paths.php';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/permissions.php';
 
 // Verificar se o usuário está logado
 $usuarioLogado = isset($_SESSION['usuario_logado']) && $_SESSION['usuario_logado'] === true;
@@ -23,11 +24,6 @@ $urlGerenciarCardapio = rtrim(dirname(PathConfig::url()), '/') . '/admin-seguro-
     <!-- ✅ Bootstrap via CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = { corePlugins: { preflight: false } };
-    </script>
-    
     <!-- ✅ CSS personalizado - se existir na raiz -->
     <?php if (file_exists(__DIR__ . '/../css/style.css')): ?>
         <link rel="stylesheet" href="<?= PathConfig::url('css/style.css') ?>?v=<?= filemtime(__DIR__ . '/../css/style.css') ?>">
@@ -101,45 +97,38 @@ $urlGerenciarCardapio = rtrim(dirname(PathConfig::url()), '/') . '/admin-seguro-
         <script src="<?= PathConfig::url('js/path-config.js') ?>"></script>
     <?php endif; ?>
 </head>
-<body class="bg-slate-50">
+<body>
     <div class="page-layout">
-    <header class="header bg-slate-900 text-white shadow-lg">
-        <div class="dashboard-header-inner mx-auto grid w-full max-w-screen-2xl grid-cols-[1fr_auto_1fr] items-center gap-6 px-6 py-3">
-            <a href="<?= PathConfig::url('index.php') ?>" class="flex min-w-0 items-center gap-3 text-white no-underline">
-                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-500 text-white">
-                    <i data-lucide="utensils" class="h-6 w-6"></i>
+    <header class="header">
+        <div class="dashboard-header-inner">
+            <a href="<?= PathConfig::url('index.php') ?>" class="dashboard-brand">
+                <span class="dashboard-brand-mark">
+                    <i class="bi bi-shop" aria-hidden="true"></i>
                 </span>
-                <span class="min-w-0">
-                    <span class="block truncate text-base font-bold tracking-tight">Sistema Restaurante</span>
-                    <span class="block truncate text-xs text-slate-400">Espetinho do Júnior</span>
+                <span class="dashboard-brand-copy">
+                    <span class="dashboard-brand-title">Sistema Restaurante</span>
+                    <span class="dashboard-brand-subtitle">Espetinho do Júnior</span>
                 </span>
             </a>
 
-            <nav class="main-nav dashboard-nav flex items-center justify-center gap-1" aria-label="Navegação principal">
-                <a href="<?= PathConfig::url('index.php') ?>"<?= $paginaInicio ? ' aria-current="page"' : '' ?> class="dashboard-nav-link flex items-center gap-2 rounded-lg <?= $paginaInicio ? 'border-b-2 border-orange-500 text-orange-400' : 'text-slate-300' ?> px-3 py-3 text-sm font-medium no-underline">
-                    <i data-lucide="layout-dashboard" class="h-4 w-4"></i><span>Início</span>
-                </a>
-                <a href="<?= htmlspecialchars($urlGerenciarCardapio, ENT_QUOTES, 'UTF-8') ?>" class="dashboard-nav-link flex items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium text-slate-300 no-underline">
-                    <i data-lucide="book-open" class="h-4 w-4"></i><span>Cardápio</span>
-                </a>
-                <a href="<?= PathConfig::modules('caixa/') ?>" class="dashboard-nav-link flex items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium text-slate-300 no-underline">
-                    <i data-lucide="wallet" class="h-4 w-4"></i><span>Caixa</span>
-                </a>
-                <a href="<?= PathConfig::modules('estoque/') ?>" class="dashboard-nav-link flex items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium text-slate-300 no-underline">
-                    <i data-lucide="package" class="h-4 w-4"></i><span>Estoque</span>
-                </a>
-                <a href="<?= PathConfig::modules('relatorios/') ?>" class="dashboard-nav-link flex items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium text-slate-300 no-underline">
-                    <i data-lucide="chart-no-axes-column-increasing" class="h-4 w-4"></i><span>Relatórios</span>
-                </a>
-                <a href="<?= PathConfig::modules('admin/') ?>" class="dashboard-nav-link flex items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium text-slate-300 no-underline">
-                    <i data-lucide="settings" class="h-4 w-4"></i><span>Admin</span>
-                </a>
-            </nav>
+            <nav
+                id="mainNavRoot"
+                class="main-nav dashboard-nav"
+                aria-label="Navegação principal"
+                data-role="<?= htmlspecialchars($usuarioPerfil, ENT_QUOTES, 'UTF-8') ?>"
+                data-home-url="<?= htmlspecialchars(PathConfig::url('index.php'), ENT_QUOTES, 'UTF-8') ?>"
+                data-home-active="<?= $paginaInicio ? 'true' : 'false' ?>"
+                data-menu-url="<?= htmlspecialchars($urlGerenciarCardapio, ENT_QUOTES, 'UTF-8') ?>"
+                data-cash-url="<?= htmlspecialchars(PathConfig::modules('caixa/'), ENT_QUOTES, 'UTF-8') ?>"
+                data-stock-url="<?= htmlspecialchars(PathConfig::modules('estoque/'), ENT_QUOTES, 'UTF-8') ?>"
+                data-reports-url="<?= htmlspecialchars(PathConfig::modules('relatorios/'), ENT_QUOTES, 'UTF-8') ?>"
+                data-admin-url="<?= htmlspecialchars(PathConfig::modules('admin/'), ENT_QUOTES, 'UTF-8') ?>"
+            ></nav>
 
             <?php if ($usuarioLogado): ?>
             <div
                 id="userMenuRoot"
-                class="dashboard-user-dropdown justify-self-end"
+                class="dashboard-user-dropdown"
                 data-user-name="<?= htmlspecialchars($usuarioNome, ENT_QUOTES, 'UTF-8') ?>"
                 data-user-email="<?= htmlspecialchars($usuarioEmail, ENT_QUOTES, 'UTF-8') ?>"
                 data-user-initials="<?= htmlspecialchars(getInitials($usuarioNome), ENT_QUOTES, 'UTF-8') ?>"
@@ -148,9 +137,9 @@ $urlGerenciarCardapio = rtrim(dirname(PathConfig::url()), '/') . '/admin-seguro-
                 data-logout-url="<?= htmlspecialchars(PathConfig::url('logout.php'), ENT_QUOTES, 'UTF-8') ?>"
             ></div>
             <?php else: ?>
-            <div class="justify-self-end">
+            <div class="dashboard-login">
                 <a href="<?= PathConfig::url('login.php') ?>" class="btn btn-outline-light btn-sm">
-                    <i class="bi bi-box-arrow-in-right"></i> Entrar
+                    Entrar
                 </a>
             </div>
             <?php endif; ?>
@@ -234,7 +223,7 @@ $urlGerenciarCardapio = rtrim(dirname(PathConfig::url()), '/') . '/admin-seguro-
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-primary btn-sm" id="savePasswordBtn">
-                        <i class="bi bi-check-lg"></i> Salvar
+                        Salvar
                     </button>
                 </div>
             </div>
@@ -287,7 +276,7 @@ $urlGerenciarCardapio = rtrim(dirname(PathConfig::url()), '/') . '/admin-seguro-
                 };
             }, [open]);
 
-            const menuAction = (icon, label, props = {}) => h(
+            const menuAction = (label, props = {}) => h(
                 'a',
                 {
                     className: 'dashboard-user-action',
@@ -295,7 +284,6 @@ $urlGerenciarCardapio = rtrim(dirname(PathConfig::url()), '/') . '/admin-seguro-
                     onClick: () => setOpen(false),
                     ...props
                 },
-                h('i', { className: `bi ${icon}`, 'aria-hidden': 'true' }),
                 h('span', null, label)
             );
 
@@ -313,13 +301,7 @@ $urlGerenciarCardapio = rtrim(dirname(PathConfig::url()), '/') . '/admin-seguro-
                         'aria-haspopup': 'menu',
                         onClick: () => setOpen((isOpen) => !isOpen)
                     },
-                    h(
-                        'span',
-                        { className: 'dashboard-user-menu-icon', 'aria-hidden': 'true' },
-                        h('span'),
-                        h('span'),
-                        h('span')
-                    )
+                    'Menu'
                 ),
                 open && h(
                     'div',
@@ -336,20 +318,20 @@ $urlGerenciarCardapio = rtrim(dirname(PathConfig::url()), '/') . '/admin-seguro-
                         )
                     ),
                     h('div', { className: 'dashboard-user-divider' }),
-                    menuAction('bi-person', 'Meu perfil', {
+                    menuAction('Meu perfil', {
                         ref: firstAction,
                         href: '#userProfileModal',
                         'data-bs-toggle': 'modal',
                         'data-bs-target': '#userProfileModal'
                     }),
-                    menuAction('bi-lock', 'Alterar senha', {
+                    menuAction('Alterar senha', {
                         href: '#changePasswordModal',
                         'data-bs-toggle': 'modal',
                         'data-bs-target': '#changePasswordModal'
                     }),
-                    user.isAdmin && menuAction('bi-gear', 'Administração', { href: user.adminUrl }),
+                    user.isAdmin && menuAction('Administração', { href: user.adminUrl }),
                     h('div', { className: 'dashboard-user-divider' }),
-                    menuAction('bi-box-arrow-right', 'Sair', {
+                    menuAction('Sair', {
                         className: 'dashboard-user-action dashboard-user-action--danger',
                         href: user.logoutUrl
                     })
@@ -420,4 +402,4 @@ $urlGerenciarCardapio = rtrim(dirname(PathConfig::url()), '/') . '/admin-seguro-
     });
     </script>
 
-    <main class="container flex-1">
+    <main class="container">

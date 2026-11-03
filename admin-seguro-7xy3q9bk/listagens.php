@@ -285,7 +285,7 @@ require_once __DIR__ . '/includes/auth.php';
 
         <!-- Filtros -->
         <div class="card">
-            <h2 class="card-title">🔍 Filtros</h2>
+            <h2 class="card-title">Filtros</h2>
             <div class="filter-section">
                 <div class="filter-group">
                     <label for="category" class="filter-label">Categoria</label>
@@ -317,7 +317,7 @@ require_once __DIR__ . '/includes/auth.php';
 
         <!-- Seção de Espetos -->
         <div class="card" id="espetos-card"> 
-            <h2 class="card-title">📋 Espetos</h2>
+            <h2 class="card-title">Espetos</h2>
             <div class="item-list">
                 <div class="item-row item-header">
                     <div>ID</div>
@@ -356,7 +356,7 @@ require_once __DIR__ . '/includes/auth.php';
 
         <!-- Seção de Opções de Buffet -->
         <div class="card" id="opcoes_buffet-card">
-            <h2 class="card-title">📋 Opções de Buffet</h2>
+            <h2 class="card-title">Opções de Buffet</h2>
             <div class="item-list">
                 <div class="item-row item-header">
                     <div>ID</div>
@@ -395,7 +395,7 @@ require_once __DIR__ . '/includes/auth.php';
 
         <!-- Seção de Porções -->
         <div class="card" id="porcoes-card">
-            <h2 class="card-title">📋 Porções</h2>
+            <h2 class="card-title">Porções</h2>
             <div class="item-list">
                 <div class="item-row item-header">
                     <div>ID</div>
@@ -434,7 +434,7 @@ require_once __DIR__ . '/includes/auth.php';
 
         <!-- Seção de Bebidas -->
         <div class="card" id="bebidas-card">
-            <h2 class="card-title">📋 Bebidas</h2>
+            <h2 class="card-title">Bebidas</h2>
             <div class="item-list">
                 <div class="item-row item-header">
                     <div>ID</div>
@@ -473,7 +473,7 @@ require_once __DIR__ . '/includes/auth.php';
 
         <!-- Seção de Cervejas -->
         <div class="card" id="cervejas-card">
-            <h2 class="card-title">📋 Cervejas</h2>
+            <h2 class="card-title">Cervejas</h2>
             <div class="item-list">
                 <div class="item-row item-header">
                     <div>ID</div>

@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/api-auth.php';
 // api/debug.php - ✅ CORRIGIDO
 require_once __DIR__ . '/../config/paths.php';
 

@@ -1,7 +1,7 @@
 // VERSÃO AGGRESSIVA - FECHAMENTO RÁPIDO
 window.impressaoService = {
     imprimirComprovante: function(conteudo) {
-        console.log('⚡ Versão aggressiva - Fechamento rápido...');
+        console.log('Versão de fechamento rápido iniciada.');
         
         const textoLimpo = conteudo.replace(/\x1B\[[0-9;]*[A-Za-z]/g, '').replace(/\x0A/g, '\n').trim();
         
@@ -31,7 +31,7 @@ window.impressaoService = {
         
         return Promise.resolve({
             success: true,
-            message: '✅ Imprimindo... Fechamento automático ativado.'
+            message: 'Imprimindo... Fechamento automático ativado.'
         });
     }
 };

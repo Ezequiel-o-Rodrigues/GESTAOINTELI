@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/api-auth.php';
 // api/imprimir_comprovante.php
 require_once __DIR__ . '/../config/database.php';
 

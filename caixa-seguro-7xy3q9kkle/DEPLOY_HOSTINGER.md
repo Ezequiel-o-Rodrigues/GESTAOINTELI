@@ -70,6 +70,16 @@ public_html/
 3. **Importar SQL no banco da Hostinger**
 4. **Testar conexão**
 
+## Perfis de acesso
+
+- `admin`: acesso completo, incluindo administração e cardápio público.
+- `caixa`: frente de caixa e relatórios.
+- `estoque`: controle de estoque e relatórios.
+
+As permissões são verificadas nas páginas e nas APIs; ocultar um link na navegação não substitui a validação do servidor.
+
+O login, o painel inicial, a navegação compartilhada e o cabeçalho do caixa usam React 18 via CDN e o arquivo `js/react-app.js`. Bootstrap continua carregado para as telas operacionais existentes, que mantêm os endpoints PHP atuais durante a migração gradual, sem etapa de compilação no deploy.
+
 ## Migrações do cardápio integrado
 
 Antes de enviar a versão que consulta o cardápio público, faça um backup completo do banco e dos arquivos de imagem. No banco usado pelo sistema de caixa, execute `migracao_cardapio_integrado.sql` no phpMyAdmin. O script cria a tabela de opções se estiver ausente e adiciona os campos públicos apenas se ainda não existirem, podendo ser reaplicado com segurança.

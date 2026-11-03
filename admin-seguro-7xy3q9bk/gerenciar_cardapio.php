@@ -148,7 +148,7 @@ require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/header.php';
         }
     </style>
     <header class="page-heading">
-        <span class="page-icon" aria-hidden="true"><i data-lucide="utensils"></i></span>
+        <span class="page-icon" aria-hidden="true"><i class="bi bi-shop"></i></span>
         <div>
             <h1>Cardápio público</h1>
             <p class="page-description">Edite a apresentação dos produtos ativos. Nome, preço e categoria oficiais vêm do sistema de caixa.</p>
@@ -173,7 +173,7 @@ require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/header.php';
         </div>
         <div class="filter-controls">
             <label class="filter-field">
-                <i data-lucide="search" aria-hidden="true"></i>
+                <i class="bi bi-search" aria-hidden="true"></i>
                 <input id="searchProducts" type="search" placeholder="Buscar por nome, descrição ou categoria..." aria-label="Buscar produtos">
             </label>
             <label>

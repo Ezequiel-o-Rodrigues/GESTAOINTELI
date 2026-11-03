@@ -233,7 +233,7 @@ input:focus, select:focus, textarea:focus {
         <h1>Centro de Cadastro de Itens e Produtos</h1>
         </div>
           <div class="card"> 
-            <h2 class="card-title">➕ Cadastrar Nova Opção de Buffet</h2>
+            <h2 class="card-title">Cadastrar Nova Opção de Buffet</h2>
             <form method="POST" action="processamentoform.php" class="form-container">
                 <input type="hidden" name="acao" value="adicionar_opcao">
                 <div class="form-group">
@@ -250,7 +250,7 @@ input:focus, select:focus, textarea:focus {
 
 
 <div class="card">
-    <h2 class="card-title">🍢 Cadastrar Novo Espeto</h2>
+    <h2 class="card-title">Cadastrar Novo Espeto</h2>
     <form method="POST" action="processamentoform.php" class="form-container">
         <input type="hidden" name="acao" value="adicionar_espeto">
         <div class="form-group">
@@ -266,7 +266,7 @@ input:focus, select:focus, textarea:focus {
 </div>
 
 <div class="card">
-    <h2 class="card-title">🍟 Cadastrar Nova Porção</h2>
+    <h2 class="card-title">Cadastrar Nova Porção</h2>
     <form method="POST" action="processamentoform.php" class="form-container">
         <input type="hidden" name="acao" value="adicionar_porcao">
         <div class="form-group">
@@ -286,7 +286,7 @@ input:focus, select:focus, textarea:focus {
 </div>
 
 <div class="card">
-    <h2 class="card-title">🧃 Cadastrar Nova Bebida</h2>
+    <h2 class="card-title">Cadastrar Nova Bebida</h2>
     <form method="POST" action="processamentoform.php" class="form-container">
         <input type="hidden" name="acao" value="adicionar_bebida">
         <div class="form-group">
@@ -316,7 +316,7 @@ input:focus, select:focus, textarea:focus {
 </div>
 
 <div class="card">
-    <h2 class="card-title">🍺 Cadastrar Nova Cerveja</h2>
+    <h2 class="card-title">Cadastrar Nova Cerveja</h2>
     <form method="POST" action="processamentoform.php" class="form-container">
         <input type="hidden" name="acao" value="adicionar_cerveja">
         <div class="form-group">

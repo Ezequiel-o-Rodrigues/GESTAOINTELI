@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/api-auth.php';
 // API: finalizar_comanda.php
 // Retorna JSON limpo; usa Database class
 ini_set('display_errors', 0);

@@ -5,10 +5,17 @@ $destinoCardapio = ($_GET['destino'] ?? $_POST['destino'] ?? '') === 'cardapio';
 
 // Se já estiver logado, redireciona para página principal
 if (isset($_SESSION['usuario_logado']) && $_SESSION['usuario_logado'] === true) {
-    header('Location: ' . ($destinoCardapio
-        ? '../admin-seguro-7xy3q9bk/gerenciar_cardapio.php'
-        : '/'));
-    exit;
+    $perfilSessao = strtolower(trim((string) ($_SESSION['usuario_perfil'] ?? '')));
+    if (in_array($perfilSessao, ['admin', 'caixa', 'estoque'], true)) {
+        $destinoCardapioPermitido = $destinoCardapio && $perfilSessao === 'admin';
+        header('Location: ' . ($destinoCardapioPermitido
+            ? '../admin-seguro-7xy3q9bk/gerenciar_cardapio.php'
+            : '/'));
+        exit;
+    }
+
+    session_unset();
+    session_destroy();
 }
 
 $error = '';
@@ -33,18 +40,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($usuario) {
                 // Verificar senha
                 if (password_verify($senha, $usuario['senha'])) {
-                    // Login bem-sucedido
-                    $_SESSION['usuario_id'] = $usuario['id'];
-                    $_SESSION['usuario_nome'] = $usuario['nome'];
-                    $_SESSION['usuario_email'] = $usuario['email'];
-                    $_SESSION['usuario_perfil'] = strtolower(trim((string) $usuario['perfil']));
-                    $_SESSION['usuario_logado'] = true;
-                    $_SESSION['last_activity'] = time();
-                    
-                    header('Location: ' . ($destinoCardapio
-                        ? '../admin-seguro-7xy3q9bk/gerenciar_cardapio.php'
-                        : '/'));
-                    exit;
+                    $perfil = strtolower(trim((string) $usuario['perfil']));
+                    if (!in_array($perfil, ['admin', 'caixa', 'estoque'], true)) {
+                        $error = 'Perfil de acesso inválido. Solicite a revisão do seu cadastro.';
+                    } elseif ($destinoCardapio && $perfil !== 'admin') {
+                        $error = 'Apenas administradores podem acessar o gerenciamento do cardápio.';
+                    } else {
+                        session_regenerate_id(true);
+                        $_SESSION['usuario_id'] = $usuario['id'];
+                        $_SESSION['usuario_nome'] = $usuario['nome'];
+                        $_SESSION['usuario_email'] = $usuario['email'];
+                        $_SESSION['usuario_perfil'] = $perfil;
+                        $_SESSION['usuario_logado'] = true;
+                        $_SESSION['last_activity'] = time();
+
+                        header('Location: ' . ($destinoCardapio
+                            ? '../admin-seguro-7xy3q9bk/gerenciar_cardapio.php'
+                            : '/'));
+                        exit;
+                    }
                 } else {
                     $error = 'Senha incorreta';
                 }
@@ -65,122 +79,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - GestãoInteli JNR</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <style>
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-        }
-        .login-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
-        .login-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2rem;
-            text-align: center;
-        }
-        .login-body {
-            padding: 2rem;
-        }
-        .btn-login {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            color: white;
-            padding: 0.75rem 2rem;
-        }
-        .btn-login:hover {
-            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
-            color: white;
-        }
-    </style>
+    <meta name="theme-color" content="#f5f7fb">
+    <title>Entrar | GestãoInteli JNR</title>
+    <link rel="stylesheet" href="css/style.css?v=<?= filemtime(__DIR__ . '/css/style.css') ?>">
 </head>
-<body>
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-6 col-lg-4">
-                <div class="login-card">
-                    <div class="login-header">
-                        <h2><i class="bi bi-shop"></i> GestãoInteli JNR</h2>
-                        <p class="mb-0">Sistema de Gestão de Restaurante</p>
-                    </div>
-                    <div class="login-body">
-                        <?php if ($error): ?>
-                            <div class="alert alert-danger">
-                                <i class="bi bi-exclamation-triangle"></i> 
-                                <?= htmlspecialchars($error) ?>
-                            </div>
-                        <?php endif; ?>
-                        
-                        <?php if (isset($_GET['expired'])): ?>
-                            <div class="alert alert-warning">
-                                <i class="bi bi-clock"></i> 
-                                Sessão expirada. Faça login novamente.
-                            </div>
-                        <?php endif; ?>
-                        
-                        <?php if (isset($_GET['logout'])): ?>
-                            <div class="alert alert-success">
-                                <i class="bi bi-check-circle"></i> 
-                                Logout realizado com sucesso.
-                            </div>
-                        <?php endif; ?>
-                        
-                        <form method="post" id="loginForm">
-                            <?php if ($destinoCardapio): ?>
-                                <input type="hidden" name="destino" value="cardapio">
-                            <?php endif; ?>
-                            <div class="mb-3">
-                                <label for="email" class="form-label">Usuário ou Email</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="bi bi-person"></i></span>
-                                    <input type="text" class="form-control" id="email" name="email" required 
-                                           value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" 
-                                           placeholder="junior ou admin@sistema.com">
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="senha" class="form-label">Senha</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                                    <input type="password" class="form-control" id="senha" name="senha" required 
-                                           placeholder="Sua senha">
-                                </div>
-                            </div>
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-login">
-                                    <i class="bi bi-box-arrow-in-right"></i> Entrar
-                                </button>
-                            </div>
-                        </form>
-                        
-                        <div class="text-center mt-4">
-                            <small class="text-muted">
-                                <strong>para recuperar a senha contacte o desenvolvedor</strong><br>
-                                <br>
-                                ezequielrod2020@gmail.com
-                            </small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        document.getElementById('loginForm').addEventListener('submit', function() {
-            const btn = this.querySelector('button[type="submit"]');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Entrando...';
-        });
-    </script>
+<body class="login-body">
+    <div
+        id="react-app"
+        data-screen="login"
+        data-error="<?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?>"
+        data-notice="<?= isset($_GET['expired']) ? 'Sessão expirada. Faça login novamente.' : (isset($_GET['logout']) ? 'Você saiu do sistema.' : '') ?>"
+        data-email="<?= htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+        data-cardapio="<?= $destinoCardapio ? 'true' : 'false' ?>"
+    ></div>
+    <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+    <script src="js/react-app.js?v=<?= filemtime(__DIR__ . '/js/react-app.js') ?>"></script>
 </body>
 </html>

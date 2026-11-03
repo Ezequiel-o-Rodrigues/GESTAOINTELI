@@ -198,7 +198,7 @@ require_once __DIR__ . '/includes/auth.php';
 </div>
     <div class="container">
         <div class="header">
-            <h1 class="page-title">🍽️ Controle do Cardápio JNR</h1>
+            <h1 class="page-title">Controle do Cardápio JNR</h1>
         </div>
         <header class="header">
             <div class="container header-container">

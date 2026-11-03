@@ -120,7 +120,7 @@ if (window.CaixaSystemAlreadyLoaded) {
                 <p class="produto-preco">R$ ${parseFloat(produto.preco).toFixed(2)}</p>
                 <div class="produto-estoque ${produto.estoque_atual <= produto.estoque_minimo ? 'estoque-baixo' : ''}">
                     Estoque: ${produto.estoque_atual}
-                    ${produto.estoque_atual <= produto.estoque_minimo ? '⚠️' : ''}
+                    ${produto.estoque_atual <= produto.estoque_minimo ? 'Estoque baixo' : ''}
                 </div>
             </div>
             <button class="btn-add-item" data-produto-id="${produto.id}">
@@ -344,8 +344,8 @@ if (window.CaixaSystemAlreadyLoaded) {
                 <span class="item-quantidade">${item.quantidade}x</span>
                 <span class="item-subtotal">R$ ${parseFloat(item.subtotal).toFixed(2)}</span>
             </div>
-            <button class="btn-remover-item" data-item-id="${item.id}">
-                ✕
+            <button class="btn-remover-item" data-item-id="${item.id}" type="button" aria-label="Remover item">
+                Remover
             </button>
         `;
         
@@ -367,7 +367,7 @@ if (window.CaixaSystemAlreadyLoaded) {
             <span class="item-nome">${this.escapeHtml(nomeProduto)}</span>
             <span class="item-quantidade" data-item-id="${item.id}" title="Clique para alterar quantidade">${item.quantidade}</span>
             <span class="item-preco">R$ ${preco}</span>
-            <button class="btn-remover" data-item-id="${item.id}" type="button">✕</button>
+            <button class="btn-remover" data-item-id="${item.id}" type="button" aria-label="Remover item">Remover</button>
         `;
         
         const btnRemover = div.querySelector('.btn-remover');
@@ -853,14 +853,14 @@ async imprimirComprovante(comprovanteId) {
                 
                 if (resultado.success) {
                     if (resultado.usadoUSB) {
-                        this.mostrarToast('✅ Comprovante impresso!', 'success');
+                        this.mostrarToast('Comprovante impresso.', 'success');
                     } else if (resultado.fallback) {
-                        this.mostrarToast('📄 Comprovante aberto para impressão', 'success');
+                        this.mostrarToast('Comprovante aberto para impressão.', 'success');
                     } else if (resultado.download) {
-                        this.mostrarToast('📥 Comprovante baixado - imprima manualmente', 'info');
+                        this.mostrarToast('Comprovante baixado. Imprima manualmente.', 'info');
                     }
                 } else {
-                    this.mostrarToast('❌ ' + resultado.message, 'error');
+                    this.mostrarToast(resultado.message, 'error');
                 }
             } else {
                 // Fallback direto se o serviço não carregou

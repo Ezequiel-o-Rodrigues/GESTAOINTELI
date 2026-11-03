@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../../includes/permissions.php';
+requireModuleAccess('caixa');
 // criar_comanda.php - Módulo de Caixa
 
 $base_path = '/';

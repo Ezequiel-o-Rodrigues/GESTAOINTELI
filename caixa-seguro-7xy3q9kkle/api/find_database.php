@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/api-auth.php';
 echo "=== PROCURANDO DATABASE.PHP ===<br><br>";
 
 $locations = [

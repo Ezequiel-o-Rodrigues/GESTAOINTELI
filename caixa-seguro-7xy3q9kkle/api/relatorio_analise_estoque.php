@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/api-auth.php';
 // api/relatorio_analise_estoque.php
 require_once '../config/database.php';
 

@@ -1,4 +1,7 @@
 <?php
+require_once __DIR__ . '/../../includes/permissions.php';
+requireModuleAccess('estoque');
+
 require_once '../../config/database.php';
 require_once '../../config/auth.php';
 require_once '../../includes/functions.php';
@@ -101,12 +104,8 @@ foreach ($produtos as $produto) {
                     <i class="fas fa-boxes text-primary"></i> Gestão de Estoque
                 </h1>
                 <div>
-                    <button class="btn btn-primary" onclick="estoqueManager.showProductModal()">
-                        <i class="fas fa-plus"></i> Novo Produto
-                    </button>
-                    <button class="btn btn-info ms-2" onclick="abrirModalInventario()">
-                        <i class="fas fa-clipboard-check"></i> Inventário Físico
-                    </button>
+                    <button class="btn btn-primary" onclick="estoqueManager.showProductModal()">Novo Produto</button>
+                    <button class="btn btn-info ms-2" onclick="abrirModalInventario()">Inventário físico</button>
                 </div>
             </div>
         </div>
@@ -125,7 +124,7 @@ foreach ($produtos as $produto) {
                     <div>
                         <span class="badge bg-danger"><?= $alertas_count ?></span>
                         <button class="btn btn-sm btn-dark ms-2" onclick="toggleAlertaEstoque()" id="btnToggleAlerta" title="Minimizar alertas">
-                            ➖
+                            Recolher
                         </button>
                     </div>
                 </div>
@@ -139,10 +138,7 @@ foreach ($produtos as $produto) {
                             <span><?= htmlspecialchars($produto['nome']) ?></span>
                             <div>
                                 <span class="badge bg-danger">Zerado</span>
-                                <button class="btn btn-sm btn-outline-primary ms-2" 
-                                        onclick="estoqueManager.showEntryModal(<?= $produto['id'] ?>)">
-                                    <i class="fas fa-box"></i>
-                                </button>
+                                <button class="btn btn-sm btn-outline-primary ms-2" onclick="estoqueManager.showEntryModal(<?= $produto['id'] ?>)">Registrar entrada</button>
                             </div>
                         </div>
                         <?php endforeach; ?>
@@ -157,10 +153,7 @@ foreach ($produtos as $produto) {
                             <span><?= htmlspecialchars($produto['nome']) ?></span>
                             <div>
                                 <span class="badge bg-warning">Baixo</span>
-                                <button class="btn btn-sm btn-outline-primary ms-2" 
-                                        onclick="estoqueManager.showEntryModal(<?= $produto['id'] ?>)">
-                                    <i class="fas fa-box"></i>
-                                </button>
+                                <button class="btn btn-sm btn-outline-primary ms-2" onclick="estoqueManager.showEntryModal(<?= $produto['id'] ?>)">Registrar entrada</button>
                             </div>
                         </div>
                         <?php endforeach; ?>
@@ -279,22 +272,22 @@ foreach ($produtos as $produto) {
                                             <button class="btn btn-outline-primary" 
                                                     onclick="estoqueManager.editProduct(<?= $produto['id'] ?>)"
                                                     title="Editar Produto">
-                                                ✏️ Editar
+                                                Editar
                                             </button>
                                             <button class="btn btn-outline-success" 
                                                     onclick="estoqueManager.showEntryModal(<?= $produto['id'] ?>)"
                                                     title="Registrar Entrada">
-                                                📥 Entrada
+                                                Registrar entrada
                                             </button>
                                             <button class="btn btn-outline-info" 
                                                     onclick="abrirModalInventarioProduto(<?= $produto['id'] ?>)"
                                                     title="Inventário Físico">
-                                                📋 Inventário
+                                                Inventário
                                             </button>
                                             <button class="btn btn-outline-<?= $produto['ativo'] ? 'warning' : 'success' ?>" 
                                                     onclick="estoqueManager.toggleProduct(<?= $produto['id'] ?>, <?= $produto['ativo'] ? 0 : 1 ?>)"
                                                     title="<?= $produto['ativo'] ? 'Desativar Produto' : 'Ativar Produto' ?>">
-                                                <?= $produto['ativo'] ? '👁️ Desativar' : '👁️ Ativar' ?>
+                                                <?= $produto['ativo'] ? 'Desativar' : 'Ativar' ?>
                                             </button>
                                         </div>
                                     </td>
@@ -431,7 +424,7 @@ foreach ($produtos as $produto) {
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title" id="inventarioModalLabel">
-                    📋 Registrar Inventário Físico
+                    Registrar inventário físico
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
@@ -442,21 +435,21 @@ foreach ($produtos as $produto) {
                     <!-- Campo de Pesquisa -->
 <div class="mb-3">
     <label for="pesquisaProduto" class="form-label">
-        🔍 Pesquisar Produto
+        Pesquisar produto
     </label>
     <input type="text" id="pesquisaProduto" class="form-control" 
            placeholder="Digite o nome do produto para filtrar..." 
            onkeyup="filtrarProdutos()"
            oninput="filtrarProdutos()">
     <div class="form-text">
-        💡 Digite para filtrar a lista de produtos em tempo real
+        Digite para filtrar a lista de produtos em tempo real
     </div>
 </div>
                     
                     <!-- Select de Produto com Opções Filtradas -->
                     <div class="mb-3">
                         <label for="produto_id" class="form-label">
-                            📦 Produto *
+                            Produto *
                         </label>
                         <select id="produto_id" name="produto_id" class="form-select" required 
                                 onchange="atualizarInfoEstoque()" size="6">
@@ -472,14 +465,13 @@ foreach ($produtos as $produto) {
                             <?php endforeach; ?>
                         </select>
                         <div class="form-text">
-                            💡 Use a pesquisa acima para encontrar rapidamente o produto
+                            Use a pesquisa acima para encontrar rapidamente o produto
                         </div>
                     </div>
                     
                     <!-- Informações do Estoque Atual -->
                     <div class="alert alert-info">
                         <div class="d-flex align-items-center">
-                            <span class="me-2">📊</span>
                             <div>
                                 <strong>Estoque atual no sistema: <span id="estoque_atual_sistema">-</span></strong>
                                 <br>
@@ -491,7 +483,7 @@ foreach ($produtos as $produto) {
                     <!-- Quantidade Física -->
                     <div class="mb-3">
                         <label for="quantidade_fisica" class="form-label">
-                            🎯 Quantidade Física Contada *
+                            Quantidade física contada *
                         </label>
                         <input type="number" id="quantidade_fisica" name="quantidade_fisica" 
                                class="form-control" min="0" required 
@@ -502,7 +494,6 @@ foreach ($produtos as $produto) {
                     <!-- Diferenca Calculada -->
                     <div class="alert alert-warning" id="diferencaAlert">
                         <div class="d-flex align-items-center">
-                            <span class="me-2">⚖️</span>
                             <div>
                                 <strong>Diferença: <span id="diferenca_calculada">0</span></strong>
                                 <br>
@@ -514,7 +505,7 @@ foreach ($produtos as $produto) {
                     <!-- Observação -->
                     <div class="mb-3">
                         <label for="observacao" class="form-label">
-                            📝 Observação
+                            Observação
                         </label>
                         <textarea id="observacao" name="observacao" class="form-control" rows="3" 
                                   placeholder="Ex: Conferência mensal, ajuste de quebra, produto vencido, etc."></textarea>
@@ -522,10 +513,10 @@ foreach ($produtos as $produto) {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        ❌ Cancelar
+                        Cancelar
                     </button>
                     <button type="submit" class="btn btn-success">
-                        ✅ Registrar Inventário
+                        Registrar inventário
                     </button>
                 </div>
             </form>
@@ -655,19 +646,19 @@ function calcularDiferenca() {
         // Diferença positiva (sobra)
         diferencaElement.className = 'text-success fw-bold';
         diferencaAlert.className = 'alert alert-success';
-        diferencaDescricao.textContent = `✅ Sobra: ${diferenca} unidades a mais que o sistema`;
+        diferencaDescricao.textContent = `Sobra: ${diferenca} unidades a mais que o sistema`;
         diferencaElement.innerHTML = `+${diferenca}`;
     } else if (diferenca < 0) {
         // Diferença negativa (falta)
         diferencaElement.className = 'text-danger fw-bold';
         diferencaAlert.className = 'alert alert-danger';
-        diferencaDescricao.textContent = `❌ Falta: ${Math.abs(diferenca)} unidades a menos que o sistema`;
+        diferencaDescricao.textContent = `Falta: ${Math.abs(diferenca)} unidades a menos que o sistema`;
         diferencaElement.innerHTML = diferenca;
     } else {
         // Sem diferença
         diferencaElement.className = 'text-muted';
         diferencaAlert.className = 'alert alert-info';
-        diferencaDescricao.textContent = '⚖️ Quantidades iguais - Sem diferenças';
+        diferencaDescricao.textContent = 'Quantidades iguais - Sem diferenças';
         diferencaElement.innerHTML = '0';
     }
 }
@@ -720,11 +711,11 @@ function toggleAlertaEstoque() {
     
     if (conteudo.style.display === 'none') {
         conteudo.style.display = 'block';
-        btn.innerHTML = '➖';
+        btn.textContent = 'Recolher';
         btn.title = 'Minimizar alertas';
     } else {
         conteudo.style.display = 'none';
-        btn.innerHTML = '➕';
+        btn.textContent = 'Expandir';
         btn.title = 'Expandir alertas';
     }
 }

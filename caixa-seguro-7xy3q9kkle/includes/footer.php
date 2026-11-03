@@ -4,11 +4,11 @@ $usuarioLogado = isset($_SESSION['usuario_logado']) && $_SESSION['usuario_logado
 ?>
     </main>
 
-    <footer class="footer mt-0 border-t border-slate-200 bg-white text-slate-500">
-        <div class="dashboard-footer-inner mx-auto flex w-full max-w-screen-2xl flex-col items-center justify-between gap-2 px-6 py-4 text-sm sm:flex-row">
+    <footer class="footer">
+        <div class="dashboard-footer-inner">
             <p class="mb-0">&copy; <?= date('Y') ?> Sistema Restaurante - Espetinho do Júnior</p>
             <?php if ($usuarioLogado): ?>
-            <small class="text-slate-500">
+            <small class="dashboard-footer-user">
                 Usuário: <?= htmlspecialchars($_SESSION['usuario_nome'] ?? '') ?> | 
                 Último acesso: <?= date('d/m/Y H:i:s') ?>
             </small>
@@ -16,9 +16,6 @@ $usuarioLogado = isset($_SESSION['usuario_logado']) && $_SESSION['usuario_logado
         </div>
     </footer>
     </div>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-        lucide.createIcons();
-    </script>
+    <script src="<?= htmlspecialchars(PathConfig::url('js/react-app.js'), ENT_QUOTES, 'UTF-8') ?>?v=<?= filemtime(__DIR__ . '/../js/react-app.js') ?>"></script>
 </body>
 </html>

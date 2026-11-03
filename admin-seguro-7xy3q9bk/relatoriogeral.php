@@ -4,10 +4,10 @@ require_once __DIR__ . '/../includes/conexao.php';
 ?>
 
 <div class="card">
-    <h2 class="card-title">📊 Relatório Geral de Itens</h2>
+    <h2 class="card-title">Relatório geral de itens</h2>
 
     <div class="report-section">
-        <h3>🍽️ Opções de Buffet</h3>
+        <h3>Opções de Buffet</h3>
         <div class="item-list">
             <div class="item-row item-header">
                 <div>ID</div>
@@ -32,7 +32,7 @@ require_once __DIR__ . '/../includes/conexao.php';
     </div>
     
     <div class="report-section">
-        <h3>🍢 Espetos</h3>
+        <h3>Espetos</h3>
         <div class="item-list">
             <div class="item-row item-header">
                 <div>ID</div>
@@ -58,7 +58,7 @@ require_once __DIR__ . '/../includes/conexao.php';
     </div>
     
     <div class="report-section">
-        <h3>🍟 Porções</h3>
+        <h3>Porções</h3>
         <div class="item-list">
             <div class="item-row item-header">
                 <div>ID</div>
@@ -83,7 +83,7 @@ require_once __DIR__ . '/../includes/conexao.php';
     </div>
     
     <div class="report-section">
-        <h3>🧃 Bebidas</h3>
+        <h3>Bebidas</h3>
         <div class="item-list">
             <div class="item-row item-header">
                 <div>ID</div>
@@ -109,7 +109,7 @@ require_once __DIR__ . '/../includes/conexao.php';
     </div>
     
     <div class="report-section">
-        <h3>🍺 Cervejas</h3>
+        <h3>Cervejas</h3>
         <div class="item-list">
             <div class="item-row item-header">
                 <div>ID</div>

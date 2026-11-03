@@ -10,22 +10,23 @@ function openUserModal(user) {
     const userAtivo = document.getElementById('userAtivo');
 
     if (!user) {
-        // novo
         userId.value = '';
         userNome.value = '';
         userEmail.value = '';
         userSenha.value = '';
-        userPerfil.value = 'usuario';
+        userPerfil.value = 'caixa';
         userAtivo.checked = true;
     } else {
         userId.value = user.id || '';
         userNome.value = user.nome || '';
         userEmail.value = user.email || '';
         userSenha.value = '';
-        userPerfil.value = user.perfil || 'usuario';
+        userPerfil.value = user.perfil || 'caixa';
         userAtivo.checked = !!user.ativo;
     }
 
+    userSenha.required = !userId.value;
+    document.getElementById('userModalTitle').textContent = user ? 'Editar usuário' : 'Novo usuário';
     const modal = new bootstrap.Modal(modalEl);
     modal.show();
 }
@@ -33,4 +34,17 @@ function openUserModal(user) {
 document.addEventListener('DOMContentLoaded', function () {
     const btnNovo = document.getElementById('btn-novo-usuario');
     if (btnNovo) btnNovo.addEventListener('click', () => openUserModal(null));
+
+    document.addEventListener('click', function (event) {
+        const button = event.target.closest('[data-edit-user]');
+        if (!button) return;
+
+        openUserModal({
+            id: button.dataset.id,
+            nome: button.dataset.nome,
+            email: button.dataset.email,
+            perfil: button.dataset.perfil,
+            ativo: button.dataset.ativo === '1'
+        });
+    });
 });

@@ -1,4 +1,7 @@
 <?php
+require_once __DIR__ . '/../../includes/permissions.php';
+requireModuleAccess('relatorios');
+
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/header.php';
@@ -90,7 +93,7 @@ try {
 ?>
 
 <div class="relatorios-container">
-    <h2>📊 Relatórios e Analytics</h2>
+    <h2>Relatórios e Analytics</h2>
     
     <div class="dashboard-cards">
         <div class="dashboard-card">
@@ -113,14 +116,14 @@ try {
             <p>Produtos com estoque baixo</p>
         </div>
         
-        <div class="dashboard-card <?= ($dashboard['total_perdas'] ?? 0) > 0 ? 'alerta' : '' ?>" style="cursor: pointer;" onclick="abrirHistoricoPerdas()">
+        <div class="dashboard-card <?= ($dashboard['total_perdas'] ?? 0) > 0 ? 'alerta' : '' ?>">
             <h3>Perdas Identificadas</h3>
             <div class="numero <?= ($dashboard['total_perdas'] ?? 0) > 0 ? 'alerta' : '' ?>" id="perdas-nao-visualizadas">
                 0
             </div>
             <p>Produtos com divergência</p>
-            <button class="btn btn-sm btn-outline-primary mt-2" onclick="event.stopPropagation(); abrirHistoricoPerdas();">
-                📋 Ver Histórico
+            <button class="btn btn-sm btn-outline-primary mt-2" onclick="abrirHistoricoPerdas();">
+                Ver histórico
             </button>
         </div>
     </div>
@@ -144,12 +147,12 @@ try {
                     <select id="tipo-relatorio" class="form-select">
                         <option value="vendas">Vendas por Período</option>
                         <option value="produtos">Produtos Mais Vendidos</option>
-                        <option value="analise_estoque">🔍 Análise de Estoque e Perdas</option>
+                        <option value="analise_estoque">Análise de Estoque e Perdas</option>
                     </select>
                 </div>
                 <div class="filtro-group">
                     <button class="btn btn-primary" onclick="gerarRelatorio()">Gerar Relatório</button>
-                    <button class="btn" onclick="exportarRelatorio()">📥 Exportar</button>
+                    <button class="btn" onclick="exportarRelatorio()">Exportar</button>
                 </div>
             </div>
         </div>

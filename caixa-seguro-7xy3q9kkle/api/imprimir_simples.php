@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/api-auth.php';
 // api/imprimir_simples.php - NOVO ARQUIVO
 // VERSÃO 100% NOVA - SEM CACHE
 
