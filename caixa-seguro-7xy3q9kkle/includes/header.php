@@ -30,9 +30,9 @@ $urlGerenciarCardapio = rtrim(dirname(PathConfig::url()), '/') . '/admin-seguro-
     
     <!-- ✅ CSS personalizado - se existir na raiz -->
     <?php if (file_exists(__DIR__ . '/../css/style.css')): ?>
-        <link rel="stylesheet" href="<?= PathConfig::url('css/style.css') ?>">
+        <link rel="stylesheet" href="<?= PathConfig::url('css/style.css') ?>?v=<?= filemtime(__DIR__ . '/../css/style.css') ?>">
     <?php elseif (file_exists(__DIR__ . '/../style.css')): ?>
-        <link rel="stylesheet" href="<?= PathConfig::url('style.css') ?>">
+        <link rel="stylesheet" href="<?= PathConfig::url('style.css') ?>?v=<?= filemtime(__DIR__ . '/../style.css') ?>">
     <?php else: ?>
         <style>
             /* Estilos básicos de fallback */
@@ -137,59 +137,23 @@ $urlGerenciarCardapio = rtrim(dirname(PathConfig::url()), '/') . '/admin-seguro-
             </nav>
 
             <?php if ($usuarioLogado): ?>
-            <div class="flex items-center justify-self-end gap-3">
-                <div class="dropdown dashboard-user-dropdown">
-                    <button type="button" class="dashboard-user-button dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Abrir menu do usuário">
-                        <i data-lucide="menu" class="dashboard-user-menu-icon" aria-hidden="true"></i>
-                    </button>
-                    
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li class="dropdown-header">
-                            <div class="d-flex align-items-center">
-                                <div class="user-avatar me-3">
-                                    <?= getInitials($usuarioNome) ?>
-                                </div>
-                                <div>
-                                    <strong><?= htmlspecialchars($usuarioNome) ?></strong>
-                                    <br>
-                                    <small class="text-muted"><?= htmlspecialchars($usuarioEmail) ?></small>
-                                </div>
-                            </div>
-                        </li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#userProfileModal">
-                                <i class="bi bi-person me-2"></i> Meu Perfil
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
-                                <i class="bi bi-lock me-2"></i> Alterar Senha
-                            </a>
-                        </li>
-                        <?php if ($usuarioPerfil === 'admin'): ?>
-                        <li>
-                            <a class="dropdown-item" href="<?= PathConfig::modules('admin/') ?>">
-                                <i class="bi bi-gear me-2"></i> Administração
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <a class="dropdown-item text-danger" href="<?= PathConfig::url('logout.php') ?>">
-                                <i class="bi bi-box-arrow-right me-2"></i> Sair
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-                <?php else: ?>
-                <div class="justify-self-end">
-                    <a href="<?= PathConfig::url('login.php') ?>" class="btn btn-outline-light btn-sm">
-                        <i class="bi bi-box-arrow-in-right"></i> Entrar
-                    </a>
-                </div>
-                <?php endif; ?>
+            <div
+                id="userMenuRoot"
+                class="dashboard-user-dropdown justify-self-end"
+                data-user-name="<?= htmlspecialchars($usuarioNome, ENT_QUOTES, 'UTF-8') ?>"
+                data-user-email="<?= htmlspecialchars($usuarioEmail, ENT_QUOTES, 'UTF-8') ?>"
+                data-user-initials="<?= htmlspecialchars(getInitials($usuarioNome), ENT_QUOTES, 'UTF-8') ?>"
+                data-is-admin="<?= $usuarioPerfil === 'admin' ? 'true' : 'false' ?>"
+                data-admin-url="<?= htmlspecialchars(PathConfig::modules('admin/'), ENT_QUOTES, 'UTF-8') ?>"
+                data-logout-url="<?= htmlspecialchars(PathConfig::url('logout.php'), ENT_QUOTES, 'UTF-8') ?>"
+            ></div>
+            <?php else: ?>
+            <div class="justify-self-end">
+                <a href="<?= PathConfig::url('login.php') ?>" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-box-arrow-in-right"></i> Entrar
+                </a>
             </div>
+            <?php endif; ?>
         </div>
     </header>
 
@@ -276,6 +240,126 @@ $urlGerenciarCardapio = rtrim(dirname(PathConfig::url()), '/') . '/admin-seguro-
             </div>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+    <script>
+    (() => {
+        const root = document.getElementById('userMenuRoot');
+        if (!root) return;
+        if (!window.React || !window.ReactDOM) {
+            console.error('O menu do usuário não pôde iniciar porque React não foi carregado.');
+            return;
+        }
+
+        const h = React.createElement;
+        const user = {
+            name: root.dataset.userName,
+            email: root.dataset.userEmail,
+            initials: root.dataset.userInitials,
+            isAdmin: root.dataset.isAdmin === 'true',
+            adminUrl: root.dataset.adminUrl,
+            logoutUrl: root.dataset.logoutUrl
+        };
+
+        function UserMenu() {
+            const [open, setOpen] = React.useState(false);
+            const trigger = React.useRef(null);
+            const firstAction = React.useRef(null);
+
+            React.useEffect(() => {
+                if (!open) return undefined;
+                firstAction.current?.focus();
+                const closeOnOutsideClick = (event) => {
+                    if (!root.contains(event.target)) setOpen(false);
+                };
+                const closeOnEscape = (event) => {
+                    if (event.key === 'Escape') {
+                        setOpen(false);
+                        trigger.current?.focus();
+                    }
+                };
+                document.addEventListener('click', closeOnOutsideClick);
+                document.addEventListener('keydown', closeOnEscape);
+                return () => {
+                    document.removeEventListener('click', closeOnOutsideClick);
+                    document.removeEventListener('keydown', closeOnEscape);
+                };
+            }, [open]);
+
+            const menuAction = (icon, label, props = {}) => h(
+                'a',
+                {
+                    className: 'dashboard-user-action',
+                    role: 'menuitem',
+                    onClick: () => setOpen(false),
+                    ...props
+                },
+                h('i', { className: `bi ${icon}`, 'aria-hidden': 'true' }),
+                h('span', null, label)
+            );
+
+            return h(
+                'div',
+                { className: 'dashboard-user-menu' },
+                h(
+                    'button',
+                    {
+                        ref: trigger,
+                        type: 'button',
+                        className: 'dashboard-user-button',
+                        'aria-label': 'Abrir menu do usuário',
+                        'aria-expanded': open,
+                        'aria-haspopup': 'menu',
+                        onClick: () => setOpen((isOpen) => !isOpen)
+                    },
+                    h(
+                        'span',
+                        { className: 'dashboard-user-menu-icon', 'aria-hidden': 'true' },
+                        h('span'),
+                        h('span'),
+                        h('span')
+                    )
+                ),
+                open && h(
+                    'div',
+                    { className: 'dashboard-user-popover', role: 'menu', 'aria-label': 'Menu do usuário' },
+                    h(
+                        'div',
+                        { className: 'dashboard-user-summary' },
+                        h('span', { className: 'dashboard-user-initials', 'aria-hidden': 'true' }, user.initials),
+                        h(
+                            'div',
+                            { className: 'dashboard-user-details' },
+                            h('strong', null, user.name),
+                            h('span', null, user.email)
+                        )
+                    ),
+                    h('div', { className: 'dashboard-user-divider' }),
+                    menuAction('bi-person', 'Meu perfil', {
+                        ref: firstAction,
+                        href: '#userProfileModal',
+                        'data-bs-toggle': 'modal',
+                        'data-bs-target': '#userProfileModal'
+                    }),
+                    menuAction('bi-lock', 'Alterar senha', {
+                        href: '#changePasswordModal',
+                        'data-bs-toggle': 'modal',
+                        'data-bs-target': '#changePasswordModal'
+                    }),
+                    user.isAdmin && menuAction('bi-gear', 'Administração', { href: user.adminUrl }),
+                    h('div', { className: 'dashboard-user-divider' }),
+                    menuAction('bi-box-arrow-right', 'Sair', {
+                        className: 'dashboard-user-action dashboard-user-action--danger',
+                        href: user.logoutUrl
+                    })
+                )
+            );
+        }
+
+        ReactDOM.createRoot(root).render(h(UserMenu));
+    })();
+    </script>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

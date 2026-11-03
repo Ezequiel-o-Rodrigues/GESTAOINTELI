@@ -56,32 +56,173 @@ main {
     background: rgba(255,255,255,0.08);
 }
 
+.dashboard-user-dropdown {
+    position: relative;
+}
+
 .dashboard-user-button {
     display: grid;
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     place-items: center;
     padding: 0;
     border: 0;
-    border-radius: 9px;
+    border-radius: 12px;
     background: transparent;
-    color: #e2e8f0;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    color: #cbd5e1;
+    cursor: pointer;
+    transition: background-color 0.18s ease, color 0.18s ease;
 }
 
 .dashboard-user-button:hover,
 .dashboard-user-button[aria-expanded="true"] {
     color: #fff;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.09);
 }
 
-.dashboard-user-button.dropdown-toggle::after {
-    display: none;
+.dashboard-user-button:focus-visible {
+    outline: 2px solid #fb923c;
+    outline-offset: 2px;
 }
 
 .dashboard-user-menu-icon {
-    width: 22px;
-    height: 22px;
+    display: grid;
+    width: 20px;
+    gap: 5px;
+}
+
+.dashboard-user-menu-icon span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+    transition: transform 0.18s ease, width 0.18s ease;
+}
+
+.dashboard-user-menu-icon span:nth-child(2) {
+    width: 14px;
+}
+
+.dashboard-user-button:hover .dashboard-user-menu-icon span:nth-child(2),
+.dashboard-user-button[aria-expanded="true"] .dashboard-user-menu-icon span:nth-child(2) {
+    width: 20px;
+}
+
+.dashboard-user-popover {
+    position: absolute;
+    z-index: 1050;
+    top: calc(100% + 10px);
+    right: 0;
+    width: min(280px, calc(100vw - 24px));
+    padding: 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 16px 42px rgba(15, 23, 42, 0.2);
+    color: #0f172a;
+    animation: dashboard-menu-enter 0.16s ease-out;
+}
+
+.dashboard-user-summary {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px;
+}
+
+.dashboard-user-initials {
+    display: grid;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    place-items: center;
+    border-radius: 12px;
+    background: #fff7ed;
+    color: #c2410c;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.dashboard-user-details {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+}
+
+.dashboard-user-details strong,
+.dashboard-user-details span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dashboard-user-details strong {
+    color: #0f172a;
+    font-size: 0.88rem;
+    font-weight: 700;
+}
+
+.dashboard-user-details span {
+    color: #64748b;
+    font-size: 0.76rem;
+}
+
+.dashboard-user-divider {
+    height: 1px;
+    margin: 5px 4px;
+    background: #f1f5f9;
+}
+
+.dashboard-user-action {
+    display: flex;
+    min-height: 42px;
+    align-items: center;
+    gap: 11px;
+    padding: 0 10px;
+    border-radius: 9px;
+    color: #334155;
+    font-size: 0.86rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.dashboard-user-action i {
+    width: 17px;
+    color: #64748b;
+    font-size: 0.95rem;
+    text-align: center;
+}
+
+.dashboard-user-action:hover,
+.dashboard-user-action:focus-visible {
+    background: #f8fafc;
+    color: #0f172a;
+    outline: none;
+}
+
+.dashboard-user-action--danger,
+.dashboard-user-action--danger i {
+    color: #dc2626;
+}
+
+.dashboard-user-action--danger:hover,
+.dashboard-user-action--danger:focus-visible {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+@keyframes dashboard-menu-enter {
+    from {
+        opacity: 0;
+        transform: translateY(-4px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .welcome-section {
