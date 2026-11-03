@@ -130,8 +130,16 @@
 
     function CashHeaderApp() {
         return h('div', { className: 'mini-header' },
-            h('h1', null, 'Caixa rápido'),
-            h('a', { href: root.dataset.homeUrl }, 'Início')
+            h('div', { className: 'mini-header-inner' },
+                h('a', { className: 'dashboard-brand', href: root.dataset.homeUrl },
+                    h('span', { className: 'dashboard-brand-mark', 'aria-hidden': 'true' }, 'G'),
+                    h('span', { className: 'dashboard-brand-copy' },
+                        h('span', { className: 'dashboard-brand-title' }, 'Caixa rápido'),
+                        h('span', { className: 'dashboard-brand-subtitle' }, 'Atendimento e comandas')
+                    )
+                ),
+                h('a', { className: 'cash-home-link', href: root.dataset.homeUrl }, 'Voltar ao início')
+            )
         );
     }
 

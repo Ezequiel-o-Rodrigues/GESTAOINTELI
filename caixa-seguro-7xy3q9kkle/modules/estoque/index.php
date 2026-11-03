@@ -183,22 +183,25 @@ $stockReactCategories = array_map(static function ($categoria) {
 
 <!-- Modal Entrada -->
 <div class="modal fade" id="entryModal" tabindex="-1" aria-labelledby="entryModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="entryModalLabel">Registrar Entrada</h5>
+                <div>
+                    <h5 class="modal-title" id="entryModalLabel">Registrar entrada</h5>
+                    <p class="mb-0 mt-1 small text-muted">Atualize o estoque com os dados do recebimento.</p>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
             <div class="modal-body">
                 <form id="entryForm">
                     <input type="hidden" id="entryProductId">
-                    <div class="mb-3">
+                    <div class="mb-3 stock-product-reference">
                         <label class="form-label">Produto</label>
                         <div id="entryProductName" class="form-control-plaintext fw-bold"></div>
                     </div>
                     <div class="mb-3">
                         <label for="entryQuantity" class="form-label">Quantidade</label>
-                        <input type="number" id="entryQuantity" class="form-control" min="1" required>
+                        <input type="number" id="entryQuantity" class="form-control" min="1" step="1" required>
                     </div>
                     <div class="mb-3">
                         <label for="entrySupplier" class="form-label">Fornecedor</label>
@@ -216,7 +219,7 @@ $stockReactCategories = array_map(static function ($categoria) {
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <button type="button" class="btn btn-primary" onclick="estoqueManager.registerEntry()">
                     Registrar Entrada
                 </button>
@@ -227,15 +230,19 @@ $stockReactCategories = array_map(static function ($categoria) {
 
 <!-- Modal Produto -->
 <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="productModalLabel">Novo Produto</h5>
+                <div>
+                    <h5 class="modal-title" id="productModalLabel">Novo produto</h5>
+                    <p class="mb-0 mt-1 small text-muted">Cadastre os dados do item e sua apresentação no cardápio.</p>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
             <div class="modal-body">
                 <form id="productForm" data-csrf-token="<?= htmlspecialchars($_SESSION['csrf_produto'], ENT_QUOTES, 'UTF-8') ?>">
                     <input type="hidden" id="productId">
+                    <h6 class="stock-form-section-title">Dados do produto</h6>
                     <div class="mb-3">
                         <label for="productName" class="form-label">Nome</label>
                         <input type="text" id="productName" class="form-control" required>
@@ -260,10 +267,10 @@ $stockReactCategories = array_map(static function ($categoria) {
                     </div>
                     <div class="mb-3">
                         <label for="productInitialStock" class="form-label">Estoque Inicial</label>
-                        <input type="number" id="productInitialStock" class="form-control" min="0" value="0">
+                        <input type="number" id="productInitialStock" class="form-control" min="0" step="1" value="0">
                     </div>
                     <hr>
-                    <h6>Apresentação no cardápio público</h6>
+                    <h6 class="stock-form-section-title">Apresentação no cardápio público</h6>
                     <p class="form-text">Nome e descrição são informativos. Preço e categoria continuam vindo do produto no caixa. Se houver opções relacionadas, elas aparecem no lugar do card principal.</p>
                     <div class="mb-3">
                         <label for="productPublicName" class="form-label">Nome público (opcional)</label>
@@ -287,7 +294,7 @@ $stockReactCategories = array_map(static function ($categoria) {
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <button type="button" class="btn btn-primary" onclick="estoqueManager.saveProduct()">
                     Salvar Produto
                 </button>
@@ -298,13 +305,14 @@ $stockReactCategories = array_map(static function ($categoria) {
 
 <!-- Modal Inventário Físico -->
 <div class="modal fade" id="inventarioModal" tabindex="-1" aria-labelledby="inventarioModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="inventarioModalLabel">
-                    Registrar inventário físico
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="inventarioModalLabel">Registrar inventário físico</h5>
+                    <p class="mb-0 mt-1 small text-muted">Compare a contagem física com o saldo registrado.</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
             <form method="POST" action="index.php">
                 <input type="hidden" name="action" value="registrar_inventario">
@@ -390,10 +398,10 @@ $stockReactCategories = array_map(static function ($categoria) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                         Cancelar
                     </button>
-                    <button type="submit" class="btn btn-success">
+                    <button type="submit" class="btn btn-primary">
                         Registrar inventário
                     </button>
                 </div>

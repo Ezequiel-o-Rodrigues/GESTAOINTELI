@@ -532,8 +532,9 @@ try {
             transform: translateY(0);
         }
     </style>
+    <link rel="stylesheet" href="<?= htmlspecialchars(PathConfig::modules('caixa/caixa.css'), ENT_QUOTES, 'UTF-8') ?>?v=<?= filemtime(__DIR__ . '/caixa.css') ?>">
 </head>
-<body>
+<body class="cash-register">
     <!-- CABEÇALHO -->
     <div id="react-app" data-screen="cash-header" data-home-url="<?= htmlspecialchars(PathConfig::url('index.php'), ENT_QUOTES, 'UTF-8') ?>"></div>
 
@@ -594,7 +595,11 @@ try {
                      data-produto-preco="<?= $produto['preco'] ?>"
                      data-produto-categoria="<?= $categoria_id ?>" 
                      data-produto-estoque="<?= $produto['estoque_atual'] ?>"
-                     onclick="adicionarProduto(<?= $produto['id'] ?>, '<?= htmlspecialchars(addslashes($produto['nome'])) ?>', <?= $produto['preco'] ?>)">
+                     role="button"
+                     tabindex="0"
+                     aria-label="Adicionar <?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?> à comanda"
+                     onclick="adicionarProduto(<?= (int) $produto['id'] ?>, <?= htmlspecialchars(json_encode($produto['nome'], JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_TAG | JSON_HEX_AMP), ENT_QUOTES, 'UTF-8') ?>, <?= json_encode((float) $produto['preco']) ?>)"
+                     onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
                     
                     <div class="produto-nome"><?= htmlspecialchars($produto['nome']) ?></div>
                     <div class="produto-preco">R$ <?= number_format($produto['preco'], 2, ',', '.') ?></div>
@@ -627,33 +632,32 @@ try {
     </script>   
 
         <!-- === MODAL SELECÃO GARÇOM DINÂMICO - BUSCA DO BD === -->
-    <div id="modalGarcom" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
-        <div style="background: white; padding: 25px; border-radius: 10px; width: 450px; max-width: 90vw; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); max-height: 80vh; overflow-y: auto;">
-            <h3 style="margin-bottom: 15px; color: #2c3e50;">Selecione o Garçom</h3>
-            <p style="color: #7f8c8d; margin-bottom: 25px;">Clique no garçom responsável pelo atendimento:</p>
+    <div id="modalGarcom" class="cash-modal" role="dialog" aria-modal="true" aria-labelledby="modalGarcomTitle" style="display: none;">
+        <div class="cash-modal-card">
+            <h2 id="modalGarcomTitle" class="cash-modal-title">Selecione o garçom</h2>
+            <p class="cash-modal-description">Escolha quem será responsável pelo atendimento.</p>
             
             <!-- Grid de Botões dos Garçons - DINÂMICO -->
-            <div id="gridGarcons" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 25px;">
+            <div id="gridGarcons" class="cash-waiter-grid">
                 <?php if (!empty($garcons)): ?>
                     <?php foreach($garcons as $garcom): ?>
                     <button class="btn-garcom" data-garcom="<?= $garcom['codigo'] ?>" onclick="selecionarGarcom('<?= $garcom['codigo'] ?>', '<?= addslashes($garcom['nome']) ?>')">
-                        <div style="font-weight: bold; font-size: 1.1rem;"><?= htmlspecialchars($garcom['codigo']) ?></div>
-                        <div style="font-size: 0.8rem; color: #7f8c8d;"><?= htmlspecialchars($garcom['nome']) ?></div>
+                        <span class="cash-waiter-code"><?= htmlspecialchars($garcom['codigo']) ?></span>
+                        <span class="cash-waiter-name"><?= htmlspecialchars($garcom['nome']) ?></span>
                     </button>
                     <?php endforeach; ?>
                 <?php else: ?>
-                    <div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: #7f8c8d;">
+                    <div class="cash-waiter-empty">
                         <p>Nenhum garçom cadastrado</p>
-                        <button onclick="fecharModalGarcom()" style="background: #95a5a6; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-top: 10px; cursor: pointer;">
+                        <button class="cash-button cash-button--secondary" onclick="fecharModalGarcom()">
                             Fechar
                         </button>
                     </div>
                 <?php endif; ?>
             </div>
 
-            <div style="border-top: 1px solid #ecf0f1; padding-top: 15px;">
-                <button onclick="fecharModalGarcom()" 
-                        style="background: #95a5a6; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">
+            <div class="cash-modal-actions">
+                <button class="cash-button cash-button--secondary" onclick="fecharModalGarcom()">
                     Cancelar
                 </button>
             </div>
@@ -661,19 +665,17 @@ try {
     </div>
 
     <!-- MODAL COMPROVANTE -->
-    <div id="modalComprovante" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center;">
-        <div style="background: white; padding: 30px; border-radius: 10px; width: 400px; max-width: 90vw; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
-            <h3 style="margin-bottom: 15px; color: #2c3e50;">Venda Finalizada!</h3>
-            <p id="totalVenda" style="color: #7f8c8d; margin-bottom: 20px;">Total: <strong>R$ 0,00</strong></p>
-            <p style="color: #7f8c8d; margin-bottom: 25px;">Deseja imprimir o comprovante?</p>
+    <div id="modalComprovante" class="cash-modal" role="dialog" aria-modal="true" aria-labelledby="modalComprovanteTitle" style="display: none;">
+        <div class="cash-modal-card cash-modal-card--receipt">
+            <h2 id="modalComprovanteTitle" class="cash-modal-title">Venda finalizada</h2>
+            <p id="totalVenda" class="cash-modal-total">Total: <strong>R$ 0,00</strong></p>
+            <p class="cash-modal-description">Deseja imprimir o comprovante?</p>
             
-            <div style="display: flex; gap: 15px; justify-content: center;">
-                <button id="btnImprimirComprovante" 
-                        style="background: #3498db; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">
+            <div class="cash-modal-actions cash-modal-actions--center">
+                <button id="btnImprimirComprovante" class="cash-button cash-button--primary">
                     Imprimir
                 </button>
-                <button id="btnPularImpressao" 
-                        style="background: #95a5a6; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">
+                <button id="btnPularImpressao" class="cash-button cash-button--secondary">
                     Não imprimir
                 </button>
             </div>

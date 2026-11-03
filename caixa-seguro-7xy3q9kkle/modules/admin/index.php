@@ -302,10 +302,13 @@ require_once '../../includes/header.php';
     </div>
 
     <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalTitle" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2 class="modal-title fs-5" id="userModalTitle">Novo usuário</h2>
+                    <div>
+                        <h2 class="modal-title fs-5" id="userModalTitle">Novo usuário</h2>
+                        <p class="mb-0 mt-1 small text-muted">Defina os dados de acesso e o perfil da conta.</p>
+                    </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                 </div>
                 <form method="POST">
@@ -328,19 +331,20 @@ require_once '../../includes/header.php';
                                 <option value="caixa">Caixa</option>
                                 <option value="estoque">Estoque</option>
                             </select>
+                            <div class="form-text">O perfil determina quais módulos e operações estarão disponíveis para a conta.</div>
                         </div>
                         <div class="mb-3">
                             <label for="userSenha" class="form-label">Senha</label>
                             <input type="password" class="form-control" id="userSenha" name="senha" minlength="8" autocomplete="new-password">
                             <div class="form-text">Obrigatória para novos usuários; deixe em branco para manter a senha atual.</div>
                         </div>
-                        <div class="form-check">
+                        <div class="form-check stock-account-status">
                             <input class="form-check-input" type="checkbox" id="userAtivo" name="ativo" checked>
                             <label class="form-check-label" for="userAtivo">Conta ativa</label>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
                         <button type="submit" class="btn btn-primary">Salvar usuário</button>
                     </div>
                 </form>
@@ -448,12 +452,15 @@ require_once '../../includes/header.php';
     </div>
 
 <!-- Modal Garçom -->
-<div class="modal fade" id="garcomModal" tabindex="-1">
-    <div class="modal-dialog">
+<div class="modal fade" id="garcomModal" tabindex="-1" aria-labelledby="garcomModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="garcomModalTitle">Novo Garçom</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div>
+                    <h5 class="modal-title" id="garcomModalTitle">Novo Garçom</h5>
+                    <p class="mb-0 mt-1 small text-muted">Cadastre os dados usados para identificar o atendimento.</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
             <form method="POST" id="garcomForm">
                 <div class="modal-body">
@@ -476,7 +483,7 @@ require_once '../../includes/header.php';
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Salvar</button>
                 </div>
             </form>
