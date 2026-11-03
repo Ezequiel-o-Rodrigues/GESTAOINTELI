@@ -719,6 +719,43 @@ mark {
     border: 1px solid #f1b0b7;
 }
 
+.stock-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.stock-row-actions {
+    display: flex;
+    min-width: 250px;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.stock-row-actions .btn {
+    min-height: 34px;
+    padding: 5px 9px;
+    font-size: 0.8rem;
+}
+
+.stock-empty-state {
+    margin: 0;
+    padding: 36px 16px;
+    color: #64748b;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .stock-filter-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .stock-row-actions {
+        min-width: 220px;
+    }
+}
+
 /* Hover effects nos botões */
 .btn-outline-primary:hover { background-color: #0d6efd; color: white; }
 .btn-outline-success:hover { background-color: #198754; color: white; }

@@ -78,7 +78,7 @@ public_html/
 
 As permissões são verificadas nas páginas e nas APIs; ocultar um link na navegação não substitui a validação do servidor.
 
-O login, o painel inicial, a navegação compartilhada e o cabeçalho do caixa usam React 18 via CDN e o arquivo `js/react-app.js`. Bootstrap continua carregado para as telas operacionais existentes, que mantêm os endpoints PHP atuais durante a migração gradual, sem etapa de compilação no deploy.
+O login, o painel inicial, a navegação compartilhada, o cabeçalho do caixa e a listagem/filtros do estoque usam React 18 via CDN e o arquivo `js/react-app.js`. Os modais e operações de estoque, assim como as demais telas operacionais, continuam usando Bootstrap e os endpoints PHP atuais durante a migração gradual, sem etapa de compilação no deploy.
 
 ## Migrações do cardápio integrado
 

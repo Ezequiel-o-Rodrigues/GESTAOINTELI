@@ -351,34 +351,6 @@ class EstoqueManager {
         }
     }
 
-    // ========== FILTROS ==========
-    filterProducts() {
-        const categorySelects = document.querySelectorAll('[onchange="estoqueManager.filterProducts()"]');
-        const searchInput = document.querySelector('[onkeyup="estoqueManager.filterProducts()"]');
-        
-        const category = categorySelects[0]?.value || 'all';
-        const status = categorySelects[1]?.value || 'all';
-        const search = (searchInput?.value || '').toLowerCase();
-
-        this.log('Filtrando produtos', { category, status, search });
-
-        document.querySelectorAll('.product-row').forEach(row => {
-            const rowCategory = row.getAttribute('data-category');
-            const rowStatus = row.getAttribute('data-status');
-            const rowName = row.getAttribute('data-name');
-
-            const categoryMatch = category === 'all' || rowCategory === category;
-            const statusMatch = status === 'all' || rowStatus === status;
-            const searchMatch = rowName.includes(search);
-
-            if (categoryMatch && statusMatch && searchMatch) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
-    }
-
     // ========== UTILITÁRIOS ==========
     editProduct(productId) {
         this.log('Editando produto', { productId });

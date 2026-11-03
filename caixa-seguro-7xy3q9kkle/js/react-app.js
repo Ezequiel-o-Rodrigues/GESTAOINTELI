@@ -153,6 +153,9 @@
         try {
             products = JSON.parse(productsElement.textContent);
             categories = JSON.parse(categoriesElement.textContent);
+            if (!Array.isArray(products) || !Array.isArray(categories)) {
+                throw new TypeError('Os dados do estoque devem ser listas.');
+            }
         } catch (error) {
             console.error('Não foi possível ler os dados de estoque.', error);
             return h('p', { className: 'alert alert-danger', role: 'alert' },
@@ -160,10 +163,14 @@
             );
         }
 
-        const filteredProducts = products.filter((product) => {
+        const getStockStatus = (product) => {
             const currentStock = Number(product.estoque_atual);
             const minimumStock = Number(product.estoque_minimo);
-            const productStatus = currentStock <= 0 ? 'critical' : currentStock <= minimumStock ? 'low' : 'normal';
+            return currentStock === 0 ? 'critical' : currentStock <= minimumStock ? 'low' : 'normal';
+        };
+
+        const filteredProducts = products.filter((product) => {
+            const productStatus = getStockStatus(product);
             const matchesCategory = category === 'all' || String(product.categoria_id) === category;
             const matchesStatus = status === 'all' || productStatus === status;
             const matchesSearch = String(product.nome).toLocaleLowerCase('pt-BR').includes(search.trim().toLocaleLowerCase('pt-BR'));
@@ -179,7 +186,7 @@
         const rows = filteredProducts.map((product) => {
             const currentStock = Number(product.estoque_atual);
             const minimumStock = Number(product.estoque_minimo);
-            const productStatus = currentStock <= 0 ? 'critical' : currentStock <= minimumStock ? 'low' : 'normal';
+            const productStatus = getStockStatus(product);
             const statusLabels = { critical: 'Crítico', low: 'Baixo', normal: 'Normal' };
 
             return h('tr', { key: product.id },
