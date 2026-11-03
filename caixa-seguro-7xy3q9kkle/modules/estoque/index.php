@@ -54,19 +54,6 @@ $stmt_produtos = $db->prepare($query_produtos);
 $stmt_produtos->execute();
 $produtos = $stmt_produtos->fetchAll(PDO::FETCH_ASSOC);
 
-// Organizar produtos por categoria
-$produtos_por_categoria = [];
-foreach ($produtos as $produto) {
-    $categoria_id = $produto['categoria_id'];
-    if (!isset($produtos_por_categoria[$categoria_id])) {
-        $produtos_por_categoria[$categoria_id] = [
-            'categoria_nome' => $produto['categoria_nome'],
-            'produtos' => []
-        ];
-    }
-    $produtos_por_categoria[$categoria_id]['produtos'][] = $produto;
-}
-
 // Buscar todas as categorias
 $query_categorias = "SELECT * FROM categorias ORDER BY nome";
 $stmt_categorias = $db->prepare($query_categorias);
@@ -93,6 +80,25 @@ foreach ($produtos as $produto) {
         $alertas_count++;
     }
 }
+
+$stockReactProducts = array_map(static function ($produto) {
+    return [
+        'id' => (int) $produto['id'],
+        'nome' => (string) $produto['nome'],
+        'categoria_id' => (int) $produto['categoria_id'],
+        'categoria_nome' => (string) $produto['categoria_nome'],
+        'preco' => (float) $produto['preco'],
+        'estoque_atual' => (float) $produto['estoque_atual'],
+        'estoque_minimo' => (float) $produto['estoque_minimo'],
+    ];
+}, $produtos);
+
+$stockReactCategories = array_map(static function ($categoria) {
+    return [
+        'id' => (int) $categoria['id'],
+        'nome' => (string) $categoria['nome'],
+    ];
+}, $todas_categorias);
 ?>
 
 <div class="container-fluid py-4">
@@ -165,142 +171,14 @@ foreach ($produtos as $produto) {
     </div>
     <?php endif; ?>
 
-    <!-- Filtros -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-filter"></i> Filtros
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Categoria</label>
-                            <select class="form-select" onchange="estoqueManager.filterProducts()">
-                                <option value="all">Todas as categorias</option>
-                                <?php foreach($todas_categorias as $categoria): ?>
-                                <option value="<?= $categoria['id'] ?>"><?= htmlspecialchars($categoria['nome']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Status</label>
-                            <select class="form-select" onchange="estoqueManager.filterProducts()">
-                                <option value="all">Todos</option>
-                                <option value="normal">Normal</option>
-                                <option value="low">Baixo</option>
-                                <option value="critical">Crítico</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Buscar</label>
-                            <input type="text" class="form-control" placeholder="Nome do produto..." 
-                                   onkeyup="estoqueManager.filterProducts()">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Lista de Produtos -->
-    <div class="row">
-        <?php foreach($produtos_por_categoria as $categoria_id => $categoria_data): ?>
-        <div class="col-12 mb-4">
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-tag"></i> <?= htmlspecialchars($categoria_data['categoria_nome']) ?>
-                    </h5>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Produto</th>
-                                    <th>Preço</th>
-                                    <th>Estoque</th>
-                                    <th>Mínimo</th>
-                                    <th>Status</th>
-                                    <th width="200">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach($categoria_data['produtos'] as $produto): 
-                                    $status_class = '';
-                                    $status_text = '';
-                                    $stock_class = '';
-                                    
-                                    if ($produto['estoque_atual'] == 0) {
-                                        $status_class = 'status-critical';
-                                        $status_text = 'Crítico';
-                                        $stock_class = 'no-stock';
-                                    } elseif ($produto['estoque_atual'] <= $produto['estoque_minimo']) {
-                                        $status_class = 'status-low';
-                                        $status_text = 'Baixo';
-                                        $stock_class = 'low-stock';
-                                    } else {
-                                        $status_class = 'status-normal';
-                                        $status_text = 'Normal';
-                                    }
-                                ?>
-                                <tr class="product-row" 
-                                    data-category="<?= $categoria_id ?>" 
-                                    data-status="<?= strtolower($status_text) ?>"
-                                    data-name="<?= htmlspecialchars(strtolower($produto['nome'])) ?>">
-                                    <td><?= $produto['id'] ?></td>
-                                    <td>
-                                        <strong><?= htmlspecialchars($produto['nome']) ?></strong>
-                                    </td>
-                                    <td>R$ <?= number_format($produto['preco'], 2, ',', '.') ?></td>
-                                    <td class="<?= $stock_class ?>">
-                                        <?= $produto['estoque_atual'] ?>
-                                    </td>
-                                    <td><?= $produto['estoque_minimo'] ?></td>
-                                    <td>
-                                        <span class="status-badge <?= $status_class ?>">
-                                            <?= $status_text ?>
-                                        </span>
-                                    </td>
-
-                                    <td>
-                                        <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-primary" 
-                                                    onclick="estoqueManager.editProduct(<?= $produto['id'] ?>)"
-                                                    title="Editar Produto">
-                                                Editar
-                                            </button>
-                                            <button class="btn btn-outline-success" 
-                                                    onclick="estoqueManager.showEntryModal(<?= $produto['id'] ?>)"
-                                                    title="Registrar Entrada">
-                                                Registrar entrada
-                                            </button>
-                                            <button class="btn btn-outline-info" 
-                                                    onclick="abrirModalInventarioProduto(<?= $produto['id'] ?>)"
-                                                    title="Inventário Físico">
-                                                Inventário
-                                            </button>
-                                            <button class="btn btn-outline-<?= $produto['ativo'] ? 'warning' : 'success' ?>" 
-                                                    onclick="estoqueManager.toggleProduct(<?= $produto['id'] ?>, <?= $produto['ativo'] ? 0 : 1 ?>)"
-                                                    title="<?= $produto['ativo'] ? 'Desativar Produto' : 'Ativar Produto' ?>">
-                                                <?= $produto['ativo'] ? 'Desativar' : 'Ativar' ?>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <?php endforeach; ?>
-    </div>
+    <div
+        id="react-app"
+        data-screen="stock-list"
+        data-products-id="stock-react-products"
+        data-categories-id="stock-react-categories"
+    ></div>
+    <script id="stock-react-products" type="application/json"><?= json_encode($stockReactProducts, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?></script>
+    <script id="stock-react-categories" type="application/json"><?= json_encode($stockReactCategories, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?></script>
 </div>
 
 <!-- Modal Entrada -->

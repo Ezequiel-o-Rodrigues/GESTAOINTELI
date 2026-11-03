@@ -135,6 +135,160 @@
         );
     }
 
+    function StockApp() {
+        const [category, setCategory] = React.useState('all');
+        const [status, setStatus] = React.useState('all');
+        const [search, setSearch] = React.useState('');
+        const productsElement = document.getElementById(root.dataset.productsId);
+        const categoriesElement = document.getElementById(root.dataset.categoriesId);
+
+        if (!productsElement || !categoriesElement) {
+            return h('p', { className: 'alert alert-danger', role: 'alert' },
+                'Não foi possível carregar a lista de produtos. Atualize a página.'
+            );
+        }
+
+        let products;
+        let categories;
+        try {
+            products = JSON.parse(productsElement.textContent);
+            categories = JSON.parse(categoriesElement.textContent);
+        } catch (error) {
+            console.error('Não foi possível ler os dados de estoque.', error);
+            return h('p', { className: 'alert alert-danger', role: 'alert' },
+                'Não foi possível carregar a lista de produtos. Atualize a página.'
+            );
+        }
+
+        const filteredProducts = products.filter((product) => {
+            const currentStock = Number(product.estoque_atual);
+            const minimumStock = Number(product.estoque_minimo);
+            const productStatus = currentStock <= 0 ? 'critical' : currentStock <= minimumStock ? 'low' : 'normal';
+            const matchesCategory = category === 'all' || String(product.categoria_id) === category;
+            const matchesStatus = status === 'all' || productStatus === status;
+            const matchesSearch = String(product.nome).toLocaleLowerCase('pt-BR').includes(search.trim().toLocaleLowerCase('pt-BR'));
+
+            return matchesCategory && matchesStatus && matchesSearch;
+        });
+
+        const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+        }).format(Number(value) || 0);
+
+        const rows = filteredProducts.map((product) => {
+            const currentStock = Number(product.estoque_atual);
+            const minimumStock = Number(product.estoque_minimo);
+            const productStatus = currentStock <= 0 ? 'critical' : currentStock <= minimumStock ? 'low' : 'normal';
+            const statusLabels = { critical: 'Crítico', low: 'Baixo', normal: 'Normal' };
+
+            return h('tr', { key: product.id },
+                h('td', null, product.id),
+                h('td', null, h('strong', null, product.nome)),
+                h('td', null, product.categoria_nome),
+                h('td', null, formatCurrency(product.preco)),
+                h('td', { className: productStatus === 'critical' ? 'no-stock' : productStatus === 'low' ? 'low-stock' : '' }, currentStock),
+                h('td', null, minimumStock),
+                h('td', null, h('span', { className: `status-badge status-${productStatus}` }, statusLabels[productStatus])),
+                h('td', null,
+                    h('div', { className: 'stock-row-actions' },
+                        h('button', {
+                            type: 'button',
+                            className: 'btn btn-sm btn-outline-primary',
+                            onClick: () => window.estoqueManager.editProduct(Number(product.id))
+                        }, 'Editar'),
+                        h('button', {
+                            type: 'button',
+                            className: 'btn btn-sm btn-outline-success',
+                            onClick: () => window.estoqueManager.showEntryModal(Number(product.id))
+                        }, 'Registrar entrada'),
+                        h('button', {
+                            type: 'button',
+                            className: 'btn btn-sm btn-outline-info',
+                            onClick: () => window.abrirModalInventarioProduto(Number(product.id))
+                        }, 'Inventário'),
+                        h('button', {
+                            type: 'button',
+                            className: 'btn btn-sm btn-outline-warning',
+                            onClick: () => window.estoqueManager.toggleProduct(Number(product.id), 0)
+                        }, 'Desativar')
+                    )
+                )
+            );
+        });
+
+        return h(React.Fragment, null,
+            h('section', { className: 'card mb-4', 'aria-labelledby': 'stock-filter-title' },
+                h('div', { className: 'card-header' },
+                    h('h2', { id: 'stock-filter-title', className: 'h5 mb-0' }, 'Filtrar produtos')
+                ),
+                h('div', { className: 'card-body' },
+                    h('div', { className: 'stock-filter-grid' },
+                        h('div', null,
+                            h('label', { className: 'form-label', htmlFor: 'stock-category-filter' }, 'Categoria'),
+                            h('select', {
+                                id: 'stock-category-filter',
+                                className: 'form-select',
+                                value: category,
+                                onChange: (event) => setCategory(event.target.value)
+                            },
+                                h('option', { value: 'all' }, 'Todas as categorias'),
+                                ...categories.map((item) => h('option', { key: item.id, value: String(item.id) }, item.nome))
+                            )
+                        ),
+                        h('div', null,
+                            h('label', { className: 'form-label', htmlFor: 'stock-status-filter' }, 'Status'),
+                            h('select', {
+                                id: 'stock-status-filter',
+                                className: 'form-select',
+                                value: status,
+                                onChange: (event) => setStatus(event.target.value)
+                            },
+                                h('option', { value: 'all' }, 'Todos'),
+                                h('option', { value: 'normal' }, 'Normal'),
+                                h('option', { value: 'low' }, 'Baixo'),
+                                h('option', { value: 'critical' }, 'Crítico')
+                            )
+                        ),
+                        h('div', null,
+                            h('label', { className: 'form-label', htmlFor: 'stock-search' }, 'Buscar produto'),
+                            h('input', {
+                                id: 'stock-search',
+                                className: 'form-control',
+                                type: 'search',
+                                value: search,
+                                onChange: (event) => setSearch(event.target.value),
+                                placeholder: 'Digite o nome do produto'
+                            })
+                        )
+                    )
+                )
+            ),
+            h('section', { className: 'card', 'aria-labelledby': 'stock-list-title' },
+                h('div', { className: 'card-header d-flex align-items-center justify-content-between gap-2' },
+                    h('h2', { id: 'stock-list-title', className: 'h5 mb-0' }, 'Produtos'),
+                    h('span', { className: 'text-muted small', 'aria-live': 'polite' },
+                        `${filteredProducts.length} de ${products.length} produtos`
+                    )
+                ),
+                h('div', { className: 'table-responsive' },
+                    filteredProducts.length
+                        ? h('table', { className: 'table table-hover align-middle mb-0' },
+                            h('thead', { className: 'table-light' },
+                                h('tr', null,
+                                    ...['ID', 'Produto', 'Categoria', 'Preço', 'Estoque', 'Mínimo', 'Status', 'Ações'].map((label) => h('th', { key: label, scope: 'col' }, label))
+                                )
+                            ),
+                            h('tbody', null, ...rows)
+                        )
+                        : h('p', { className: 'stock-empty-state', role: 'status' },
+                            products.length ? 'Nenhum produto corresponde aos filtros.' : 'Nenhum produto ativo cadastrado.'
+                        )
+                )
+            )
+        );
+    }
+
     if (navRoot) ReactDOM.createRoot(navRoot).render(h(NavigationApp));
     if (root) {
         const screen = root.dataset.screen;
@@ -144,6 +298,8 @@
                 ? h(DashboardApp)
                 : screen === 'cash-header'
                     ? h(CashHeaderApp)
+                    : screen === 'stock-list'
+                        ? h(StockApp)
                     : null;
         if (app) ReactDOM.createRoot(root).render(app);
     }
