@@ -11,7 +11,7 @@ $usuarioPerfil = $_SESSION['usuario_perfil'] ?? '';
 $tituloPagina = $tituloPagina ?? 'Sistema Restaurante';
 $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
 $paginaInicio = rtrim(dirname($scriptName), '/.') === rtrim(PathConfig::url(), '/');
-$urlGerenciarCardapio = rtrim(dirname(PathConfig::url()), '/') . '/admin-seguro-7xy3q9bk/gerenciar_cardapio.php';
+$urlGerenciarCardapio = PathConfig::modules('cardapio/');
 
 ?>
 <!DOCTYPE html>

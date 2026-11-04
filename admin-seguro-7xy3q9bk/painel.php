@@ -205,7 +205,7 @@ require_once __DIR__ . '/includes/auth.php';
             <div class="container header-container">
                 <nav class="nav">
                     <ul class="menu-botoes">
-                        <li><a href="gerenciar_cardapio.php">Gerenciar produtos do cardápio</a></li>
+                        <li><a href="../caixa-seguro-7xy3q9kkle/modules/cardapio/">Gerenciar produtos do cardápio</a></li>
                         <li><a href="relatoriogeral.php">Relatório Geral</a></li>
                         <li><a href="logout.php" class="btn btn-danger">Sair</a></li>
                     </ul>

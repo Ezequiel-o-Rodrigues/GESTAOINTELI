@@ -56,7 +56,7 @@ Tipografia, cores, identidade visual, espaçamentos, hierarquia, estilo dos card
 ## Referências da implementação atual
 
 - Página pública: [`public/cardapio.php`](./public/cardapio.php)
-- Gerenciamento da apresentação: [`admin-seguro-7xy3q9bk/gerenciar_cardapio.php`](./admin-seguro-7xy3q9bk/gerenciar_cardapio.php)
+- Gerenciamento da apresentação: [`caixa-seguro-7xy3q9kkle/modules/cardapio/index.php`](./caixa-seguro-7xy3q9kkle/modules/cardapio/index.php)
 - Salvamento e validações: [`caixa-seguro-7xy3q9kkle/api/salvar_produto.php`](./caixa-seguro-7xy3q9kkle/api/salvar_produto.php)
 - Regras de resolução e upload de imagens: [`caixa-seguro-7xy3q9kkle/includes/menu-images.php`](./caixa-seguro-7xy3q9kkle/includes/menu-images.php)
 - Estrutura de apresentação e subcategorias: [`caixa-seguro-7xy3q9kkle/migracao_cardapio_integrado.sql`](./caixa-seguro-7xy3q9kkle/migracao_cardapio_integrado.sql)

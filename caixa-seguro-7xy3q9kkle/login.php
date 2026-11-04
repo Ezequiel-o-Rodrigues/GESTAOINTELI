@@ -9,7 +9,7 @@ if (isset($_SESSION['usuario_logado']) && $_SESSION['usuario_logado'] === true) 
     if (in_array($perfilSessao, ['admin', 'caixa', 'estoque'], true)) {
         $destinoCardapioPermitido = $destinoCardapio && $perfilSessao === 'admin';
         header('Location: ' . ($destinoCardapioPermitido
-            ? '../admin-seguro-7xy3q9bk/gerenciar_cardapio.php'
+            ? 'modules/cardapio/'
             : 'index.php'));
         exit;
     }
@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $_SESSION['last_activity'] = time();
 
                         header('Location: ' . ($destinoCardapio
-                            ? '../admin-seguro-7xy3q9bk/gerenciar_cardapio.php'
+                            ? 'modules/cardapio/'
                             : 'index.php'));
                         exit;
                     }

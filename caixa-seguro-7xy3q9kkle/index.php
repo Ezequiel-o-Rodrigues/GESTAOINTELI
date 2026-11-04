@@ -14,8 +14,7 @@ require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/permissions.php';
 require_once __DIR__ . '/includes/header.php';
 
-$baseSistema = rtrim(dirname(rtrim(PathConfig::url(), '/')), '/');
-$urlGerenciarCardapio = $baseSistema . '/admin-seguro-7xy3q9bk/gerenciar_cardapio.php';
+$urlGerenciarCardapio = PathConfig::modules('cardapio/');
 ?>
 <div
     id="react-app"

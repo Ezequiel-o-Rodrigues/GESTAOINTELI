@@ -30,7 +30,11 @@ if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 
         $basePath = $caixaPosition !== false
             ? substr($scriptName, 0, $caixaPosition)
             : ($adminPosition !== false ? substr($scriptName, 0, $adminPosition) : '');
-        $destinoCardapio = $adminPosition !== false && strpos($scriptName, '/gerenciar_cardapio.php') !== false
+        $destinoCardapio = strpos($scriptName, '/modules/cardapio/') !== false
+            || ($adminPosition !== false && (
+                strpos($scriptName, '/gerenciar_cardapio.php') !== false
+                || strpos($scriptName, '/salvar_cardapio.php') !== false
+            ))
             ? '&destino=cardapio'
             : '';
 
