@@ -10,10 +10,13 @@ try {
 
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $stmt = $db->prepare(
-            "SELECT id, cliente_nome, mesa_numero, valor_total, created_at
-             FROM comandas
-             WHERE status = 'aberta'
-             ORDER BY created_at DESC, id DESC"
+            "SELECT c.id, c.cliente_nome, c.mesa_numero, c.valor_total, c.created_at,
+                    COALESCE(u.nome, g.nome) AS garcom_nome
+             FROM comandas c
+             LEFT JOIN usuarios u ON u.id = c.garcom_usuario_id
+             LEFT JOIN garcons g ON g.id = c.garcom_id
+             WHERE c.status = 'aberta'
+             ORDER BY c.created_at DESC, c.id DESC"
         );
         $stmt->execute();
         echo json_encode(['success' => true, 'comandas' => $stmt->fetchAll(PDO::FETCH_ASSOC)], JSON_UNESCAPED_UNICODE);

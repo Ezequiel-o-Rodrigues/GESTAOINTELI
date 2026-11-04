@@ -65,7 +65,7 @@
         if (orders.length === 0) {
             const empty = document.createElement('p');
             empty.className = 'waiter-empty';
-            empty.textContent = 'Você ainda não tem comandas abertas.';
+            empty.textContent = 'Não há comandas abertas neste momento.';
             dashboardOrders.appendChild(empty);
             ordersList.appendChild(empty.cloneNode(true));
         }
@@ -81,9 +81,12 @@
             title.textContent = order.cliente_nome || `Comanda #${order.id}`;
             const number = document.createElement('span');
             number.className = 'waiter-order-meta';
-            number.textContent = order.mesa_numero
+            const details = order.mesa_numero
                 ? `Mesa ${order.mesa_numero} · Comanda #${order.id}`
                 : `Comanda #${order.id}`;
+            number.textContent = order.garcom_nome
+                ? `${details} · Aberta por ${order.garcom_nome}`
+                : details;
             const total = document.createElement('span');
             total.className = 'waiter-order-total';
             total.textContent = formatCurrency(order.valor_total);
@@ -253,6 +256,15 @@
                 showMessage('A comanda selecionada não está mais aberta.', false);
             } else {
                 updateActiveOrderHeading(selectedOrder);
+                if (!orderDetail.hidden) {
+                    const selectedId = Number(selectedOrder.id);
+                    const itemsData = await request(
+                        `${config.itemsUrl}?comanda_id=${encodeURIComponent(selectedId)}`
+                    );
+                    if (selectedOrder && Number(selectedOrder.id) === selectedId) {
+                        renderItems(itemsData.itens);
+                    }
+                }
             }
         } else {
             ordersDashboard.hidden = false;

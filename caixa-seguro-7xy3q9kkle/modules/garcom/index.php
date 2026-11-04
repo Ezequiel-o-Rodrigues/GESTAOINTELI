@@ -52,7 +52,7 @@ try {
         <div class="waiter-account">
             <button type="button" class="waiter-orders-toggle" id="toggleOrders" aria-expanded="false" aria-controls="ordersSidebar">
                 <i class="bi bi-list-ul" aria-hidden="true"></i>
-                <span>Minhas comandas</span>
+                <span>Comandas abertas</span>
                 <span id="ordersCount" class="waiter-count">0</span>
             </button>
             <span><?= htmlspecialchars($_SESSION['usuario_nome'] ?? 'Garçom', ENT_QUOTES, 'UTF-8') ?></span>
@@ -61,11 +61,11 @@ try {
     </header>
 
     <div id="ordersBackdrop" class="waiter-sidebar-backdrop" hidden></div>
-    <aside id="ordersSidebar" class="waiter-sidebar" role="dialog" aria-modal="true" aria-label="Minhas comandas abertas" aria-hidden="true" inert>
+    <aside id="ordersSidebar" class="waiter-sidebar" role="dialog" aria-modal="true" aria-label="Comandas abertas para atendimento conjunto" aria-hidden="true" inert>
         <div class="waiter-sidebar-heading">
             <div>
                 <p class="waiter-eyebrow">EM ATENDIMENTO</p>
-                <h2>Minhas comandas</h2>
+                <h2>Comandas abertas</h2>
             </div>
             <button type="button" id="closeOrders" class="waiter-sidebar-close" aria-label="Fechar lista de comandas">
                 <i class="bi bi-x-lg" aria-hidden="true"></i>
@@ -86,9 +86,9 @@ try {
         <section id="ordersDashboard" class="waiter-dashboard" aria-labelledby="dashboardTitle">
             <div class="waiter-dashboard-heading">
                 <div>
-                    <p class="waiter-eyebrow">SEUS ATENDIMENTOS</p>
+                    <p class="waiter-eyebrow">ATENDIMENTO COOPERATIVO</p>
                     <h2 id="dashboardTitle">Comandas abertas</h2>
-                    <p class="waiter-help">Selecione uma comanda para continuar o atendimento ou abra uma nova.</p>
+                    <p class="waiter-help">Todos os garçons podem visualizar e atender qualquer comanda aberta.</p>
                 </div>
                 <button class="waiter-button waiter-button--primary" type="button" id="openCreateOrder">
                     <i class="bi bi-plus-circle" aria-hidden="true"></i> Abrir comanda

@@ -21,7 +21,9 @@ try {
         if (!$comandaId || $comandaId < 1) {
             responderItensGarcom(400, ['success' => false, 'message' => 'Comanda inválida.']);
         }
-        $stmt = $db->prepare("SELECT id FROM comandas WHERE id = ? AND status = 'aberta'");
+        $stmt = $db->prepare(
+            "SELECT id FROM comandas WHERE id = ? AND status = 'aberta'"
+        );
         $stmt->execute([(int) $comandaId]);
         if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
             responderItensGarcom(404, ['success' => false, 'message' => 'Comanda aberta não encontrada.']);
