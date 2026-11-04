@@ -9,6 +9,11 @@ function openUserModal(user) {
     const userPerfil = document.getElementById('userPerfil');
     const userAtivo = document.getElementById('userAtivo');
 
+    if (!modalEl || !userId || !userNome || !userEmail || !userSenha || !userPerfil || !userAtivo) {
+        console.error('Não foi possível abrir o formulário: os campos de usuário estão indisponíveis.');
+        return;
+    }
+
     if (!user) {
         userId.value = '';
         userNome.value = '';
@@ -31,24 +36,27 @@ function openUserModal(user) {
     icon.className = `bi ${user ? 'bi-pencil-square' : 'bi-person-plus'}`;
     icon.setAttribute('aria-hidden', 'true');
     title.replaceChildren(icon, document.createTextNode(` ${user ? 'Editar usuário' : 'Novo usuário'}`));
-    const modal = new bootstrap.Modal(modalEl);
-    modal.show();
+    if (!window.bootstrap || !window.bootstrap.Modal) {
+        console.error('Não foi possível abrir o formulário: Bootstrap Modal não foi carregado.');
+        return;
+    }
+
+    window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
 }
 
 document.addEventListener('DOMContentLoaded', function () {
     const btnNovo = document.getElementById('btn-novo-usuario');
     if (btnNovo) btnNovo.addEventListener('click', () => openUserModal(null));
 
-    document.addEventListener('click', function (event) {
-        const button = event.target.closest('[data-edit-user]');
-        if (!button) return;
-
-        openUserModal({
-            id: button.dataset.id,
-            nome: button.dataset.nome,
-            email: button.dataset.email,
-            perfil: button.dataset.perfil,
-            ativo: button.dataset.ativo === '1'
+    document.querySelectorAll('[data-edit-user]').forEach((button) => {
+        button.addEventListener('click', function () {
+            openUserModal({
+                id: this.dataset.id,
+                nome: this.dataset.nome,
+                email: this.dataset.email,
+                perfil: this.dataset.perfil,
+                ativo: this.dataset.ativo === '1'
+            });
         });
     });
 });

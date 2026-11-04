@@ -493,7 +493,7 @@ require_once '../../includes/header.php';
 
 <!-- Bootstrap JS (bundle com Popper) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="<?= PathConfig::modules('admin/') ?>admin.js"></script>
+<script src="<?= PathConfig::modules('admin/') ?>admin.js?v=<?= filemtime(__DIR__ . '/admin.js') ?>"></script>
 
 <!-- Fetch and render performance dos garçons -->
 <script>
