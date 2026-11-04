@@ -237,7 +237,7 @@ require_once '../../includes/header.php';
         <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2 py-3">
             <div>
                 <h2 class="h5 mb-1"><i class="bi bi-people" aria-hidden="true"></i> Usuários do sistema</h2>
-                <p class="mb-0 text-muted small">Gerencie contas e atribua um dos três perfis de acesso.</p>
+                <p class="mb-0 text-muted small">Gerencie contas e atribua um dos quatro perfis de acesso, incluindo Garçom.</p>
             </div>
             <button type="button" class="btn btn-primary" id="btn-novo-usuario"><i class="bi bi-person-plus" aria-hidden="true"></i> Novo usuário</button>
         </div>
@@ -503,6 +503,12 @@ function formatCurrency(v) {
     return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+function escapeHtml(value) {
+    const element = document.createElement('span');
+    element.textContent = value == null ? '' : String(value);
+    return element.innerHTML;
+}
+
 function formatPeriod(dataInicio, dataFim) {
     if (dataInicio === dataFim) {
         return new Date(dataInicio + 'T00:00:00').toLocaleDateString('pt-BR');
@@ -535,7 +541,7 @@ function carregarDesempenhoGarcons() {
             const periodo = formatPeriod(data.data_inicio, data.data_fim);
             const commissionRate = data.commission_rate_percent || 3;
             let html = '';
-            html += '<p class="small text-muted">Período: <strong>' + periodo + '</strong> • Comandas com garçons: <strong>' + data.total_comandas + '</strong> • Garçons ativos: <strong>' + data.active_garcons + '</strong> • Média: <strong>' + avg + '</strong> • Comissão: <strong>' + commissionRate + '%</strong></p>';
+            html += '<p class="small text-muted">Período: <strong>' + periodo + '</strong> • Comandas com garçons: <strong>' + data.total_comandas + '</strong> • Garçons ativos (contas e cadastros legados): <strong>' + data.active_garcons + '</strong> • Média: <strong>' + avg + '</strong> • Comissão: <strong>' + commissionRate + '%</strong></p>';
             html += '<div class="table-responsive"><table class="table table-sm align-middle">';
             html += '<thead><tr><th>Garçom</th><th>Comandas</th><th>Performance</th><th>Vendas</th><th>Comissão</th><th>Classificação</th></tr></thead><tbody>';
 
@@ -544,7 +550,8 @@ function carregarDesempenhoGarcons() {
                 const barValue = Math.min(pct, 200);
                 const badgeClass = g.badge ? 'badge bg-' + g.badge : 'badge bg-secondary';
                 html += '<tr>';
-                html += '<td>' + (g.codigo ? ('<small class="text-muted">' + g.codigo + '</small> ') : '') + g.nome + '</td>';
+                const origem = g.origem === 'usuario' ? 'Usuário' : 'Cadastro legado';
+                html += '<td><small class="text-muted">' + origem + (g.codigo ? ' · ' + escapeHtml(g.codigo) : '') + '</small><br>' + escapeHtml(g.nome) + '</td>';
                 html += '<td>' + g.comandas + '</td>';
                 html += '<td style="min-width:220px">';
                 html += '<div class="d-flex align-items-center">';
@@ -553,7 +560,7 @@ function carregarDesempenhoGarcons() {
                 html += '</div></td>';
                 html += '<td>' + formatCurrency(g.vendas_total) + '</td>';
                 html += '<td>' + formatCurrency(g.comissao) + '</td>';
-                html += '<td><span class="' + badgeClass + '">' + g.classification + '</span></td>';
+                html += '<td><span class="' + badgeClass + '">' + escapeHtml(g.classification) + '</span></td>';
                 html += '</tr>';
             });
 

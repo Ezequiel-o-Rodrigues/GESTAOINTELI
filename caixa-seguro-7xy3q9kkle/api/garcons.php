@@ -30,15 +30,43 @@ try {
     error_log("Erro ao buscar taxa de comissão em garcons.php: " . $e->getMessage());
 }
 
-    // Total de comandas fechadas atendidas por garçons (excluindo comandas sem garçom)
-    $stmt = $db->prepare("SELECT COUNT(*) as total FROM comandas WHERE status = 'fechada' AND DATE(data_venda) BETWEEN ? AND ? AND garcom_id IS NOT NULL");
+    // Comandas podem estar vinculadas ao cadastro legado ou a uma conta de usuário.
+    $stmt = $db->prepare(
+        "SELECT COUNT(*) AS total
+         FROM comandas
+         WHERE status = 'fechada'
+           AND DATE(data_venda) BETWEEN ? AND ?
+           AND (garcom_id IS NOT NULL OR garcom_usuario_id IS NOT NULL)"
+    );
     $stmt->execute([$data_inicio, $data_fim]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     $totalComandasComGarcom = (int)($row['total'] ?? 0);
 
-    // Garçons ativos
-    $stmt = $db->prepare("SELECT id, nome, codigo, ativo FROM garcons WHERE ativo = 1 ORDER BY nome");
-    $stmt->execute();
+    // Mantém a tabela legada e também avalia as contas de usuário com perfil Garçom.
+    $stmt = $db->prepare(
+        "SELECT 'legado' AS origem, g.id, g.nome, g.codigo, g.ativo,
+                COUNT(c.id) AS comandas, COALESCE(SUM(c.valor_total), 0) AS vendas_total
+         FROM garcons g
+         LEFT JOIN comandas c
+           ON c.garcom_id = g.id
+          AND c.garcom_usuario_id IS NULL
+          AND c.status = 'fechada'
+          AND DATE(c.data_venda) BETWEEN ? AND ?
+         WHERE g.ativo = 1
+         GROUP BY g.id, g.nome, g.codigo, g.ativo
+         UNION ALL
+         SELECT 'usuario' AS origem, u.id, u.nome, NULL AS codigo, u.ativo,
+                COUNT(c.id) AS comandas, COALESCE(SUM(c.valor_total), 0) AS vendas_total
+         FROM usuarios u
+         LEFT JOIN comandas c
+           ON c.garcom_usuario_id = u.id
+          AND c.status = 'fechada'
+          AND DATE(c.data_venda) BETWEEN ? AND ?
+         WHERE u.perfil = 'garcom' AND u.ativo = 1
+         GROUP BY u.id, u.nome, u.ativo
+         ORDER BY nome"
+    );
+    $stmt->execute([$data_inicio, $data_fim, $data_inicio, $data_fim]);
     $garcons = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $activeCount = count($garcons);
 
@@ -47,14 +75,8 @@ try {
     $resultGarcons = [];
 
     foreach ($garcons as $g) {
-        $gid = (int)$g['id'];
-
-        // Comandas atendidas pelo garçom no período
-        $stmt = $db->prepare("SELECT COUNT(*) as cnt, COALESCE(SUM(valor_total),0) as vendas_total FROM comandas WHERE status = 'fechada' AND DATE(data_venda) BETWEEN ? AND ? AND garcom_id = ?");
-        $stmt->execute([$data_inicio, $data_fim, $gid]);
-        $r = $stmt->fetch(PDO::FETCH_ASSOC);
-        $cnt = (int)($r['cnt'] ?? 0);
-        $vendas_total = floatval($r['vendas_total'] ?? 0);
+        $cnt = (int)$g['comandas'];
+        $vendas_total = (float)$g['vendas_total'];
 
         // Percentual em relação à média
         if ($average > 0) {
@@ -96,7 +118,8 @@ try {
         $comissao = round($vendas_total * $rate, 2);
 
         $resultGarcons[] = [
-            'id' => $gid,
+            'id' => (int)$g['id'],
+            'origem' => $g['origem'],
             'nome' => $g['nome'],
             'codigo' => $g['codigo'] ?? null,
             'ativo' => (int)$g['ativo'],
