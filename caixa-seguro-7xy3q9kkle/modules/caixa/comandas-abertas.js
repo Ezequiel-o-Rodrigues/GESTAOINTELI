@@ -120,7 +120,10 @@
         }
     });
 
-    window.comandasAbertasUI = { load: loadOrders };
+    window.comandasAbertasUI = {
+        load: loadOrders,
+        close: () => setOpen(false)
+    };
     loadOrders();
     window.setInterval(loadOrders, 15000);
 })();

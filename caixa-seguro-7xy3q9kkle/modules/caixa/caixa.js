@@ -18,20 +18,7 @@ if (window.CaixaSystemAlreadyLoaded) {
     async init() {
         await this.carregarProdutos();
         this.configurarEventos();
-
-        // Se o servidor informou uma comanda atual (via window.appConfig), sincronizar
-        try {
-            if (window.appConfig && window.appConfig.comandaAtualId) {
-                const cid = window.appConfig.comandaAtualId;
-                if (cid) {
-                    this.comandaAtual = { id: cid };
-                    await this.carregarItensComanda();
-                    this.atualizarUIComanda();
-                }
-            }
-        } catch (e) {
-            console.warn('Não foi possível sincronizar comanda inicial:', e);
-        }
+        this.atualizarUIComanda();
 
         this.mostrarToast('Sistema de caixa carregado', 'success');
     }
@@ -40,12 +27,6 @@ if (window.CaixaSystemAlreadyLoaded) {
         // Nota: botões finalizarComanda e cancelarComanda têm onclick inline no template
         // que delega para as funções globais, então não registramos listeners aqui
         // para evitar duplicação de chamadas
-        
-        // Nova comanda (sem onclick inline, então usamos addEventListener)
-        const btnNova = document.getElementById('btn-nova-comanda');
-        if (btnNova) {
-            btnNova.addEventListener('click', () => this.novaComanda());
-        }
         
         // Busca de produtos (aceitar nomes de id alternativos do template)
         const buscaInput = document.getElementById('busca-produto') || document.getElementById('search-produto');
@@ -214,13 +195,8 @@ if (window.CaixaSystemAlreadyLoaded) {
     
     async adicionarItem(produtoId, quantidade = 1) {
         if (!this.comandaAtual) {
-            // Criar comanda automaticamente SEM CONFIRMAÇÃO
-            await this.novaComanda();
-
-            if (!this.comandaAtual || !this.comandaAtual.id) {
-                this.mostrarToast('Não foi possível criar a comanda', 'error');
-                return;
-            }
+            this.mostrarToast('Selecione uma comanda aberta ou crie uma nova antes de adicionar produtos.', 'warning');
+            return;
         }
         
         if (this.carregando) return;
@@ -338,7 +314,7 @@ if (window.CaixaSystemAlreadyLoaded) {
         
         if (this.itensComanda.length === 0) {
             container.innerHTML = '<div class="empty-comanda">Nenhum item adicionado</div>';
-            if (totalElement) totalElement.textContent = '0.00';
+            if (totalElement) totalElement.textContent = 'R$ 0,00';
             return;
         }
         
@@ -665,6 +641,8 @@ if (window.CaixaSystemAlreadyLoaded) {
     atualizarUIComanda() {
         const numeroElement = document.getElementById('comanda-numero') || document.getElementById('numero-comanda');
         const totalElement = document.getElementById('total-comanda');
+        const toolbar = document.querySelector('.comanda-horizontal');
+        const newOrderButton = document.getElementById('btn-nova-comanda-topo');
         
         if (!numeroElement) {
             console.warn('Elemento numero-comanda não encontrado');
@@ -675,6 +653,8 @@ if (window.CaixaSystemAlreadyLoaded) {
         
         if (this.comandaAtual) {
             numeroElement.textContent = '#' + this.comandaAtual.id;
+            if (toolbar) toolbar.classList.add('has-order');
+            if (newOrderButton) newOrderButton.hidden = true;
             const contexto = document.getElementById('contexto-comanda');
             if (contexto) {
                 const detalhes = [this.comandaAtual.cliente_nome, this.comandaAtual.mesa_numero ? 'Mesa ' + this.comandaAtual.mesa_numero : '']
@@ -683,12 +663,15 @@ if (window.CaixaSystemAlreadyLoaded) {
             }
         } else {
             numeroElement.textContent = '--';
+            if (toolbar) toolbar.classList.remove('has-order');
+            if (newOrderButton) newOrderButton.hidden = false;
             const contexto = document.getElementById('contexto-comanda');
             if (contexto) contexto.textContent = '';
-            if (totalElement) totalElement.textContent = '0.00';
-            this.atualizarListaItens();
+            if (totalElement) totalElement.textContent = 'R$ 0,00';
         }
         
+        this.atualizarListaItens();
+        this.atualizarTotal();
         this.atualizarBotaoFinalizar();
     }
     
@@ -697,7 +680,7 @@ if (window.CaixaSystemAlreadyLoaded) {
         if (!totalElement) return;
         
         const total = this.itensComanda.reduce((sum, item) => sum + parseFloat(item.subtotal), 0);
-        totalElement.textContent = total.toFixed(2);
+        totalElement.textContent = 'R$ ' + total.toFixed(2).replace('.', ',');
     }
     
     atualizarBotaoFinalizar() {

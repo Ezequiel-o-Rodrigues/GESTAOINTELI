@@ -106,10 +106,13 @@ body.cash-register .dashboard-brand-subtitle {
 }
 
 body.cash-register .comanda-horizontal {
-    min-height: 82px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "info";
+    min-height: 0;
     height: auto;
-    gap: 16px;
-    padding: 12px max(24px, calc((100% - 1392px) / 2));
+    gap: 10px 12px;
+    padding: 10px 12px;
     border: 0;
     border-bottom: 1px solid #e2e8f0;
     background: #fff;
@@ -117,8 +120,43 @@ body.cash-register .comanda-horizontal {
 }
 
 body.cash-register .comanda-info-horizontal {
-    gap: 12px;
-    flex-wrap: wrap;
+    grid-area: info;
+    min-width: 0;
+    gap: 8px;
+    flex-wrap: nowrap;
+}
+
+body.cash-register .comanda-horizontal.has-order {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "info items actions";
+}
+
+body.cash-register .comanda-horizontal:not(.has-order) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "info";
+}
+
+body.cash-register .comanda-horizontal:not(.has-order) #numero-comanda {
+    display: none;
+}
+
+body.cash-register [hidden] {
+    display: none !important;
+}
+
+body.cash-register .itens-comanda-horizontal {
+    grid-area: items;
+    min-width: 0;
+    width: 100%;
+    padding: 0;
+}
+
+body.cash-register .comanda-horizontal:not(.has-order) .itens-comanda-horizontal {
+    display: none;
+}
+
+body.cash-register .comanda-horizontal:not(.has-order) .botoes-comanda {
+    display: none;
 }
 
 body.cash-register .comanda-numero {
@@ -142,8 +180,12 @@ body.cash-register .total-comanda {
 }
 
 body.cash-register .botoes-comanda {
+    grid-area: actions;
     gap: 10px;
+    min-width: 0;
 }
+
+body.cash-register .open-orders-new { width: 100%; }
 
 body.cash-register .btn {
     display: inline-flex;
@@ -336,22 +378,22 @@ body.cash-register .btn-orders:hover:not(:disabled) {
     .open-orders-panel { width: min(100vw, 430px); padding: 18px; }
     body.cash-register .comanda-horizontal { align-items: flex-start; }
     body.cash-register .comanda-info-horizontal { width: 100%; }
-    body.cash-register .cash-order-context { flex-basis: 100%; }
+    body.cash-register .cash-order-context { flex-basis: auto; }
 }
 
 body.cash-register .conteudo-principal {
     width: 100%;
     height: auto;
     min-height: 0;
-    gap: 14px;
+    gap: 10px;
     margin: 0 auto;
-    padding: 18px 24px;
+    padding: 12px;
 }
 
 body.cash-register .filtros-container {
     flex: 0 0 auto;
-    gap: 12px;
-    padding: 14px;
+    gap: 10px;
+    padding: 10px;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
     background: #fff;
@@ -719,14 +761,27 @@ body.cash-register .btn-garcom:focus-visible {
     }
 
     body.cash-register .comanda-horizontal {
-        flex-wrap: wrap;
-        justify-content: space-between;
-        padding: 12px 18px;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "info actions"
+            "items items";
+        padding: 10px 12px;
+    }
+
+    body.cash-register .comanda-horizontal.has-order {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "info actions"
+            "items items";
+    }
+
+    body.cash-register .comanda-horizontal:not(.has-order) {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "info";
     }
 
     body.cash-register .itens-comanda-horizontal {
-        order: 3;
-        width: 100%;
+        grid-column: 1 / -1;
     }
 
     body.cash-register .botoes-comanda {
@@ -734,7 +789,7 @@ body.cash-register .btn-garcom:focus-visible {
     }
 
     body.cash-register .conteudo-principal {
-        padding: 14px 18px;
+        padding: 10px 12px;
     }
 }
 
@@ -772,8 +827,29 @@ body.cash-register .btn-garcom:focus-visible {
     }
 
     body.cash-register .comanda-horizontal {
-        gap: 10px;
-        padding: 12px 14px;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+            "info"
+            "items"
+            "actions";
+        gap: 8px;
+        padding: 10px;
+    }
+
+    body.cash-register .comanda-horizontal.has-order {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+            "info"
+            "items"
+            "actions";
+    }
+
+    body.cash-register .comanda-info-horizontal {
+        flex-wrap: wrap;
+    }
+
+    body.cash-register .comanda-horizontal:not(.has-order) {
+        grid-template-areas: "info";
     }
 
     body.cash-register .botoes-comanda {
@@ -783,8 +859,8 @@ body.cash-register .btn-garcom:focus-visible {
     }
 
     body.cash-register .conteudo-principal {
-        min-height: 55vh;
-        padding: 12px 14px;
+        min-height: 0;
+        padding: 10px;
     }
 
     body.cash-register .filtros-container {

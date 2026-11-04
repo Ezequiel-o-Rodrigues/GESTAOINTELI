@@ -9,9 +9,7 @@ require_once __DIR__ . '/../../includes/menu-images.php';
 $base_path = rtrim(PathConfig::url(), '/') . '/';
 
 // INICIALIZAR VARIÁVEIS COM VALORES PADRÃO
-$comanda_aberta = null;
 $produtos_por_categoria = [];
-$total_comanda = 0;
 $categorias = [];
 
 try {
@@ -40,17 +38,6 @@ try {
         $produtos_por_categoria[$categoria_id]['produtos'][] = $produto;
     }
 
-    // Buscar comanda aberta atual
-    $query_comanda = "SELECT * FROM comandas WHERE status = 'aberta' ORDER BY id DESC LIMIT 1";
-    $stmt_comanda = $db->prepare($query_comanda);
-    $stmt_comanda->execute();
-    $comanda_aberta = $stmt_comanda->fetch(PDO::FETCH_ASSOC);
-    
-    // Definir total da comanda
-    if ($comanda_aberta) {
-        $total_comanda = number_format($comanda_aberta['valor_total'] ?? 0, 2, ',', '.');
-    }
-
     // BUSCAR CATEGORIAS PARA O SELECT
     $query_categorias = "SELECT * FROM categorias ORDER BY nome";
     $stmt_categorias = $db->prepare($query_categorias);
@@ -61,8 +48,6 @@ try {
     // Log do erro sem quebrar a aplicação
     error_log("Erro ao carregar dados: " . $e->getMessage());
     $produtos_por_categoria = [];
-    $comanda_aberta = null;
-    $total_comanda = '0,00';
     $categorias = [];
 }
   // BUSCAR GARÇONS ATIVOS
@@ -543,20 +528,16 @@ try {
     <!-- COMANDA HORIZONTAL - NOVA POSIÇÃO -->
     <div class="comanda-horizontal">
         <div class="comanda-info-horizontal">
-            <span class="comanda-numero" id="numero-comanda">
-                <?php echo $comanda_aberta ? '#' . $comanda_aberta['id'] : '--'; ?>
-            </span>
+            <span class="comanda-numero" id="numero-comanda">--</span>
             <button type="button" class="btn btn-orders" id="toggle-open-orders" aria-expanded="false" aria-controls="open-orders-panel">
                 <i class="bi bi-list-ul" aria-hidden="true"></i> Comandas abertas
             </button>
-            <button class="btn btn-primary" onclick="novaComanda()"><i class="bi bi-plus-circle" aria-hidden="true"></i> Nova comanda</button>
+            <button class="btn btn-primary" id="btn-nova-comanda-topo" onclick="novaComanda()"><i class="bi bi-plus-circle" aria-hidden="true"></i> Nova comanda</button>
             <span id="contexto-comanda" class="cash-order-context" aria-live="polite"></span>
         </div>
         
         <div class="itens-comanda-horizontal" id="itens-comanda">
-            <div class="empty-comanda">
-                <?php echo $comanda_aberta ? 'Carregando itens...' : 'Nenhuma comanda aberta'; ?>
-            </div>
+            <div class="empty-comanda">Selecione uma comanda para iniciar</div>
         </div>
 
         <div id="open-orders-backdrop" class="open-orders-backdrop" hidden></div>
@@ -574,6 +555,9 @@ try {
                 <i class="bi bi-search" aria-hidden="true"></i>
                 <input id="search-open-orders" type="search" placeholder="Cliente ou mesa..." autocomplete="off">
             </label>
+            <button type="button" class="cash-button cash-button--primary open-orders-new" onclick="novaComanda()">
+                <i class="bi bi-plus-circle" aria-hidden="true"></i> Nova comanda
+            </button>
             <div id="open-orders-list" class="open-orders-list" aria-live="polite">
                 <p class="open-orders-empty">Carregando comandas...</p>
             </div>
@@ -581,10 +565,9 @@ try {
 
         <div class="botoes-comanda">
             <span class="total-comanda" id="total-comanda">
-                R$ <?php echo $total_comanda; ?>
+                R$ 0,00
             </span>
-            <button class="btn btn-success" onclick="finalizarComanda()" id="btn-finalizar" 
-                    <?php echo (!$comanda_aberta) ? 'disabled' : ''; ?>>
+            <button class="btn btn-success" onclick="finalizarComanda()" id="btn-finalizar" disabled>
                 <i class="bi bi-check2-circle" aria-hidden="true"></i> Finalizar venda
             </button>
         </div>
@@ -670,7 +653,7 @@ try {
           // Passar variáveis PHP para JavaScript - VERIFICAR SE JÁ EXISTE
     if (typeof window.appConfig === 'undefined') {
         window.appConfig = Object.assign({}, window.appConfig || {}, {
-            comandaAtualId: <?php echo isset($comanda_aberta) && $comanda_aberta ? $comanda_aberta['id'] : 'null'; ?>,
+            comandaAtualId: null,
             basePath: <?= json_encode($base_path) ?>,
             apiBase: <?= json_encode(rtrim(PathConfig::api(), '/') . '/') ?>,
             createOrderUrl: <?= json_encode(PathConfig::modules('caixa/criar_comanda.php')) ?>,
@@ -820,6 +803,9 @@ try {
                         window.caixaSystem.itensComanda = [];
                         window.caixaSystem.atualizarUIComanda();
                     }
+                    if (window.comandasAbertasUI) {
+                        window.comandasAbertasUI.load();
+                    }
                     
                     fecharModalGarcom();
                     
@@ -839,15 +825,15 @@ try {
 
         // Função novaComanda (chamada pelo botão)
         function novaComanda() {
-            // Verificar se já existe uma comanda aberta
-            if (window.caixaSystem && window.caixaSystem.comandaAtual) {
-                if (confirm('Já existe uma comanda aberta. Deseja cancelá-la e criar uma nova?')) {
-                    window.caixaSystem.limparComanda();
-                    abrirModalGarcom();
-                }
-            } else {
-                abrirModalGarcom();
+            if (window.comandasAbertasUI) {
+                window.comandasAbertasUI.close();
             }
+
+            if (window.caixaSystem && window.caixaSystem.comandaAtual) {
+                if (!confirm('A comanda atual continuará aberta. Deseja iniciar outra comanda?')) return;
+            }
+
+            abrirModalGarcom();
         }
     </script>
 
@@ -856,7 +842,7 @@ try {
         // Chamado pelos onclick nos cards: adicionarProduto(produtoId, nome, preco)
         function adicionarProduto(produtoId, nome, preco) {
             if (window.caixaSystem && typeof window.caixaSystem.adicionarItem === 'function') {
-                // Delega completamente pro CaixaSystem (que já gerencia confirmação e criação de comanda)
+                // O CaixaSystem exige uma comanda selecionada antes de adicionar itens.
                 window.caixaSystem.adicionarItem(produtoId, 1);
                 return;
             }
