@@ -530,7 +530,7 @@ try {
         <div class="comanda-info-horizontal">
             <span class="comanda-numero" id="numero-comanda">--</span>
             <button type="button" class="btn btn-orders" id="toggle-open-orders" aria-expanded="false" aria-controls="open-orders-panel">
-                <i class="bi bi-list-ul" aria-hidden="true"></i> Comandas abertas
+                <i class="bi bi-list-ul" aria-hidden="true"></i> Comandas
             </button>
             <button class="btn btn-primary" id="btn-nova-comanda-topo" onclick="novaComanda()"><i class="bi bi-plus-circle" aria-hidden="true"></i> Nova comanda</button>
             <span id="contexto-comanda" class="cash-order-context" aria-live="polite"></span>
