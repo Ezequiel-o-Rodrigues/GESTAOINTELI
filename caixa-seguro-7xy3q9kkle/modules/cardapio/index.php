@@ -119,9 +119,10 @@ require_once __DIR__ . '/../../includes/header.php';
         .menu-admin .product .edit-product { min-height: 38px; padding: 8px 12px; }
         .menu-admin .empty { padding: 28px; border: 1px dashed #cbd5e1; border-radius: 12px; background: #fff; color: #64748b; text-align: center; }
         .menu-admin .product-editor-modal .modal-content { border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 20px 60px #0f172a40; }
+        .menu-admin .product-editor-form { display: flex; min-height: 0; flex: 1 1 auto; flex-direction: column; overflow: hidden; }
         .menu-admin .product-editor-modal .modal-header,
         .menu-admin .product-editor-modal .modal-footer { padding: 1rem 1.25rem; }
-        .menu-admin .product-editor-modal .modal-body { padding: 1.25rem; }
+        .menu-admin .product-editor-modal .modal-body { min-height: 0; padding: 1.25rem; overflow-y: auto; overscroll-behavior: contain; }
         .menu-admin .product-editor-modal .modal-title { margin: 0 0 4px; }
         .menu-admin .product-editor-modal .btn-close { min-height: 1em; padding: .5em; border: 0; border-radius: .375rem; background-color: transparent; }
         .menu-admin .product-editor-modal .btn-close:hover { background-color: transparent; transform: none; }
@@ -264,7 +265,7 @@ require_once __DIR__ . '/../../includes/header.php';
 <div class="modal fade product-editor-modal" id="productEditor" tabindex="-1" aria-labelledby="editorTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable modal-lg">
         <div class="modal-content">
-            <form id="productEditorForm">
+            <form class="product-editor-form" id="productEditorForm">
                 <div class="modal-header">
                     <div>
                         <h2 class="modal-title fs-5" id="editorTitle">Editar apresentação</h2>
