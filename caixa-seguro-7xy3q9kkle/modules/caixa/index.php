@@ -546,7 +546,11 @@ try {
             <span class="comanda-numero" id="numero-comanda">
                 <?php echo $comanda_aberta ? '#' . $comanda_aberta['id'] : '--'; ?>
             </span>
+            <button type="button" class="btn btn-orders" id="toggle-open-orders" aria-expanded="false" aria-controls="open-orders-panel">
+                <i class="bi bi-list-ul" aria-hidden="true"></i> Comandas abertas
+            </button>
             <button class="btn btn-primary" onclick="novaComanda()"><i class="bi bi-plus-circle" aria-hidden="true"></i> Nova comanda</button>
+            <span id="contexto-comanda" class="cash-order-context" aria-live="polite"></span>
         </div>
         
         <div class="itens-comanda-horizontal" id="itens-comanda">
@@ -554,7 +558,27 @@ try {
                 <?php echo $comanda_aberta ? 'Carregando itens...' : 'Nenhuma comanda aberta'; ?>
             </div>
         </div>
-        
+
+        <div id="open-orders-backdrop" class="open-orders-backdrop" hidden></div>
+        <aside id="open-orders-panel" class="open-orders-panel" role="dialog" aria-modal="true" aria-label="Comandas abertas" aria-hidden="true" inert>
+            <div class="open-orders-heading">
+                <div>
+                    <p class="waiter-eyebrow">ATENDIMENTOS</p>
+                    <h2>Comandas abertas</h2>
+                </div>
+                <button type="button" id="close-open-orders" class="open-orders-close" aria-label="Fechar lista de comandas">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                </button>
+            </div>
+            <label class="open-orders-search" for="search-open-orders">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input id="search-open-orders" type="search" placeholder="Cliente ou mesa..." autocomplete="off">
+            </label>
+            <div id="open-orders-list" class="open-orders-list" aria-live="polite">
+                <p class="open-orders-empty">Carregando comandas...</p>
+            </div>
+        </aside>
+
         <div class="botoes-comanda">
             <span class="total-comanda" id="total-comanda">
                 R$ <?php echo $total_comanda; ?>
@@ -649,7 +673,8 @@ try {
             comandaAtualId: <?php echo isset($comanda_aberta) && $comanda_aberta ? $comanda_aberta['id'] : 'null'; ?>,
             basePath: <?= json_encode($base_path) ?>,
             apiBase: <?= json_encode(rtrim(PathConfig::api(), '/') . '/') ?>,
-            createOrderUrl: <?= json_encode(PathConfig::modules('caixa/criar_comanda.php')) ?>
+            createOrderUrl: <?= json_encode(PathConfig::modules('caixa/criar_comanda.php')) ?>,
+            openOrdersUrl: <?= json_encode(PathConfig::api('comandas_abertas.php')) ?>
         });
     }
     </script>   
@@ -887,6 +912,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     <!-- Carregamento do CaixaSystem (com proteção contra duplicação) -->
     <script src="<?= htmlspecialchars(PathConfig::modules('caixa/caixa.js'), ENT_QUOTES, 'UTF-8') ?>?v=<?= time() ?>"></script>
+    <script src="<?= htmlspecialchars(PathConfig::modules('caixa/comandas-abertas.js'), ENT_QUOTES, 'UTF-8') ?>?v=<?= filemtime(__DIR__ . '/comandas-abertas.js') ?>"></script>
     
     <script>
     // Event listeners para modal de comprovante

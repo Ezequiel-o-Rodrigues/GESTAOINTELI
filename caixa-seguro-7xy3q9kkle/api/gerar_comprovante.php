@@ -35,11 +35,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 c.id as comanda_id,
                 c.valor_total,
                 c.data_venda,
-                g.nome as garcom_nome,
-                g.codigo as garcom_codigo,
+                c.cliente_nome,
+                c.mesa_numero,
+                MAX(COALESCE(u.nome, g.nome)) as garcom_nome,
+                MAX(g.codigo) as garcom_codigo,
                 GROUP_CONCAT(CONCAT(p.nome, '|', ic.quantidade, '|', ic.preco_unitario, '|', ic.subtotal) SEPARATOR ';') as itens
             FROM comandas c
             LEFT JOIN garcons g ON c.garcom_id = g.id
+            LEFT JOIN usuarios u ON c.garcom_usuario_id = u.id
             LEFT JOIN itens_comanda ic ON c.id = ic.comanda_id
             LEFT JOIN produtos p ON ic.produto_id = p.id
             WHERE c.id = :comanda_id
@@ -88,8 +91,13 @@ function gerarComprovanteLimpo($comanda) {
     $linhas[] = "-------------------------------";
     $linhas[] = "Comanda: #" . $comanda['comanda_id'];
     $linhas[] = "Data: " . date('d/m/Y H:i', strtotime($comanda['data_venda']));
-    
-    if ($comanda['garcom_nome']) {
+    if (!empty($comanda['cliente_nome'])) {
+        $linhas[] = "Cliente: " . $comanda['cliente_nome'];
+    }
+    if (!empty($comanda['mesa_numero'])) {
+        $linhas[] = "Mesa: " . $comanda['mesa_numero'];
+    }
+    if (!empty($comanda['garcom_nome'])) {
         $linhas[] = "Garcom: " . $comanda['garcom_nome'];
     }
     

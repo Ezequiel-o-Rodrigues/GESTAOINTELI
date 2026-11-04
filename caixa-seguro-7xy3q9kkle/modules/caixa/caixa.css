@@ -118,6 +118,7 @@ body.cash-register .comanda-horizontal {
 
 body.cash-register .comanda-info-horizontal {
     gap: 12px;
+    flex-wrap: wrap;
 }
 
 body.cash-register .comanda-numero {
@@ -187,6 +188,155 @@ body.cash-register .btn:disabled {
     border-color: #cbd5e1;
     background: #e2e8f0;
     color: #64748b;
+}
+
+body.cash-register .btn-orders {
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    color: #334155;
+}
+
+body.cash-register .btn-orders:hover:not(:disabled) {
+    border-color: #fdba74;
+    background: #fff7ed;
+}
+
+.cash-order-context {
+    color: #64748b;
+    font-size: 0.82rem;
+    font-weight: 650;
+}
+
+.open-orders-backdrop {
+    position: fixed;
+    z-index: 1090;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.42);
+}
+
+.open-orders-backdrop[hidden] { display: none; }
+
+.open-orders-panel {
+    position: fixed;
+    z-index: 1091;
+    top: 0;
+    right: 0;
+    display: flex;
+    width: min(390px, 100vw);
+    height: 100vh;
+    height: 100dvh;
+    flex-direction: column;
+    gap: 16px;
+    padding: 22px;
+    border-left: 1px solid #e2e8f0;
+    background: #fff;
+    box-shadow: -16px 0 42px rgba(15, 23, 42, 0.16);
+    transform: translateX(105%);
+    visibility: hidden;
+    transition: transform 0.2s ease, visibility 0.2s ease;
+}
+
+.open-orders-panel.is-open {
+    transform: translateX(0);
+    visibility: visible;
+}
+
+.open-orders-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.open-orders-heading h2 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 1.15rem;
+}
+
+.open-orders-heading .waiter-eyebrow {
+    margin: 0 0 5px;
+    color: #94a3b8;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.11em;
+}
+
+.open-orders-close {
+    display: grid;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    background: #fff;
+    color: #334155;
+    cursor: pointer;
+}
+
+.open-orders-search {
+    position: relative;
+    display: block;
+}
+
+.open-orders-search .bi {
+    position: absolute;
+    top: 14px;
+    left: 13px;
+    color: #94a3b8;
+}
+
+.open-orders-search input {
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 12px 10px 38px;
+    border: 1px solid #cbd5e1;
+    border-radius: 9px;
+    font: inherit;
+}
+
+.open-orders-search input:focus {
+    border-color: #f97316;
+    outline: 3px solid rgba(249, 115, 22, 0.16);
+}
+
+.open-orders-list {
+    display: grid;
+    align-content: start;
+    gap: 9px;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.open-order-card {
+    display: grid;
+    gap: 5px;
+    width: 100%;
+    padding: 13px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #fff;
+    color: #334155;
+    text-align: left;
+    cursor: pointer;
+}
+
+.open-order-card:hover,
+.open-order-card.is-selected {
+    border-color: #fb923c;
+    background: #fff7ed;
+}
+
+.open-order-card strong { color: #0f172a; font-size: 0.92rem; }
+.open-order-meta { color: #64748b; font-size: 0.78rem; }
+.open-order-total { color: #047857; font-size: 0.86rem; font-weight: 750; }
+.open-orders-empty { margin: 0; padding: 14px 0; color: #64748b; font-size: 0.88rem; }
+
+@media (max-width: 700px) {
+    .open-orders-panel { width: min(100vw, 430px); padding: 18px; }
+    body.cash-register .comanda-horizontal { align-items: flex-start; }
+    body.cash-register .comanda-info-horizontal { width: 100%; }
+    body.cash-register .cash-order-context { flex-basis: 100%; }
 }
 
 body.cash-register .conteudo-principal {

@@ -15,11 +15,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $db = $database->getConnection();
         
         // Buscar dados da comanda
-        $query = "SELECT c.id as comanda_id, c.valor_total, c.data_venda, 
-                         g.nome as garcom_nome,
+        $query = "SELECT c.id as comanda_id, c.valor_total, c.data_venda,
+                         c.cliente_nome, c.mesa_numero,
+                         MAX(COALESCE(u.nome, g.nome)) as garcom_nome,
                          GROUP_CONCAT(CONCAT(p.nome, '|', ic.quantidade, '|', ic.subtotal) SEPARATOR ';') as itens
                   FROM comandas c
                   LEFT JOIN garcons g ON c.garcom_id = g.id
+                  LEFT JOIN usuarios u ON c.garcom_usuario_id = u.id
                   LEFT JOIN itens_comanda ic ON c.id = ic.comanda_id
                   LEFT JOIN produtos p ON ic.produto_id = p.id
                   WHERE c.id = (SELECT comanda_id FROM comprovantes_venda WHERE id = :id)
@@ -38,6 +40,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $linhas[] = "-------------------";
         $linhas[] = "Comanda: #" . $comanda['comanda_id'];
         $linhas[] = "Data: " . date('d/m/Y H:i');
+
+        if (!empty($comanda['cliente_nome'])) {
+            $linhas[] = "Cliente: " . $comanda['cliente_nome'];
+        }
+        if (!empty($comanda['mesa_numero'])) {
+            $linhas[] = "Mesa: " . $comanda['mesa_numero'];
+        }
         
         if ($comanda['garcom_nome']) {
             $linhas[] = "Garcom: " . $comanda['garcom_nome'];

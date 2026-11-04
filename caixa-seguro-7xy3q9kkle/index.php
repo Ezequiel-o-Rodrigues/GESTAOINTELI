@@ -5,8 +5,13 @@ require_once __DIR__ . '/config/auth.php';
 
 // Se não estiver logado, redireciona para login
 if (!isset($_SESSION['usuario_logado']) || $_SESSION['usuario_logado'] !== true
-    || !in_array(strtolower(trim((string) ($_SESSION['usuario_perfil'] ?? ''))), ['admin', 'caixa', 'estoque'], true)) {
+    || !in_array(strtolower(trim((string) ($_SESSION['usuario_perfil'] ?? ''))), ['admin', 'caixa', 'estoque', 'garcom'], true)) {
     header('Location: login.php');
+    exit;
+}
+
+if (strtolower(trim((string) ($_SESSION['usuario_perfil'] ?? ''))) === 'garcom') {
+    header('Location: modules/garcom/');
     exit;
 }
 

@@ -42,8 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($nome === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 throw new Exception('Informe um nome e um e-mail válido.');
             }
-            if (!in_array($perfil, ['admin', 'caixa', 'estoque'], true)) {
-                throw new Exception('Perfil inválido. Use administrador, caixa ou estoque.');
+            if (!in_array($perfil, ['admin', 'caixa', 'estoque', 'garcom'], true)) {
+                throw new Exception('Perfil inválido.');
             }
             if (($id === null || $senha !== '') && strlen($senha) < 8) {
                 throw new Exception('A senha deve ter pelo menos 8 caracteres.');
@@ -264,7 +264,8 @@ require_once '../../includes/header.php';
                         <td><?= htmlspecialchars([
                             'admin' => 'Administrador',
                             'caixa' => 'Caixa',
-                            'estoque' => 'Estoque'
+                            'estoque' => 'Estoque',
+                            'garcom' => 'Garçom'
                         ][strtolower(trim((string) $usuario['perfil']))] ?? 'Perfil inválido', ENT_QUOTES, 'UTF-8') ?></td>
                         <td><span class="badge bg-<?= $usuario['ativo'] ? 'success' : 'secondary' ?>"><?= $usuario['ativo'] ? 'Ativo' : 'Inativo' ?></span></td>
                         <td><?= !empty($usuario['created_at']) ? date('d/m/Y', strtotime($usuario['created_at'])) : '-' ?></td>
@@ -330,6 +331,7 @@ require_once '../../includes/header.php';
                                 <option value="admin">Administrador</option>
                                 <option value="caixa">Caixa</option>
                                 <option value="estoque">Estoque</option>
+                                <option value="garcom">Garçom</option>
                             </select>
                             <div class="form-text">O perfil determina quais módulos e operações estarão disponíveis para a conta.</div>
                         </div>

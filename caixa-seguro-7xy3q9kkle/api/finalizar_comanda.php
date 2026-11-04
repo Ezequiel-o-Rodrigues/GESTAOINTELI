@@ -7,16 +7,23 @@ error_reporting(E_ALL);
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../config/database.php';
 
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['success' => false, 'message' => 'Método não permitido.'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 // Buffer para evitar qualquer saída acidental
 if (!ob_get_level()) ob_start();
 
 $data = json_decode(file_get_contents('php://input'), true);
 
 try {
-    $comanda_id = $data['comanda_id'] ?? null;
+    $comanda_id = filter_var(is_array($data) ? ($data['comanda_id'] ?? null) : null, FILTER_VALIDATE_INT);
 
-    if (!$comanda_id) {
-        throw new Exception('Comanda ID não informado');
+    if (!$comanda_id || $comanda_id < 1) {
+        http_response_code(400);
+        throw new Exception('Informe uma comanda válida.');
     }
 
     // Conectar ao banco
@@ -25,6 +32,14 @@ try {
 
     // Rodar transação: calcular total, atualizar comanda, registrar movimentação e baixar estoque
     $db->beginTransaction();
+
+    $stmt = $db->prepare('SELECT status FROM comandas WHERE id = ? FOR UPDATE');
+    $stmt->execute([(int) $comanda_id]);
+    $comandaAtual = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$comandaAtual || $comandaAtual['status'] !== 'aberta') {
+        http_response_code(409);
+        throw new Exception('A comanda não existe ou já foi finalizada.');
+    }
 
     // Calcular total da comanda (itens_comanda + itens_livres)
     $stmt = $db->prepare("SELECT COALESCE(SUM(subtotal),0) as total FROM (SELECT subtotal FROM itens_comanda WHERE comanda_id = ? UNION ALL SELECT subtotal FROM itens_livres WHERE comanda_id = ?) t");
@@ -48,8 +63,12 @@ try {
     }
 
     // Atualizar comanda
-    $stmt = $db->prepare("UPDATE comandas SET status = 'fechada', valor_total = ?, taxa_gorjeta = ?, data_venda = NOW() WHERE id = ?");
-    $stmt->execute([$total_comanda, $taxa_gorjeta, $comanda_id]);
+    $stmt = $db->prepare("UPDATE comandas SET status = 'fechada', valor_total = ?, taxa_gorjeta = ?, data_venda = NOW(), data_finalizacao = NOW(), usuario_fechamento_id = ? WHERE id = ? AND status = 'aberta'");
+    $stmt->execute([$total_comanda, $taxa_gorjeta, (int) $_SESSION['usuario_id'], (int) $comanda_id]);
+    if ($stmt->rowCount() !== 1) {
+        http_response_code(409);
+        throw new Exception('A comanda já foi finalizada por outro operador.');
+    }
 
     // Baixar estoque: para cada item em itens_comanda, inserir movimentacao tipo 'saida' e decrementar estoque
     $stmt = $db->prepare("SELECT ic.produto_id, ic.quantidade FROM itens_comanda ic WHERE ic.comanda_id = ?");
@@ -75,11 +94,14 @@ try {
             c.valor_total,
             c.taxa_gorjeta,
             c.data_venda,
-            g.nome as garcom_nome,
-            g.codigo as garcom_codigo,
+            c.cliente_nome,
+            c.mesa_numero,
+            MAX(COALESCE(u.nome, g.nome)) as garcom_nome,
+            MAX(g.codigo) as garcom_codigo,
             GROUP_CONCAT(CONCAT(p.nome, '|', ic.quantidade, '|', ic.preco_unitario, '|', ic.subtotal) SEPARATOR ';') as itens
         FROM comandas c
         LEFT JOIN garcons g ON c.garcom_id = g.id
+        LEFT JOIN usuarios u ON c.garcom_usuario_id = u.id
         LEFT JOIN itens_comanda ic ON c.id = ic.comanda_id
         LEFT JOIN produtos p ON ic.produto_id = p.id
         WHERE c.id = ?
@@ -116,8 +138,13 @@ try {
     exit;
 
 } catch (Exception $e) {
+    if (isset($db) && $db instanceof PDO && $db->inTransaction()) {
+        $db->rollBack();
+    }
     while (ob_get_level()) ob_end_clean();
-    http_response_code(500);
+    if (http_response_code() < 400) {
+        http_response_code(500);
+    }
     echo json_encode([
         'success' => false,
         'message' => $e->getMessage()
@@ -142,7 +169,17 @@ function gerarConteudoComprovante($comanda) {
     $linhas[] = str_repeat("-", 48);
     $linhas[] = "Comanda: #" . $comanda['comanda_id'];
     $linhas[] = "Data: " . date('d/m/Y H:i', strtotime($comanda['data_venda']));
-    $linhas[] = "Garçom: " . ($comanda['garcom_nome'] ? $comanda['garcom_nome'] . " (" . $comanda['garcom_codigo'] . ")" : "Não informado");
+    if (!empty($comanda['cliente_nome'])) {
+        $linhas[] = "Cliente: " . $comanda['cliente_nome'];
+    }
+    if (!empty($comanda['mesa_numero'])) {
+        $linhas[] = "Mesa: " . $comanda['mesa_numero'];
+    }
+    $identificacaoGarcom = $comanda['garcom_nome'] ?? 'Não informado';
+    if (!empty($comanda['garcom_codigo'])) {
+        $identificacaoGarcom .= " (" . $comanda['garcom_codigo'] . ")";
+    }
+    $linhas[] = "Garçom: " . $identificacaoGarcom;
     $linhas[] = str_repeat("-", 48);
     $linhas[] = "QTD  DESCRICAO";
     $linhas[] = "     VALOR UNIT.   SUBTOTAL";

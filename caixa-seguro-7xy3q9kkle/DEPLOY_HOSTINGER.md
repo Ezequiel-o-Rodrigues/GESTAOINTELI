@@ -9,6 +9,10 @@ public_html/
 ├── .htaccess
 ├── api/
 │   ├── adicionar_item.php
+│   ├── comandas_abertas.php
+│   ├── garcom_comandas.php
+│   ├── garcom_itens.php
+│   ├── garcom_remover_item.php
 │   ├── comanda_aberta.php
 │   ├── finalizar_comanda.php
 │   ├── garcons.php
@@ -52,8 +56,13 @@ public_html/
     ├── caixa/
     │   ├── index.php
     │   ├── caixa.js
+    │   ├── comandas-abertas.js
     │   ├── criar_comanda.php
     │   └── impressao-service.js
+    ├── garcom/
+    │   ├── index.php
+    │   ├── garcom.js
+    │   └── garcom.css
     ├── estoque/
     │   ├── index.php
     │   └── js/
@@ -75,10 +84,19 @@ public_html/
 - `admin`: acesso completo, incluindo administração e cardápio público.
 - `caixa`: frente de caixa e relatórios.
 - `estoque`: controle de estoque e relatórios.
+- `garcom`: módulo de atendimento; pode criar e atualizar apenas as próprias comandas abertas.
 
 As permissões são verificadas nas páginas e nas APIs; ocultar um link na navegação não substitui a validação do servidor.
 
 O login, o painel inicial, a navegação compartilhada, o cabeçalho do caixa e a listagem/filtros do estoque usam React 18 via CDN e o arquivo `js/react-app.js`. Os modais e operações de estoque, assim como as demais telas operacionais, continuam usando Bootstrap e os endpoints PHP atuais durante a migração gradual, sem etapa de compilação no deploy.
+
+## Módulo Garçom
+
+Antes de enviar a versão com o módulo Garçom, faça backup do banco e execute
+`migracao_modulo_garcom.sql` no banco do sistema. A migração amplia os perfis
+de usuário e adiciona à comanda os dados de cliente, mesa e usuário responsável.
+Cadastre contas com perfil **Garçom** na Administração; elas não recebem acesso
+ao caixa, estoque, relatórios ou administração.
 
 ## Migrações do cardápio integrado
 

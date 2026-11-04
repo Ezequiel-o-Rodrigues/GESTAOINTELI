@@ -1,117 +1,126 @@
-   <?php
-   require_once __DIR__ . '/../includes/api-auth.php';
-   // ✅ CORRIGIDO
-require_once __DIR__ . '/../config/paths.php';
-require_once PathConfig::config('database.php'); 
+<?php
+require_once __DIR__ . '/../includes/api-auth.php';
+require_once __DIR__ . '/../config/database.php';
+
 header('Content-Type: application/json; charset=utf-8');
 
-$data = json_decode(file_get_contents('php://input'), true);    
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['success' => false, 'message' => 'Método não permitido.'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+$data = json_decode(file_get_contents('php://input'), true);
+if (!is_array($data)) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Dados da operação inválidos.'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+$comandaId = filter_var(is_array($data) ? ($data['comanda_id'] ?? null) : null, FILTER_VALIDATE_INT);
+if (!$comandaId || $comandaId < 1) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Informe uma comanda válida.'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
 try {
     $database = new Database();
     $db = $database->getConnection();
+    $db->beginTransaction();
 
-    $data = json_decode(file_get_contents('php://input'), true);
-    
-    $comanda_id = $data['comanda_id'] ?? null;
-    $produto_id = $data['produto_id'] ?? null;
-    $quantidade = $data['quantidade'] ?? 1;
-    $item_id = $data['item_id'] ?? null;
-    $nova_quantidade = $data['nova_quantidade'] ?? null;
+    $stmt = $db->prepare("SELECT id FROM comandas WHERE id = ? AND status = 'aberta' FOR UPDATE");
+    $stmt->execute([(int) $comandaId]);
+    if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+        $db->rollBack();
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Comanda aberta não encontrada.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
 
-    // Se for alteração de quantidade de item existente
-    if ($item_id && $nova_quantidade !== null) {
-        // Buscar produto do item para recalcular subtotal
-        $query_item = "SELECT ic.produto_id, p.preco, p.nome FROM itens_comanda ic JOIN produtos p ON ic.produto_id = p.id WHERE ic.id = ?";
-        $stmt_item = $db->prepare($query_item);
-        $stmt_item->execute([$item_id]);
-        $item_info = $stmt_item->fetch(PDO::FETCH_ASSOC);
-        
-        if (!$item_info) {
-            throw new Exception('Item não encontrado');
+    if (isset($data['item_id']) && array_key_exists('nova_quantidade', $data)) {
+        $itemId = filter_var($data['item_id'], FILTER_VALIDATE_INT);
+        $quantity = filter_var($data['nova_quantidade'], FILTER_VALIDATE_INT);
+        if (!$itemId || $itemId < 1 || !$quantity || $quantity < 1) {
+            $db->rollBack();
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Item ou quantidade inválidos.'], JSON_UNESCAPED_UNICODE);
+            exit;
         }
-        
-        // Atualizar quantidade e subtotal
-        $novo_subtotal = $item_info['preco'] * $nova_quantidade;
-        $query_update = "UPDATE itens_comanda SET quantidade = ?, subtotal = ? WHERE id = ?";
-        $stmt_update = $db->prepare($query_update);
-        $stmt_update->execute([$nova_quantidade, $novo_subtotal, $item_id]);
-        
-        // Atualizar total da comanda
-        $query_total = "SELECT SUM(subtotal) as total FROM itens_comanda WHERE comanda_id = ?";
-        $stmt_total = $db->prepare($query_total);
-        $stmt_total->execute([$comanda_id]);
-        $total = $stmt_total->fetch(PDO::FETCH_ASSOC);
-        
-        $query_update_comanda = "UPDATE comandas SET valor_total = ? WHERE id = ?";
-        $stmt_update_comanda = $db->prepare($query_update_comanda);
-        $stmt_update_comanda->execute([$total['total'] ?? 0, $comanda_id]);
-        
-        echo json_encode([
-            'success' => true,
-            'message' => 'Quantidade alterada com sucesso'
-        ]);
-        return;
-    }
 
-    if (!$comanda_id || !$produto_id) {
-        throw new Exception('Dados incompletos');
-    }
+        $stmt = $db->prepare('SELECT preco_unitario FROM itens_comanda WHERE id = ? AND comanda_id = ?');
+        $stmt->execute([(int) $itemId, (int) $comandaId]);
+        $price = $stmt->fetchColumn();
+        if ($price === false) {
+            $db->rollBack();
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'Item não encontrado nesta comanda.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
 
-    // 1. Verificar se produto existe e tem estoque disponível (APENAS VERIFICAÇÃO)
-    $query_produto = "SELECT estoque_atual, nome, preco FROM produtos WHERE id = ? AND ativo = 1";
-    $stmt_produto = $db->prepare($query_produto);
-    $stmt_produto->execute([$produto_id]);
-    $produto = $stmt_produto->fetch(PDO::FETCH_ASSOC);
-
-    if (!$produto) {
-        throw new Exception('Produto não encontrado ou inativo');
-    }
-
-    // 2. Verificar estoque disponível (APENAS VALIDAÇÃO)
-    if ($produto['estoque_atual'] < $quantidade) {
-        throw new Exception('Estoque insuficiente para o produto: ' . $produto['nome']);
-    }
-
-    // 3. Verificar se item já existe na comanda
-    $query_existe = "SELECT id, quantidade FROM itens_comanda   WHERE comanda_id = ? AND produto_id = ?";
-    $stmt_existe = $db->prepare($query_existe);
-    $stmt_existe->execute([$comanda_id, $produto_id]);
-    $item_existente = $stmt_existe->fetch(PDO::FETCH_ASSOC);
-
-    if ($item_existente) {
-        // Atualizar quantidade do item existente
-        $nova_quantidade = $item_existente['quantidade'] + $quantidade;
-        $query_update = "UPDATE itens_comanda SET quantidade = ?, subtotal = ? * ? WHERE id = ?";
-        $stmt_update = $db->prepare($query_update);
-        $stmt_update->execute([$nova_quantidade, $produto['preco'], $nova_quantidade, $item_existente['id']]);
+        $stmt = $db->prepare('UPDATE itens_comanda SET quantidade = ?, subtotal = ? * ? WHERE id = ? AND comanda_id = ?');
+        $stmt->execute([(int) $quantity, $price, (int) $quantity, (int) $itemId, (int) $comandaId]);
     } else {
-        // Inserir novo item
-        $subtotal = $produto['preco'] * $quantidade;
-        $query_insert = "INSERT INTO itens_comanda (comanda_id, produto_id, quantidade, preco_unitario, subtotal) VALUES (?, ?, ?, ?, ?)";
-        $stmt_insert = $db->prepare($query_insert);
-        $stmt_insert->execute([$comanda_id, $produto_id, $quantidade, $produto['preco'], $subtotal]);
+        $productId = filter_var($data['produto_id'] ?? null, FILTER_VALIDATE_INT);
+        $quantity = filter_var($data['quantidade'] ?? 1, FILTER_VALIDATE_INT);
+        if (!$productId || $productId < 1 || !$quantity || $quantity < 1) {
+            $db->rollBack();
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Produto ou quantidade inválidos.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $stmt = $db->prepare('SELECT estoque_atual, nome, preco FROM produtos WHERE id = ? AND ativo = 1');
+        $stmt->execute([(int) $productId]);
+        $product = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$product) {
+            $db->rollBack();
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'Produto não encontrado ou inativo.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        if ((int) $product['estoque_atual'] < (int) $quantity) {
+            $db->rollBack();
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Estoque insuficiente para o produto: ' . $product['nome']], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $stmt = $db->prepare('SELECT id, quantidade FROM itens_comanda WHERE comanda_id = ? AND produto_id = ?');
+        $stmt->execute([(int) $comandaId, (int) $productId]);
+        $item = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($item) {
+            $newQuantity = (int) $item['quantidade'] + (int) $quantity;
+            $stmt = $db->prepare('UPDATE itens_comanda SET quantidade = ?, subtotal = ? * ? WHERE id = ?');
+            $stmt->execute([$newQuantity, $product['preco'], $newQuantity, (int) $item['id']]);
+        } else {
+            $stmt = $db->prepare(
+                'INSERT INTO itens_comanda (comanda_id, produto_id, quantidade, preco_unitario, subtotal)
+                 VALUES (?, ?, ?, ?, ?)'
+            );
+            $stmt->execute([
+                (int) $comandaId,
+                (int) $productId,
+                (int) $quantity,
+                $product['preco'],
+                (float) $product['preco'] * (int) $quantity
+            ]);
+        }
     }
 
-    // 4. Atualizar total da comanda (SEM BAIXAR ESTOQUE)
-    $query_total = "SELECT SUM(subtotal) as total FROM itens_comanda WHERE comanda_id = ?";
-    $stmt_total = $db->prepare($query_total);
-    $stmt_total->execute([$comanda_id]);
-    $total = $stmt_total->fetch(PDO::FETCH_ASSOC);
+    $stmt = $db->prepare('SELECT COALESCE(SUM(subtotal), 0) FROM itens_comanda WHERE comanda_id = ?');
+    $stmt->execute([(int) $comandaId]);
+    $total = $stmt->fetchColumn();
+    $stmt = $db->prepare("UPDATE comandas SET valor_total = ? WHERE id = ? AND status = 'aberta'");
+    $stmt->execute([$total, (int) $comandaId]);
+    $db->commit();
 
-    $query_update_comanda = "UPDATE comandas SET valor_total = ? WHERE id = ?";
-    $stmt_update_comanda = $db->prepare($query_update_comanda);
-    $stmt_update_comanda->execute([$total['total'] ?? 0, $comanda_id]);
-
-    echo json_encode([
-        'success' => true,
-        'message' => 'Item adicionado à comanda (estoque será baixado apenas na finalização)'
-    ]);
-
-} catch (Exception $e) {
-    echo json_encode([
-        'success' => false,
-        'message' => $e->getMessage()
-    ]);
+    echo json_encode(['success' => true, 'message' => 'Comanda atualizada.'], JSON_UNESCAPED_UNICODE);
+} catch (PDOException $e) {
+    if (isset($db) && $db instanceof PDO && $db->inTransaction()) {
+        $db->rollBack();
+    }
+    error_log('Erro ao atualizar item da comanda no caixa: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Não foi possível atualizar a comanda.'], JSON_UNESCAPED_UNICODE);
 }
 ?>

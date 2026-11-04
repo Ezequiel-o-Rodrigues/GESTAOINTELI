@@ -6,11 +6,11 @@ $destinoCardapio = ($_GET['destino'] ?? $_POST['destino'] ?? '') === 'cardapio';
 // Se já estiver logado, redireciona para página principal
 if (isset($_SESSION['usuario_logado']) && $_SESSION['usuario_logado'] === true) {
     $perfilSessao = strtolower(trim((string) ($_SESSION['usuario_perfil'] ?? '')));
-    if (in_array($perfilSessao, ['admin', 'caixa', 'estoque'], true)) {
+    if (in_array($perfilSessao, ['admin', 'caixa', 'estoque', 'garcom'], true)) {
         $destinoCardapioPermitido = $destinoCardapio && $perfilSessao === 'admin';
         header('Location: ' . ($destinoCardapioPermitido
             ? 'modules/cardapio/'
-            : 'index.php'));
+            : ($perfilSessao === 'garcom' ? 'modules/garcom/' : 'index.php')));
         exit;
     }
 
@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Verificar senha
                 if (password_verify($senha, $usuario['senha'])) {
                     $perfil = strtolower(trim((string) $usuario['perfil']));
-                    if (!in_array($perfil, ['admin', 'caixa', 'estoque'], true)) {
+                    if (!in_array($perfil, ['admin', 'caixa', 'estoque', 'garcom'], true)) {
                         $error = 'Perfil de acesso inválido. Solicite a revisão do seu cadastro.';
                     } elseif ($destinoCardapio && $perfil !== 'admin') {
                         $error = 'Apenas administradores podem acessar o gerenciamento do cardápio.';
@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         header('Location: ' . ($destinoCardapio
                             ? 'modules/cardapio/'
-                            : 'index.php'));
+                            : ($perfil === 'garcom' ? 'modules/garcom/' : 'index.php')));
                         exit;
                     }
                 } else {

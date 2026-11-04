@@ -148,6 +148,9 @@ if (window.CaixaSystemAlreadyLoaded) {
             });
 
             const data = await response.json();
+            if (!response.ok || data.success === false) {
+                throw new Error(data.message || 'Não foi possível carregar os itens da comanda.');
+            }
 
             if (data.success) {
                 // API pode retornar comanda (objeto) ou apenas comanda_id
@@ -163,6 +166,7 @@ if (window.CaixaSystemAlreadyLoaded) {
                 this.itensComanda = [];
                 this.atualizarUIComanda();
                 this.mostrarToast('Nova comanda criada (sem garçom)', 'success');
+                if (window.comandasAbertasUI) window.comandasAbertasUI.load();
             } else {
                 throw new Error(data.message || 'Erro ao criar comanda');
             }
@@ -194,6 +198,7 @@ if (window.CaixaSystemAlreadyLoaded) {
                 this.itensComanda = [];
                 this.atualizarUIComanda();
                 this.mostrarToast(data.message || 'Comanda criada com garçom', 'success');
+                if (window.comandasAbertasUI) window.comandasAbertasUI.load();
                 return true;
             } else {
                 throw new Error(data.message || 'Erro ao criar comanda com garçom');
@@ -240,6 +245,7 @@ if (window.CaixaSystemAlreadyLoaded) {
             
             if (data.success) {
                 await this.carregarItensComanda();
+                if (window.comandasAbertasUI) window.comandasAbertasUI.load();
                 this.mostrarToast('Item adicionado à comanda', 'success');
             } else {
                 this.mostrarToast(data.message || 'Erro ao adicionar item', 'error');
@@ -259,6 +265,9 @@ if (window.CaixaSystemAlreadyLoaded) {
             // Usar endpoint PHP do projeto
             const response = await fetch(`${this.apiUrl('itens_comanda.php')}?comanda_id=${encodeURIComponent(this.comandaAtual.id)}`);
             const data = await response.json();
+            if (!response.ok || data.success === false) {
+                throw new Error(data.message || 'Não foi possível carregar os itens da comanda.');
+            }
 
             // DEBUG: log para diagnóstico
             console.log('Resposta itens_comanda.php:', data);
@@ -287,6 +296,27 @@ if (window.CaixaSystemAlreadyLoaded) {
             console.error('Erro ao carregar itens:', error);
             this.itensComanda = [];
             this.atualizarListaItens();
+            throw error;
+        }
+    }
+
+    async abrirComandaSelecionada(comanda) {
+        const comandaAnterior = this.comandaAtual;
+        const itensAnteriores = this.itensComanda;
+        this.comandaAtual = {
+            id: Number(comanda.id),
+            cliente_nome: comanda.cliente_nome || '',
+            mesa_numero: comanda.mesa_numero || ''
+        };
+        this.itensComanda = [];
+        try {
+            await this.carregarItensComanda();
+            this.atualizarUIComanda();
+        } catch (error) {
+            this.comandaAtual = comandaAnterior;
+            this.itensComanda = itensAnteriores;
+            this.atualizarUIComanda();
+            throw error;
         }
     }
     
@@ -427,6 +457,7 @@ if (window.CaixaSystemAlreadyLoaded) {
             
             if (data.success) {
                 await this.carregarItensComanda();
+                if (window.comandasAbertasUI) window.comandasAbertasUI.load();
                 this.mostrarToast('Quantidade alterada', 'success');
             } else {
                 this.mostrarToast(data.message || 'Erro ao alterar quantidade', 'error');
@@ -475,6 +506,7 @@ if (window.CaixaSystemAlreadyLoaded) {
             
             if (data.success) {
                 await this.carregarItensComanda();
+                if (window.comandasAbertasUI) window.comandasAbertasUI.load();
                 this.mostrarToast('Item removido com sucesso', 'success');
             } else {
                 this.mostrarToast(data.message || 'Erro ao remover item', 'error');
@@ -556,6 +588,9 @@ if (window.CaixaSystemAlreadyLoaded) {
                 
                 // Limpar comanda
                 this.limparComanda();
+                if (window.comandasAbertasUI) {
+                    window.comandasAbertasUI.load();
+                }
             } else {
                 this.mostrarToast(data.message || 'Erro ao finalizar comanda', 'error');
                 console.error('Erro na resposta:', data.message);
@@ -640,8 +675,16 @@ if (window.CaixaSystemAlreadyLoaded) {
         
         if (this.comandaAtual) {
             numeroElement.textContent = '#' + this.comandaAtual.id;
+            const contexto = document.getElementById('contexto-comanda');
+            if (contexto) {
+                const detalhes = [this.comandaAtual.cliente_nome, this.comandaAtual.mesa_numero ? 'Mesa ' + this.comandaAtual.mesa_numero : '']
+                    .filter(Boolean);
+                contexto.textContent = detalhes.join(' · ');
+            }
         } else {
             numeroElement.textContent = '--';
+            const contexto = document.getElementById('contexto-comanda');
+            if (contexto) contexto.textContent = '';
             if (totalElement) totalElement.textContent = '0.00';
             this.atualizarListaItens();
         }

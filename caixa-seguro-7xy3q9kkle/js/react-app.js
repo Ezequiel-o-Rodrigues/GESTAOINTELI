@@ -93,7 +93,7 @@
     function DashboardApp() {
         const role = root.dataset.role;
         const firstName = root.dataset.firstName || 'equipe';
-        const roleLabels = { admin: 'Administrador', caixa: 'Operador de caixa', estoque: 'Operador de estoque' };
+        const roleLabels = { admin: 'Administrador', caixa: 'Operador de caixa', estoque: 'Operador de estoque', garcom: 'Garçom' };
         const modules = [
             { key: 'caixa', title: 'Frente de caixa', description: 'Abra comandas, registre itens e conclua vendas.', href: root.dataset.cashUrl, accent: 'orange' },
             { key: 'estoque', title: 'Controle de estoque', description: 'Acompanhe produtos, entradas e inventários.', href: root.dataset.stockUrl, accent: 'amber' },
@@ -102,6 +102,8 @@
             { key: 'cardapio', title: 'Cardápio público', description: 'Atualize os itens exibidos aos clientes.', href: root.dataset.menuUrl, accent: 'green' },
         ].filter((module) => module.key === 'cardapio'
             ? role === 'admin'
+            : role === 'garcom'
+                ? false
             : role === 'admin' || (role === 'caixa' && ['caixa', 'relatorios'].includes(module.key))
                 || (role === 'estoque' && ['estoque', 'relatorios'].includes(module.key)));
 

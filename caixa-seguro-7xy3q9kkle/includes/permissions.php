@@ -12,6 +12,7 @@ function canAccessModule($module) {
         'admin' => ['admin', 'caixa', 'estoque', 'relatorios'],
         'caixa' => ['caixa', 'relatorios'],
         'estoque' => ['estoque', 'relatorios'],
+        'garcom' => ['garcom'],
     ];
 
     return in_array($module, $permissions[$role] ?? [], true);
