@@ -385,6 +385,8 @@ body.waiter-app {
 
 .waiter-item-name { overflow-wrap: anywhere; font-weight: 700; }
 .waiter-item-price { color: #047857; font-size: 0.88rem; font-weight: 750; white-space: nowrap; }
+.waiter-quantity-control { display: grid; gap: 3px; }
+.waiter-quantity-label { color: #64748b; font-size: 0.7rem; font-weight: 700; text-align: center; }
 .waiter-quantity { min-height: 42px; padding: 6px; text-align: center; }
 .waiter-item-actions { display: flex; gap: 6px; }
 

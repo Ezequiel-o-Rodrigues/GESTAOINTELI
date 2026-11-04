@@ -29,6 +29,7 @@
     let orders = [];
     let selectedOrder = null;
     let isLoading = false;
+    const quantityTimers = new Map();
 
     const formatCurrency = (value) => `R$ ${Number(value || 0).toFixed(2).replace('.', ',')}`;
 
@@ -130,6 +131,8 @@
     }
 
     function renderItems(items) {
+        quantityTimers.forEach((timer) => window.clearTimeout(timer));
+        quantityTimers.clear();
         orderItems.replaceChildren();
         if (items.length === 0) {
             const empty = document.createElement('p');
@@ -153,21 +156,32 @@
             quantity.min = '1';
             quantity.step = '1';
             quantity.value = String(item.quantidade);
+            quantity.dataset.savedValue = String(item.quantidade);
             quantity.setAttribute('aria-label', `Quantidade de ${item.nome_produto}`);
+            quantity.addEventListener('input', () => scheduleQuantitySave(item.id, quantity));
+            quantity.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    clearQuantityTimer(item.id);
+                    updateQuantity(item.id, quantity, true);
+                }
+            });
+            quantity.addEventListener('blur', () => {
+                clearQuantityTimer(item.id);
+                updateQuantity(item.id, quantity, true);
+            });
+            const quantityControl = document.createElement('label');
+            quantityControl.className = 'waiter-quantity-control';
+            const quantityLabel = document.createElement('span');
+            quantityLabel.className = 'waiter-quantity-label';
+            quantityLabel.textContent = 'Qtd.';
+            quantityControl.append(quantityLabel, quantity);
             const price = document.createElement('span');
             price.className = 'waiter-item-price';
             price.textContent = formatCurrency(item.subtotal);
 
             const actions = document.createElement('div');
             actions.className = 'waiter-item-actions';
-            const save = document.createElement('button');
-            save.type = 'button';
-            save.className = 'waiter-icon-button';
-            save.title = 'Salvar quantidade';
-            save.setAttribute('aria-label', `Salvar quantidade de ${item.nome_produto}`);
-            save.innerHTML = '<i class="bi bi-check2" aria-hidden="true"></i>';
-            save.addEventListener('click', () => updateQuantity(item.id, quantity.value));
-
             const remove = document.createElement('button');
             remove.type = 'button';
             remove.className = 'waiter-icon-button waiter-icon-button--remove';
@@ -176,11 +190,26 @@
             remove.innerHTML = '<i class="bi bi-trash" aria-hidden="true"></i>';
             remove.addEventListener('click', () => removeItem(item.id));
 
-            actions.append(save, remove);
-            row.append(name, quantity, price, actions);
+            actions.append(remove);
+            row.append(name, quantityControl, price, actions);
             orderItems.appendChild(row);
         });
         orderTotal.textContent = formatCurrency(total);
+    }
+
+    function clearQuantityTimer(itemId) {
+        const timer = quantityTimers.get(itemId);
+        if (timer) window.clearTimeout(timer);
+        quantityTimers.delete(itemId);
+    }
+
+    function scheduleQuantitySave(itemId, input, delay = 500) {
+        clearQuantityTimer(itemId);
+        const timer = window.setTimeout(() => {
+            quantityTimers.delete(itemId);
+            updateQuantity(itemId, input);
+        }, delay);
+        quantityTimers.set(itemId, timer);
     }
 
     function filterProducts() {
@@ -270,14 +299,28 @@
         }
     }
 
-    async function updateQuantity(itemId, value) {
-        const quantity = Number(value);
+    async function updateQuantity(itemId, input, reportInvalid = false) {
+        if (!input.isConnected) return;
+        if (input.value === '') {
+            if (reportInvalid) {
+                showMessage('Informe uma quantidade inteira maior que zero.', true);
+                input.value = input.dataset.savedValue;
+            }
+            return;
+        }
+        const quantity = Number(input.value);
         if (!Number.isInteger(quantity) || quantity < 1) {
             showMessage('Informe uma quantidade inteira maior que zero.', true);
             return;
         }
-        if (!selectedOrder || isLoading) return;
+        if (quantity === Number(input.dataset.savedValue)) return;
+        if (!selectedOrder) return;
+        if (isLoading) {
+            scheduleQuantitySave(itemId, input, 250);
+            return;
+        }
         isLoading = true;
+        input.disabled = true;
         try {
             await request(config.itemsUrl, {
                 method: 'POST',
@@ -294,6 +337,7 @@
             showMessage(error.message, true);
         } finally {
             isLoading = false;
+            if (input.isConnected) input.disabled = false;
         }
     }
 
