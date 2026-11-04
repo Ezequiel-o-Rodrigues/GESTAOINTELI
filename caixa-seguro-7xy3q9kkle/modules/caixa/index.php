@@ -662,14 +662,17 @@ try {
     }
     </script>   
 
-        <!-- === MODAL SELECÃO GARÇOM DINÂMICO - BUSCA DO BD === -->
+        <!-- Modal para definir se a nova comanda será aberta pelo caixa ou por um garçom. -->
     <div id="modalGarcom" class="cash-modal" role="dialog" aria-modal="true" aria-labelledby="modalGarcomTitle" aria-hidden="true" style="display: none;">
         <div class="cash-modal-card">
-            <h2 id="modalGarcomTitle" class="cash-modal-title"><i class="bi bi-person-badge" aria-hidden="true"></i> Selecione o garçom</h2>
-            <p class="cash-modal-description">Escolha quem será responsável pelo atendimento.</p>
+            <h2 id="modalGarcomTitle" class="cash-modal-title"><i class="bi bi-person-badge" aria-hidden="true"></i> Quem abriu a comanda?</h2>
+            <p class="cash-modal-description">Abra uma comanda manual pelo caixa ou selecione o garçom responsável.</p>
             
-            <!-- Grid de Botões dos Garçons - DINÂMICO -->
             <div id="gridGarcons" class="cash-waiter-grid">
+                <button type="button" class="btn-garcom btn-caixa" id="btnAbrirComandaCaixa">
+                    <span class="cash-waiter-code"><i class="bi bi-cash-register" aria-hidden="true"></i> Caixa</span>
+                    <span class="cash-waiter-name">Abrir comanda manual</span>
+                </button>
                 <?php if (!empty($garcons)): ?>
                     <?php foreach($garcons as $garcom): ?>
                     <button type="button" class="btn-garcom" data-garcom="<?= htmlspecialchars((string) $garcom['codigo'], ENT_QUOTES, 'UTF-8') ?>" data-garcom-name="<?= htmlspecialchars($garcom['nome'], ENT_QUOTES, 'UTF-8') ?>" aria-pressed="false">
@@ -771,10 +774,44 @@ try {
 
         document.getElementById('gridGarcons').addEventListener('click', function(event) {
             const button = event.target.closest('.btn-garcom');
-            if (button) {
+            if (button && button.dataset.garcom) {
                 selecionarGarcom(button.dataset.garcom, button.dataset.garcomName);
             }
         });
+
+        document.getElementById('btnAbrirComandaCaixa').addEventListener('click', criarComandaCaixa);
+
+        async function criarComandaCaixa(event) {
+            const button = event.currentTarget;
+            if (button.disabled) return;
+            if (!window.caixaSystem || typeof window.caixaSystem.atualizarUIComanda !== 'function') {
+                notificarCaixa('O caixa ainda está carregando. Tente novamente.', 'warning');
+                return;
+            }
+            button.disabled = true;
+            try {
+                const response = await fetch(window.appConfig.apiBase + 'nova_comanda.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success || !data.comanda_id) {
+                    throw new Error(data.message || 'Não foi possível abrir uma comanda pelo caixa.');
+                }
+
+                window.caixaSystem.comandaAtual = { id: Number(data.comanda_id) };
+                window.caixaSystem.itensComanda = [];
+                window.caixaSystem.atualizarUIComanda();
+                if (window.comandasAbertasUI) window.comandasAbertasUI.load();
+                fecharModalGarcom();
+                notificarCaixa(data.message || 'Comanda aberta pelo caixa.', 'success');
+            } catch (error) {
+                console.error('Erro ao abrir comanda pelo caixa:', error);
+                notificarCaixa(error.message || 'Não foi possível abrir uma comanda pelo caixa.', 'error');
+            } finally {
+                button.disabled = false;
+            }
+        }
 
         async function criarComandaComGarcom() {
             if (!garcomSelecionado) {
