@@ -394,21 +394,21 @@ require_once '../../includes/header.php';
                 <input type="hidden" name="action" value="save_commission">
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_admin_user'], ENT_QUOTES, 'UTF-8') ?>">
                 <div class="col-md-4">
-                    <label for="commission_rate" class="form-label">Taxa de Comissão dos Garçons (%)</label>
+                    <label for="commission_rate" class="form-label">Percentual de comissão e serviço (%)</label>
                     <div class="input-group">
                         <input type="number" class="form-control" id="commission_rate" name="commission_rate" 
                                value="<?= $current_commission * 100 ?>" min="0" max="100" step="0.1" required>
                         <span class="input-group-text">%</span>
                     </div>
-                    <div class="form-text">Taxa atual: <?= number_format($current_commission * 100, 1) ?>%</div>
+                    <div class="form-text">Comissão nos itens lançados por garçons e, se habilitado, taxa aplicada à conta do cliente. Atual: <?= number_format($current_commission * 100, 1) ?>%</div>
                 </div>
                 <div class="col-md-8 d-flex align-items-center">
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="service_fee_enabled" name="service_fee_enabled" value="1" <?= $service_fee_enabled ? 'checked' : '' ?>>
                         <label class="form-check-label" for="service_fee_enabled">
-                            Repassar ao cliente a soma das comissões dos itens
+                            Cobrar do cliente o percentual configurado sobre o subtotal da comanda
                         </label>
-                        <div class="form-text">Quando desativado, os garçons continuam acumulando comissão, mas não há taxa de serviço na conta.</div>
+                        <div class="form-text">Quando ativado, a taxa incide sobre todos os itens, inclusive os lançados pelo caixa ou administração. A comissão continua sendo atribuída somente aos itens lançados por garçons.</div>
                     </div>
                 </div>
                 <div class="col-12">

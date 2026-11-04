@@ -111,7 +111,12 @@ function ajustarQuantidadeItemComanda(
     }
 
     if ($novaQuantidade > $quantidadeAtual) {
-        $garcom = buscarGarcomAtivo($db, $usuarioId);
+        $garcom = null;
+        $taxaComissao = 0;
+        if (currentUserRole() === 'garcom') {
+            $garcom = buscarGarcomAtivo($db, $usuarioId);
+            $taxaComissao = obterTaxaComissao($db);
+        }
         $incremento = $novaQuantidade - $quantidadeAtual;
 
         $stmt = $db->prepare(
@@ -132,9 +137,9 @@ function ajustarQuantidadeItemComanda(
             (int) $item['produto_id'],
             $incremento,
             (float) $item['preco_unitario'],
-            (int) $garcom['id'],
-            $garcom['nome'],
-            obterTaxaComissao($db)
+            $garcom === null ? null : (int) $garcom['id'],
+            $garcom === null ? null : $garcom['nome'],
+            $taxaComissao
         );
     } else {
         $stmt = $db->prepare(

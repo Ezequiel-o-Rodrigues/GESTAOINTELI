@@ -576,7 +576,7 @@ try {
     <!-- CONTEÚDO PRINCIPAL - MAIS ESPAÇO PARA PRODUTOS -->
     <div class="conteudo-principal">
         <div class="alert alert-info" role="status">
-            O lançamento de produtos exige uma sessão autenticada de garçom. Acesse o módulo Garçom para registrar itens; o caixa pode acompanhar, remover itens e finalizar comandas.
+            Caixa, administração e garçons podem lançar produtos. A comissão do item é atribuída apenas quando lançado por um garçom autenticado.
         </div>
         <div class="filtros-container">
             <label class="cash-filter-search" for="search-produto">
@@ -660,11 +660,9 @@ try {
             basePath: <?= json_encode($base_path) ?>,
             apiBase: <?= json_encode(rtrim(PathConfig::api(), '/') . '/') ?>,
             createOrderUrl: <?= json_encode(PathConfig::modules('caixa/criar_comanda.php')) ?>,
-            openOrdersUrl: <?= json_encode(PathConfig::api('comandas_abertas.php')) ?>,
-            canLaunchItems: <?= json_encode(currentUserRole() === 'garcom') ?>
+            openOrdersUrl: <?= json_encode(PathConfig::api('comandas_abertas.php')) ?>
         });
     }
-    window.appConfig.canLaunchItems = <?= json_encode(currentUserRole() === 'garcom') ?>;
     </script>   
 
         <!-- Modal para definir se a nova comanda será aberta pelo caixa ou por um garçom. -->
@@ -883,10 +881,6 @@ try {
         // Wrapper global para compatibilidade com os elementos inline do template
         // Chamado pelos onclick nos cards: adicionarProduto(produtoId, nome, preco)
         function adicionarProduto(produtoId, nome, preco) {
-            if (!window.appConfig.canLaunchItems) {
-                notificarCaixa('Entre com uma conta ativa de garçom para lançar produtos.', 'warning');
-                return;
-            }
             if (window.caixaSystem && typeof window.caixaSystem.adicionarItem === 'function') {
                 // O CaixaSystem exige uma comanda selecionada antes de adicionar itens.
                 window.caixaSystem.adicionarItem(produtoId, 1);

@@ -30,9 +30,6 @@ if (!$comandaId || $comandaId < 1 || !$quantity || $quantity < 1
 }
 
 $isQuantityChange = isset($data['item_id']);
-if (!$isQuantityChange && currentUserRole() !== 'garcom') {
-    responderItem(403, ['success' => false, 'message' => 'Entre com uma conta ativa de garçom para lançar produtos.']);
-}
 
 try {
     $database = new Database();
@@ -64,7 +61,12 @@ try {
             responderItem(400, ['success' => false, 'message' => 'Produto inválido.']);
         }
 
-        $garcom = buscarGarcomAtivo($db, (int) $_SESSION['usuario_id']);
+        $garcom = null;
+        $commissionRate = 0;
+        if (currentUserRole() === 'garcom') {
+            $garcom = buscarGarcomAtivo($db, (int) $_SESSION['usuario_id']);
+            $commissionRate = obterTaxaComissao($db);
+        }
         $stmt = $db->prepare('SELECT estoque_atual, nome, preco FROM produtos WHERE id = ? AND ativo = 1 FOR UPDATE');
         $stmt->execute([(int) $productId]);
         $product = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -92,9 +94,9 @@ try {
             (int) $productId,
             (int) $quantity,
             (float) $product['preco'],
-            (int) $garcom['id'],
-            $garcom['nome'],
-            obterTaxaComissao($db)
+            $garcom === null ? null : (int) $garcom['id'],
+            $garcom === null ? null : $garcom['nome'],
+            $commissionRate
         );
         atualizarTotalComanda($db, (int) $comandaId);
     }
