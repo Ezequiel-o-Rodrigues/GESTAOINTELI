@@ -40,10 +40,35 @@ try {
             <h1>Atendimento</h1>
         </div>
         <div class="waiter-account">
+            <button type="button" class="waiter-orders-toggle" id="toggleOrders" aria-expanded="false" aria-controls="ordersSidebar">
+                <i class="bi bi-list-ul" aria-hidden="true"></i>
+                <span>Minhas comandas</span>
+                <span id="ordersCount" class="waiter-count">0</span>
+            </button>
             <span><?= htmlspecialchars($_SESSION['usuario_nome'] ?? 'Garçom', ENT_QUOTES, 'UTF-8') ?></span>
             <a href="<?= htmlspecialchars(PathConfig::url('logout.php'), ENT_QUOTES, 'UTF-8') ?>">Sair</a>
         </div>
     </header>
+
+    <div id="ordersBackdrop" class="waiter-sidebar-backdrop" hidden></div>
+    <aside id="ordersSidebar" class="waiter-sidebar" role="dialog" aria-modal="true" aria-label="Minhas comandas abertas" aria-hidden="true" inert>
+        <div class="waiter-sidebar-heading">
+            <div>
+                <p class="waiter-eyebrow">EM ATENDIMENTO</p>
+                <h2>Minhas comandas</h2>
+            </div>
+            <button type="button" id="closeOrders" class="waiter-sidebar-close" aria-label="Fechar lista de comandas">
+                <i class="bi bi-x-lg" aria-hidden="true"></i>
+            </button>
+        </div>
+        <label class="waiter-orders-search" for="searchOrders">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input id="searchOrders" type="search" placeholder="Cliente ou mesa..." autocomplete="off">
+        </label>
+        <div id="ordersList" class="waiter-orders-list" aria-live="polite">
+            <p class="waiter-empty">Carregando comandas...</p>
+        </div>
+    </aside>
 
     <main class="waiter-main">
         <section class="waiter-card waiter-create" aria-labelledby="create-title">
@@ -72,19 +97,6 @@ try {
         <div id="waiterMessage" class="waiter-message" role="status" aria-live="polite"></div>
 
         <div class="waiter-layout">
-            <section class="waiter-card waiter-orders" aria-labelledby="orders-title">
-                <div class="waiter-section-heading">
-                    <div>
-                        <p class="waiter-eyebrow">EM ATENDIMENTO</p>
-                        <h2 id="orders-title">Minhas comandas</h2>
-                    </div>
-                    <span id="ordersCount" class="waiter-count">0</span>
-                </div>
-                <div id="ordersList" class="waiter-orders-list" aria-live="polite">
-                    <p class="waiter-empty">Carregando comandas...</p>
-                </div>
-            </section>
-
             <section id="activeOrder" class="waiter-card waiter-workspace" aria-labelledby="activeOrderTitle" hidden>
                 <div class="waiter-section-heading">
                     <div>

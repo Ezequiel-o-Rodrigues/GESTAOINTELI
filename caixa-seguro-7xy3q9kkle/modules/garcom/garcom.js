@@ -10,6 +10,11 @@
     const orderTotal = document.getElementById('orderTotal');
     const newOrderForm = document.getElementById('newOrderForm');
     const productSearch = document.getElementById('productSearch');
+    const ordersSidebar = document.getElementById('ordersSidebar');
+    const ordersBackdrop = document.getElementById('ordersBackdrop');
+    const toggleOrders = document.getElementById('toggleOrders');
+    const closeOrders = document.getElementById('closeOrders');
+    const searchOrders = document.getElementById('searchOrders');
     let orders = [];
     let selectedOrder = null;
     let isLoading = false;
@@ -39,16 +44,23 @@
 
     function renderOrders() {
         ordersCount.textContent = String(orders.length);
+        ordersList.removeAttribute('role');
+        const term = searchOrders.value.trim().toLocaleLowerCase();
+        const matchingOrders = orders.filter((order) =>
+            `${order.cliente_nome || ''} ${order.mesa_numero || ''} ${order.id}`.toLocaleLowerCase().includes(term)
+        );
         ordersList.replaceChildren();
-        if (orders.length === 0) {
+        if (matchingOrders.length === 0) {
             const empty = document.createElement('p');
             empty.className = 'waiter-empty';
-            empty.textContent = 'Você ainda não tem comandas abertas.';
+            empty.textContent = orders.length
+                ? 'Nenhuma comanda corresponde à pesquisa.'
+                : 'Você ainda não tem comandas abertas.';
             ordersList.appendChild(empty);
             return;
         }
 
-        orders.forEach((order) => {
+        matchingOrders.forEach((order) => {
             const button = document.createElement('button');
             button.type = 'button';
             button.className = `waiter-order-button${selectedOrder && Number(selectedOrder.id) === Number(order.id) ? ' is-selected' : ''}`;
@@ -67,6 +79,20 @@
             button.append(title, number, total);
             ordersList.appendChild(button);
         });
+    }
+
+    function setOrdersSidebarOpen(isOpen) {
+        ordersSidebar.classList.toggle('is-open', isOpen);
+        ordersSidebar.setAttribute('aria-hidden', String(!isOpen));
+        ordersSidebar.inert = !isOpen;
+        toggleOrders.setAttribute('aria-expanded', String(isOpen));
+        ordersBackdrop.hidden = !isOpen;
+        if (isOpen) {
+            searchOrders.focus();
+            loadOrders().catch((error) => showMessage(error.message, true));
+        } else {
+            toggleOrders.focus();
+        }
     }
 
     function renderItems(items) {
@@ -134,7 +160,10 @@
             selectedOrder = orders.find((item) => Number(item.id) === Number(selectedOrder.id)) || null;
             if (!selectedOrder) {
                 activeOrder.hidden = true;
+                renderItems([]);
                 showMessage('A comanda selecionada não está mais aberta.', false);
+            } else {
+                activeOrderTitle.textContent = orderLabel(selectedOrder);
             }
         }
         renderOrders();
@@ -256,8 +285,21 @@
         if (!order) return;
         try {
             await selectOrder(order);
+            setOrdersSidebarOpen(false);
         } catch (error) {
             showMessage(error.message, true);
+        }
+    });
+
+    toggleOrders.addEventListener('click', () =>
+        setOrdersSidebarOpen(ordersSidebar.getAttribute('aria-hidden') === 'true')
+    );
+    closeOrders.addEventListener('click', () => setOrdersSidebarOpen(false));
+    ordersBackdrop.addEventListener('click', () => setOrdersSidebarOpen(false));
+    searchOrders.addEventListener('input', renderOrders);
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && ordersSidebar.classList.contains('is-open')) {
+            setOrdersSidebarOpen(false);
         }
     });
 
