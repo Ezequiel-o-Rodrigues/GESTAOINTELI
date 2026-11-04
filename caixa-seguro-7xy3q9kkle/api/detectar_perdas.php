@@ -22,9 +22,9 @@ try {
                 (SELECT COALESCE(SUM(ic.quantidade), 0) 
                  FROM itens_comanda ic 
                  JOIN comandas c ON ic.comanda_id = c.id 
-                 WHERE ic.produto_id = p.id AND c.status = 'fechada') as total_vendido,
+                 WHERE ic.produto_id = p.id AND c.status = 'fechada' AND ic.cancelado_em IS NULL) as total_vendido,
                 ((SELECT COALESCE(SUM(quantidade), 0) FROM movimentacoes_estoque WHERE produto_id = p.id AND tipo = 'entrada') - 
-                 (SELECT COALESCE(SUM(ic.quantidade), 0) FROM itens_comanda ic JOIN comandas c ON ic.comanda_id = c.id WHERE ic.produto_id = p.id AND c.status = 'fechada') - 
+                 (SELECT COALESCE(SUM(ic.quantidade), 0) FROM itens_comanda ic JOIN comandas c ON ic.comanda_id = c.id WHERE ic.produto_id = p.id AND c.status = 'fechada' AND ic.cancelado_em IS NULL) - 
                  p.estoque_atual) as diferenca_estoque
               FROM produtos p
               JOIN categorias cat ON p.categoria_id = cat.id

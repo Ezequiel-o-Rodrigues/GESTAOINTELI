@@ -542,7 +542,8 @@ if (window.CaixaSystemAlreadyLoaded) {
             console.log('Resposta finalizar_comanda:', data);
             
             if (data.success) {
-                this.mostrarToast('Comanda finalizada com sucesso! Total: R$ ' + data.valor_total.toFixed(2), 'success');
+                const totalAPagar = Number(data.total_a_pagar ?? data.valor_total);
+                this.mostrarToast('Comanda finalizada com sucesso! Total: R$ ' + totalAPagar.toFixed(2), 'success');
                 
                 // Mostrar modal de comprovante
                 const modal = document.getElementById('modalComprovante');
@@ -551,7 +552,7 @@ if (window.CaixaSystemAlreadyLoaded) {
                 if (modal) {
                     // Atualizar valor total no modal
                     if (totalElement) {
-                        totalElement.innerHTML = `Total: <strong>R$ ${data.valor_total.toFixed(2).replace('.', ',')}</strong>`;
+                        totalElement.innerHTML = `Total: <strong>R$ ${totalAPagar.toFixed(2).replace('.', ',')}</strong>`;
                     }
                     
                     // Armazenar comprovante_id para os botões

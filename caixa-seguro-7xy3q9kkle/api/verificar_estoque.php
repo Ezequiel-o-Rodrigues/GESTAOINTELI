@@ -21,7 +21,7 @@ try {
     $db = $database->getConnection();
 
     // Verificar estoque para todos os itens da comanda
-    $stmt = $db->prepare("SELECT p.id, p.nome, p.estoque_atual, ic.quantidade as quantidade_solicitada, (p.estoque_atual - ic.quantidade) as estoque_apos FROM itens_comanda ic JOIN produtos p ON ic.produto_id = p.id WHERE ic.comanda_id = ?");
+    $stmt = $db->prepare("SELECT p.id, p.nome, p.estoque_atual, ic.quantidade as quantidade_solicitada, (p.estoque_atual - ic.quantidade) as estoque_apos FROM itens_comanda ic JOIN produtos p ON ic.produto_id = p.id WHERE ic.comanda_id = ? AND ic.cancelado_em IS NULL");
     $stmt->execute([$comanda_id]);
     $itens = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

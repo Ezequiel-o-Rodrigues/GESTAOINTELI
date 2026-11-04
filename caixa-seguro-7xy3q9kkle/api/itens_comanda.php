@@ -31,10 +31,12 @@ try {
         exit;
     }
 
-    $query = "SELECT ic.id, ic.comanda_id, ic.produto_id, ic.quantidade, ic.subtotal, p.nome as nome_produto
+    $query = "SELECT ic.id, ic.comanda_id, ic.produto_id, ic.quantidade, ic.subtotal,
+                     COALESCE(ic.garcom_nome, u.nome) AS garcom_nome, p.nome as nome_produto
               FROM itens_comanda ic 
               JOIN produtos p ON ic.produto_id = p.id 
-              WHERE ic.comanda_id = ?";
+              LEFT JOIN usuarios u ON u.id = ic.garcom_usuario_id
+              WHERE ic.comanda_id = ? AND ic.cancelado_em IS NULL";
     $stmt = $db->prepare($query);
     $stmt->execute([(int) $comandaId]);
     

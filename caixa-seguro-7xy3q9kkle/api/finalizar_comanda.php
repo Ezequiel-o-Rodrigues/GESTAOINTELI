@@ -42,36 +42,33 @@ try {
     }
 
     // Calcular total da comanda (itens_comanda + itens_livres)
-    $stmt = $db->prepare("SELECT COALESCE(SUM(subtotal),0) as total FROM (SELECT subtotal FROM itens_comanda WHERE comanda_id = ? UNION ALL SELECT subtotal FROM itens_livres WHERE comanda_id = ?) t");
+    $stmt = $db->prepare("SELECT COALESCE(SUM(subtotal),0) as total FROM (SELECT subtotal FROM itens_comanda WHERE comanda_id = ? AND cancelado_em IS NULL UNION ALL SELECT subtotal FROM itens_livres WHERE comanda_id = ?) t");
     $stmt->execute([$comanda_id, $comanda_id]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     $total_comanda = floatval($row['total'] ?? 0);
 
-    // Obter configuração de taxa
-    $stmt = $db->prepare("SELECT taxa_gorjeta, tipo_taxa FROM configuracoes ORDER BY id DESC LIMIT 1");
+    $stmt = $db->prepare('SELECT COALESCE(SUM(comissao_valor), 0) FROM itens_comanda WHERE comanda_id = ? AND cancelado_em IS NULL');
+    $stmt->execute([(int) $comanda_id]);
+    $comissaoItens = (float) $stmt->fetchColumn();
+    $stmt = $db->prepare("SELECT valor FROM configuracoes_sistema WHERE chave = 'service_fee_enabled'");
     $stmt->execute();
-    $conf = $stmt->fetch(PDO::FETCH_ASSOC);
-    $taxa_config = floatval($conf['taxa_gorjeta'] ?? 0);
-    $tipo_taxa = $conf['tipo_taxa'] ?? 'nenhuma';
-
-    if ($tipo_taxa === 'percentual' && $taxa_config > 0) {
-        $taxa_gorjeta = ($total_comanda * $taxa_config) / 100;
-    } elseif ($tipo_taxa === 'fixa' && $taxa_config > 0) {
-        $taxa_gorjeta = $taxa_config;
-    } else {
-        $taxa_gorjeta = 0;
-    }
+    $repasseAtivo = $stmt->fetchColumn() === '1';
+    $taxa_gorjeta = $repasseAtivo ? round($comissaoItens, 2) : 0;
 
     // Atualizar comanda
-    $stmt = $db->prepare("UPDATE comandas SET status = 'fechada', valor_total = ?, taxa_gorjeta = ?, data_venda = NOW(), data_finalizacao = NOW(), usuario_fechamento_id = ? WHERE id = ? AND status = 'aberta'");
-    $stmt->execute([$total_comanda, $taxa_gorjeta, (int) $_SESSION['usuario_id'], (int) $comanda_id]);
+    $stmt = $db->prepare("UPDATE comandas SET status = 'fechada', valor_total = ?, taxa_gorjeta = 0, data_venda = NOW(), data_finalizacao = NOW(), usuario_fechamento_id = ? WHERE id = ? AND status = 'aberta'");
+    $stmt->execute([$total_comanda, (int) $_SESSION['usuario_id'], (int) $comanda_id]);
     if ($stmt->rowCount() !== 1) {
         http_response_code(409);
         throw new Exception('A comanda já foi finalizada por outro operador.');
     }
+    // O gatilho legado aplica sua própria taxa na transição de status; sobrescrevemos
+    // em seguida com o repasse calculado a partir das comissões registradas nos itens.
+    $stmt = $db->prepare('UPDATE comandas SET taxa_gorjeta = ? WHERE id = ? AND status = \'fechada\'');
+    $stmt->execute([$taxa_gorjeta, (int) $comanda_id]);
 
     // Baixar estoque: para cada item em itens_comanda, inserir movimentacao tipo 'saida' e decrementar estoque
-    $stmt = $db->prepare("SELECT ic.produto_id, ic.quantidade FROM itens_comanda ic WHERE ic.comanda_id = ?");
+    $stmt = $db->prepare("SELECT ic.produto_id, ic.quantidade FROM itens_comanda ic WHERE ic.comanda_id = ? AND ic.cancelado_em IS NULL");
     $stmt->execute([$comanda_id]);
     $itens = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -102,7 +99,7 @@ try {
         FROM comandas c
         LEFT JOIN garcons g ON c.garcom_id = g.id
         LEFT JOIN usuarios u ON c.garcom_usuario_id = u.id
-        LEFT JOIN itens_comanda ic ON c.id = ic.comanda_id
+        LEFT JOIN itens_comanda ic ON c.id = ic.comanda_id AND ic.cancelado_em IS NULL
         LEFT JOIN produtos p ON ic.produto_id = p.id
         WHERE c.id = ?
         GROUP BY c.id
@@ -133,6 +130,7 @@ try {
         'message' => 'Comanda finalizada e estoque baixado com sucesso',
         'valor_total' => $total_comanda,
         'taxa_gorjeta' => $taxa_gorjeta,
+        'total_a_pagar' => $total_comanda + $taxa_gorjeta,
         'comprovante_id' => $comprovante_id
     ], JSON_UNESCAPED_UNICODE);
     exit;
@@ -208,10 +206,12 @@ function gerarConteudoComprovante($comanda) {
     
     // Rodapé
     $linhas[] = str_repeat("-", 48);
-    $linhas[] = "SUBTOTAL: R$ " . number_format($comanda['valor_total'] - $comanda['taxa_gorjeta'], 2, ',', '.');
-    $linhas[] = "GORJETA:  R$ " . number_format($comanda['taxa_gorjeta'], 2, ',', '.');
+    $linhas[] = "SUBTOTAL: R$ " . number_format($comanda['valor_total'], 2, ',', '.');
+    if ((float) $comanda['taxa_gorjeta'] > 0) {
+        $linhas[] = "SERVICO:  R$ " . number_format($comanda['taxa_gorjeta'], 2, ',', '.');
+    }
     $linhas[] = str_repeat("=", 48);
-    $linhas[] = $bold_on . "TOTAL:    R$ " . number_format($comanda['valor_total'], 2, ',', '.') . $bold_off;
+    $linhas[] = $bold_on . "TOTAL:    R$ " . number_format($comanda['valor_total'] + $comanda['taxa_gorjeta'], 2, ',', '.') . $bold_off;
     $linhas[] = str_repeat("=", 48);
     $linhas[] = "";
     $linhas[] = $center . "OBRIGADO PELA PREFERÊNCIA!";

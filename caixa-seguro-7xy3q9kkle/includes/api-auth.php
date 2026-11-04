@@ -2,7 +2,7 @@
 require_once __DIR__ . '/permissions.php';
 
 $endpointRoles = [
-    'adicionar_item.php' => ['admin', 'caixa'],
+    'adicionar_item.php' => ['admin', 'caixa', 'garcom'],
     'comanda_aberta.php' => ['admin', 'caixa'],
     'criar_tabela.php' => ['admin'],
     'debug.php' => ['admin'],
@@ -33,7 +33,7 @@ $endpointRoles = [
     'relatorio_vendas_7dias.php' => ['admin', 'caixa', 'estoque'],
     'relatorio_vendas_mensais.php' => ['admin', 'caixa', 'estoque'],
     'relatorio_vendas_periodo.php' => ['admin', 'caixa', 'estoque'],
-    'remover_item.php' => ['admin', 'caixa'],
+    'remover_item.php' => ['admin', 'caixa', 'estoque', 'garcom'],
     'salvar_produto.php' => ['admin', 'estoque'],
     'teste_conexao.php' => ['admin'],
     'toggle_produto.php' => ['admin', 'estoque'],

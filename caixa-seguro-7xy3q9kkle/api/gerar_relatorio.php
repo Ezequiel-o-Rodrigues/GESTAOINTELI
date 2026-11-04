@@ -44,7 +44,7 @@ try {
                       JOIN produtos p ON ic.produto_id = p.id
                       JOIN categorias cat ON p.categoria_id = cat.id
                       JOIN comandas c ON ic.comanda_id = c.id
-                      WHERE c.status = 'fechada'";
+                      WHERE c.status = 'fechada' AND ic.cancelado_em IS NULL";
             
             if ($data_inicio && $data_fim) {
                 $query .= " AND DATE(c.data_venda) BETWEEN :data_inicio AND :data_fim";

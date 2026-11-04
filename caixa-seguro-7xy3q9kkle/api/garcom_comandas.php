@@ -12,10 +12,10 @@ try {
         $stmt = $db->prepare(
             "SELECT id, cliente_nome, mesa_numero, valor_total, created_at
              FROM comandas
-             WHERE garcom_usuario_id = ? AND status = 'aberta'
+             WHERE status = 'aberta'
              ORDER BY created_at DESC, id DESC"
         );
-        $stmt->execute([(int) $_SESSION['usuario_id']]);
+        $stmt->execute();
         echo json_encode(['success' => true, 'comandas' => $stmt->fetchAll(PDO::FETCH_ASSOC)], JSON_UNESCAPED_UNICODE);
         exit;
     }

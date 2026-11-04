@@ -9,6 +9,8 @@ INSTRUÇÕES PARA DEPLOY NA HOSTINGER
    - Renomeie config/database_hostinger.php para config/database.php
    - Edite config/database.php e coloque sua senha real no lugar de "ALTERE_PARA_SUA_SENHA"
    - Importe o arquivo sistema_restaurante (6).sql no banco u903648047_sis_restaurant
+   - Execute migracao_modulo_garcom.sql e depois migracao_comissao_por_item.sql no mesmo banco
+   - Cadastre garçons como usuários ativos com perfil "Garçom"; o lançamento é identificado pela sessão autenticada
 
 3. TESTAR CONEXÃO:
    - Acesse: seusite.com/api/teste_conexao.php

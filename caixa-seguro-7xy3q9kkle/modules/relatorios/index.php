@@ -43,7 +43,7 @@ try {
         WHERE p.ativo = 1
         AND (
             (SELECT COALESCE(SUM(me.quantidade), 0) FROM movimentacoes_estoque me WHERE me.produto_id = p.id AND me.tipo = 'entrada' AND me.data_movimentacao >= DATE_SUB(NOW(), INTERVAL 30 DAY)) -
-            (SELECT COALESCE(SUM(ic.quantidade), 0) FROM itens_comanda ic JOIN comandas c ON ic.comanda_id = c.id WHERE ic.produto_id = p.id AND c.status = 'fechada' AND c.data_venda >= DATE_SUB(NOW(), INTERVAL 30 DAY)) -
+            (SELECT COALESCE(SUM(ic.quantidade), 0) FROM itens_comanda ic JOIN comandas c ON ic.comanda_id = c.id WHERE ic.produto_id = p.id AND c.status = 'fechada' AND ic.cancelado_em IS NULL AND c.data_venda >= DATE_SUB(NOW(), INTERVAL 30 DAY)) -
             p.estoque_atual
         ) > 0
     ) as perdas";
@@ -77,6 +77,7 @@ try {
         JOIN categorias cat ON p.categoria_id = cat.id
         JOIN comandas c ON ic.comanda_id = c.id
         WHERE c.status = 'fechada'
+        AND ic.cancelado_em IS NULL
         AND DATE(c.data_venda) BETWEEN :inicio_semana AND :fim_semana
         GROUP BY p.id
         ORDER BY total_vendido DESC

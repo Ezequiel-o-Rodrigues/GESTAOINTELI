@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/api-auth.php';
+require_once __DIR__ . '/../includes/comissao-comanda.php';
 require_once __DIR__ . '/../config/database.php';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -33,29 +34,22 @@ try {
         exit;
     }
 
-    $stmt = $db->prepare('DELETE FROM itens_comanda WHERE id = ? AND comanda_id = ?');
-    $stmt->execute([(int) $itemId, (int) $comandaId]);
-    if ($stmt->rowCount() < 1) {
+    if (!cancelarItemComanda($db, (int) $comandaId, (int) $itemId, (int) $_SESSION['usuario_id'])) {
         $db->rollBack();
         http_response_code(404);
         echo json_encode(['success' => false, 'message' => 'Item não encontrado nesta comanda.'], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
-    $stmt = $db->prepare('SELECT COALESCE(SUM(subtotal), 0) FROM itens_comanda WHERE comanda_id = ?');
-    $stmt->execute([(int) $comandaId]);
-    $total = $stmt->fetchColumn();
-    $stmt = $db->prepare("UPDATE comandas SET valor_total = ? WHERE id = ? AND status = 'aberta'");
-    $stmt->execute([$total, (int) $comandaId]);
+    atualizarTotalComanda($db, (int) $comandaId);
     $db->commit();
-
-    echo json_encode(['success' => true, 'message' => 'Item removido com sucesso.'], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['success' => true, 'message' => 'Item cancelado e comissão estornada.'], JSON_UNESCAPED_UNICODE);
 } catch (PDOException $e) {
     if (isset($db) && $db instanceof PDO && $db->inTransaction()) {
         $db->rollBack();
     }
-    error_log('Erro ao remover item da comanda no caixa: ' . $e->getMessage());
+    error_log('Erro ao cancelar item da comanda no caixa: ' . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Não foi possível remover o item.'], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['success' => false, 'message' => 'Não foi possível cancelar o item.'], JSON_UNESCAPED_UNICODE);
 }
 ?>

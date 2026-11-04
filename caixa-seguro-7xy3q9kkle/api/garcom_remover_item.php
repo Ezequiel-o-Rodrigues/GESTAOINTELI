@@ -12,13 +12,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $data = json_decode(file_get_contents('php://input'), true);
-if (!is_array($data)) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Dados da operação inválidos.'], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-$comandaId = filter_var($data['comanda_id'] ?? null, FILTER_VALIDATE_INT);
-$itemId = filter_var($data['item_id'] ?? null, FILTER_VALIDATE_INT);
+$comandaId = filter_var(is_array($data) ? ($data['comanda_id'] ?? null) : null, FILTER_VALIDATE_INT);
+$itemId = filter_var(is_array($data) ? ($data['item_id'] ?? null) : null, FILTER_VALIDATE_INT);
 if (!$comandaId || $comandaId < 1 || !$itemId || $itemId < 1) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Comanda ou item inválido.'], JSON_UNESCAPED_UNICODE);
@@ -30,16 +25,14 @@ try {
     $db = $database->getConnection();
     $db->beginTransaction();
 
-    if (!buscarComandaAbertaDoGarcom($db, (int) $comandaId, (int) $_SESSION['usuario_id'])) {
+    if (!buscarComandaAbertaDoGarcom($db, (int) $comandaId)) {
         $db->rollBack();
         http_response_code(404);
         echo json_encode(['success' => false, 'message' => 'Comanda aberta não encontrada.'], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
-    $stmt = $db->prepare('DELETE FROM itens_comanda WHERE id = ? AND comanda_id = ?');
-    $stmt->execute([(int) $itemId, (int) $comandaId]);
-    if ($stmt->rowCount() < 1) {
+    if (!cancelarItemComanda($db, (int) $comandaId, (int) $itemId, (int) $_SESSION['usuario_id'])) {
         $db->rollBack();
         http_response_code(404);
         echo json_encode(['success' => false, 'message' => 'Item não encontrado nesta comanda.'], JSON_UNESCAPED_UNICODE);
@@ -48,13 +41,13 @@ try {
 
     atualizarTotalComanda($db, (int) $comandaId);
     $db->commit();
-    echo json_encode(['success' => true, 'message' => 'Item removido.'], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['success' => true, 'message' => 'Item cancelado e comissão estornada.'], JSON_UNESCAPED_UNICODE);
 } catch (PDOException $e) {
-    if (isset($db) && $db->inTransaction()) {
+    if (isset($db) && $db instanceof PDO && $db->inTransaction()) {
         $db->rollBack();
     }
-    error_log('Erro ao remover item da comanda do garçom: ' . $e->getMessage());
+    error_log('Erro ao cancelar item da comanda do garçom: ' . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Não foi possível remover o item.'], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['success' => false, 'message' => 'Não foi possível cancelar o item.'], JSON_UNESCAPED_UNICODE);
 }
 ?>

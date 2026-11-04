@@ -19,6 +19,7 @@ try {
               JOIN categorias cat ON p.categoria_id = cat.id
               JOIN comandas c ON ic.comanda_id = c.id
               WHERE c.status = 'fechada'
+                AND ic.cancelado_em IS NULL
                 AND c.data_venda >= DATE_SUB(NOW(), INTERVAL 30 DAY)
               GROUP BY cat.id, cat.nome
               ORDER BY valor_total DESC

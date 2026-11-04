@@ -575,6 +575,9 @@ try {
 
     <!-- CONTEÚDO PRINCIPAL - MAIS ESPAÇO PARA PRODUTOS -->
     <div class="conteudo-principal">
+        <div class="alert alert-info" role="status">
+            O lançamento de produtos exige uma sessão autenticada de garçom. Acesse o módulo Garçom para registrar itens; o caixa pode acompanhar, remover itens e finalizar comandas.
+        </div>
         <div class="filtros-container">
             <label class="cash-filter-search" for="search-produto">
                 <i class="bi bi-search" aria-hidden="true"></i>
@@ -657,16 +660,18 @@ try {
             basePath: <?= json_encode($base_path) ?>,
             apiBase: <?= json_encode(rtrim(PathConfig::api(), '/') . '/') ?>,
             createOrderUrl: <?= json_encode(PathConfig::modules('caixa/criar_comanda.php')) ?>,
-            openOrdersUrl: <?= json_encode(PathConfig::api('comandas_abertas.php')) ?>
+            openOrdersUrl: <?= json_encode(PathConfig::api('comandas_abertas.php')) ?>,
+            canLaunchItems: <?= json_encode(currentUserRole() === 'garcom') ?>
         });
     }
+    window.appConfig.canLaunchItems = <?= json_encode(currentUserRole() === 'garcom') ?>;
     </script>   
 
         <!-- Modal para definir se a nova comanda será aberta pelo caixa ou por um garçom. -->
     <div id="modalGarcom" class="cash-modal" role="dialog" aria-modal="true" aria-labelledby="modalGarcomTitle" aria-hidden="true" style="display: none;">
         <div class="cash-modal-card">
-            <h2 id="modalGarcomTitle" class="cash-modal-title"><i class="bi bi-person-badge" aria-hidden="true"></i> Quem abriu a comanda?</h2>
-            <p class="cash-modal-description">Abra uma comanda manual pelo caixa ou selecione o garçom responsável.</p>
+            <h2 id="modalGarcomTitle" class="cash-modal-title"><i class="bi bi-person-badge" aria-hidden="true"></i> Como identificar a comanda?</h2>
+            <p class="cash-modal-description">Este vínculo não define comissão. Cada item será atribuído ao garçom autenticado que o lançar.</p>
             
             <div id="gridGarcons" class="cash-waiter-grid">
                 <button type="button" class="btn-garcom btn-caixa" id="btnAbrirComandaCaixa">
@@ -878,6 +883,10 @@ try {
         // Wrapper global para compatibilidade com os elementos inline do template
         // Chamado pelos onclick nos cards: adicionarProduto(produtoId, nome, preco)
         function adicionarProduto(produtoId, nome, preco) {
+            if (!window.appConfig.canLaunchItems) {
+                notificarCaixa('Entre com uma conta ativa de garçom para lançar produtos.', 'warning');
+                return;
+            }
             if (window.caixaSystem && typeof window.caixaSystem.adicionarItem === 'function') {
                 // O CaixaSystem exige uma comanda selecionada antes de adicionar itens.
                 window.caixaSystem.adicionarItem(produtoId, 1);

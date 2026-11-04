@@ -26,7 +26,7 @@ $action = $_POST['action'] ?? '';
 // Handlers: salvar/atualizar usuário, alternar ativo, deletar
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
-        if (in_array($action, ['save_user', 'toggle_user', 'delete_user'], true)
+        if (in_array($action, ['save_user', 'toggle_user', 'delete_user', 'save_commission'], true)
             && !hash_equals($_SESSION['csrf_admin_user'], (string) ($_POST['csrf_token'] ?? ''))) {
             throw new Exception('A sessão do formulário expirou. Atualize a página e tente novamente.');
         }
@@ -124,19 +124,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($action === 'save_commission') {
-    $rate_percent = floatval($_POST['commission_rate'] ?? 3);
-    if ($rate_percent < 0 || $rate_percent > 100) {
-        throw new Exception('Taxa de comissão deve estar entre 0% e 100%.');
-    }
-    
-    $rate = $rate_percent / 100; // Converter de porcentagem para decimal
-    
-    // Usar a NOVA tabela configuracoes_sistema
-    $stmt = $db->prepare("INSERT INTO configuracoes_sistema (chave, valor, descricao) VALUES ('commission_rate', ?, 'Taxa de comissão dos garçons') ON DUPLICATE KEY UPDATE valor = ?, updated_at = NOW()");
-    $stmt->execute([$rate, $rate]);
-    $_SESSION['sucesso'] = 'Taxa de comissão atualizada para ' . number_format($rate_percent, 1) . '%.';
-    header('Location: index.php'); exit;
-}
+            $rateInput = trim((string) ($_POST['commission_rate'] ?? ''));
+            if (!is_numeric($rateInput)) {
+                throw new Exception('Informe uma taxa de comissão válida.');
+            }
+            $rate_percent = (float) $rateInput;
+            if ($rate_percent < 0 || $rate_percent > 100) {
+                throw new Exception('Taxa de comissão deve estar entre 0% e 100%.');
+            }
+
+            $rate = $rate_percent / 100;
+            $repasseAtivo = isset($_POST['service_fee_enabled']) ? '1' : '0';
+            $db->beginTransaction();
+            $stmt = $db->prepare(
+                "INSERT INTO configuracoes_sistema (chave, valor, descricao)
+                 VALUES ('commission_rate', ?, 'Taxa de comissão dos garçons')
+                 ON DUPLICATE KEY UPDATE valor = VALUES(valor), updated_at = NOW()"
+            );
+            $stmt->execute([(string) $rate]);
+            $stmt = $db->prepare(
+                "INSERT INTO configuracoes_sistema (chave, valor, descricao)
+                 VALUES ('service_fee_enabled', ?, 'Repassar as comissões dos itens ao cliente')
+                 ON DUPLICATE KEY UPDATE valor = VALUES(valor), updated_at = NOW()"
+            );
+            $stmt->execute([$repasseAtivo]);
+            $db->commit();
+
+            $_SESSION['sucesso'] = 'Comissão atualizada para ' . number_format($rate_percent, 1)
+                . '%; repasse ao cliente ' . ($repasseAtivo === '1' ? 'ativado' : 'desativado') . '.';
+            header('Location: index.php');
+            exit;
+        }
 
         if ($action === 'save_garcom') {
             $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
@@ -174,6 +192,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: index.php'); exit;
         }
     } catch (Exception $e) {
+        if ($db instanceof PDO && $db->inTransaction()) {
+            $db->rollBack();
+        }
         $_SESSION['erro'] = 'Erro: ' . $e->getMessage();
         header('Location: index.php'); exit;
     }
@@ -189,24 +210,32 @@ $stmt = $db->prepare('SELECT id, nome, codigo, ativo, created_at FROM garcons WH
 $stmt->execute();
 $garcons = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Buscar configuração de comissão - NOVO CÓDIGO
+$current_commission = 0.03;
+$service_fee_enabled = false;
+$commission_config_error = '';
 try {
-    $stmt = $db->prepare('SELECT valor FROM configuracoes_sistema WHERE chave = "commission_rate"');
+    $stmt = $db->prepare("SELECT valor FROM configuracoes_sistema WHERE chave = 'commission_rate'");
     $stmt->execute();
     $config = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+
     if ($config && isset($config['valor'])) {
-        $current_commission = floatval($config['valor']);
+        $current_commission = (float) $config['valor'];
     } else {
-        // Se não existir, criar com valor padrão
-        $stmt = $db->prepare("INSERT INTO configuracoes_sistema (chave, valor, descricao) VALUES ('commission_rate', '0.03', 'Taxa de comissão dos garçons')");
+        $stmt = $db->prepare(
+            "INSERT INTO configuracoes_sistema (chave, valor, descricao)
+             VALUES ('commission_rate', '0.03', 'Taxa de comissão dos garçons')"
+        );
         $stmt->execute();
         $current_commission = 0.03;
     }
+
+    $stmt = $db->prepare("SELECT valor FROM configuracoes_sistema WHERE chave = 'service_fee_enabled'");
+    $stmt->execute();
+    $repasse = $stmt->fetchColumn();
+    $service_fee_enabled = $repasse === '1';
 } catch (Exception $e) {
-    // Fallback para valor padrão em caso de erro
-    $current_commission = 0.03;
-    error_log("Erro ao buscar taxa de comissão: " . $e->getMessage());
+    error_log('Erro ao carregar configurações de comissão: ' . $e->getMessage());
+    $commission_config_error = 'Não foi possível carregar as configurações de comissão. Verifique a migração do banco e tente novamente.';
 }
 
 require_once '../../includes/header.php';
@@ -358,8 +387,12 @@ require_once '../../includes/header.php';
     <div class="card mb-4">
         <div class="card-body">
             <h5 class="card-title"><i class="bi bi-sliders" aria-hidden="true"></i> Configurações do sistema</h5>
+            <?php if ($commission_config_error !== ''): ?>
+                <p class="alert alert-danger" role="alert"><?= htmlspecialchars($commission_config_error, ENT_QUOTES, 'UTF-8') ?></p>
+            <?php endif; ?>
             <form method="POST" class="row g-3">
                 <input type="hidden" name="action" value="save_commission">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_admin_user'], ENT_QUOTES, 'UTF-8') ?>">
                 <div class="col-md-4">
                     <label for="commission_rate" class="form-label">Taxa de Comissão dos Garçons (%)</label>
                     <div class="input-group">
@@ -368,6 +401,15 @@ require_once '../../includes/header.php';
                         <span class="input-group-text">%</span>
                     </div>
                     <div class="form-text">Taxa atual: <?= number_format($current_commission * 100, 1) ?>%</div>
+                </div>
+                <div class="col-md-8 d-flex align-items-center">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="service_fee_enabled" name="service_fee_enabled" value="1" <?= $service_fee_enabled ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="service_fee_enabled">
+                            Repassar ao cliente a soma das comissões dos itens
+                        </label>
+                        <div class="form-text">Quando desativado, os garçons continuam acumulando comissão, mas não há taxa de serviço na conta.</div>
+                    </div>
                 </div>
                 <div class="col-12">
                     <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle" aria-hidden="true"></i> Salvar configuração</button>
@@ -539,9 +581,8 @@ function carregarDesempenhoGarcons() {
 
             const avg = data.average || 0;
             const periodo = formatPeriod(data.data_inicio, data.data_fim);
-            const commissionRate = data.commission_rate_percent || 3;
             let html = '';
-            html += '<p class="small text-muted">Período: <strong>' + periodo + '</strong> • Comandas com garçons: <strong>' + data.total_comandas + '</strong> • Garçons ativos (contas e cadastros legados): <strong>' + data.active_garcons + '</strong> • Média: <strong>' + avg + '</strong> • Comissão: <strong>' + commissionRate + '%</strong></p>';
+            html += '<p class="small text-muted">Período: <strong>' + periodo + '</strong> • Comandas atribuídas por itens: <strong>' + data.total_comandas + '</strong> • Garçons com vendas: <strong>' + data.active_garcons + '</strong> • Média: <strong>' + avg + '</strong> • Comissão calculada por item</p>';
             html += '<div class="table-responsive"><table class="table table-sm align-middle">';
             html += '<thead><tr><th>Garçom</th><th>Comandas</th><th>Performance</th><th>Vendas</th><th>Comissão</th><th>Classificação</th></tr></thead><tbody>';
 
@@ -550,7 +591,7 @@ function carregarDesempenhoGarcons() {
                 const barValue = Math.min(pct, 200);
                 const badgeClass = g.badge ? 'badge bg-' + g.badge : 'badge bg-secondary';
                 html += '<tr>';
-                const origem = g.origem === 'usuario' ? 'Usuário' : 'Cadastro legado';
+                const origem = 'Conta';
                 html += '<td><small class="text-muted">' + origem + (g.codigo ? ' · ' + escapeHtml(g.codigo) : '') + '</small><br>' + escapeHtml(g.nome) + '</td>';
                 html += '<td>' + g.comandas + '</td>';
                 html += '<td style="min-width:220px">';

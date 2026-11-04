@@ -34,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             SELECT 
                 c.id as comanda_id,
                 c.valor_total,
+                c.taxa_gorjeta,
                 c.data_venda,
                 c.cliente_nome,
                 c.mesa_numero,
@@ -43,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             FROM comandas c
             LEFT JOIN garcons g ON c.garcom_id = g.id
             LEFT JOIN usuarios u ON c.garcom_usuario_id = u.id
-            LEFT JOIN itens_comanda ic ON c.id = ic.comanda_id
+            LEFT JOIN itens_comanda ic ON c.id = ic.comanda_id AND ic.cancelado_em IS NULL
             LEFT JOIN produtos p ON ic.produto_id = p.id
             WHERE c.id = :comanda_id
             GROUP BY c.id
@@ -123,9 +124,13 @@ function gerarComprovanteLimpo($comanda) {
         }
     }
     
-    // Total SIMPLES - SEM GORJETA
+    // O repasse é opcional e já foi consolidado no fechamento.
     $linhas[] = "-------------------------------";
-    $linhas[] = "TOTAL: R$ " . number_format($comanda['valor_total'], 2, ',', '.');
+    if ((float) $comanda['taxa_gorjeta'] > 0) {
+        $linhas[] = "SUBTOTAL: R$ " . number_format($comanda['valor_total'], 2, ',', '.');
+        $linhas[] = "SERVICO:  R$ " . number_format($comanda['taxa_gorjeta'], 2, ',', '.');
+    }
+    $linhas[] = "TOTAL: R$ " . number_format($comanda['valor_total'] + $comanda['taxa_gorjeta'], 2, ',', '.');
     $linhas[] = "========================";
     $linhas[] = "";
     $linhas[] = "Obrigado pela preferencia!";
