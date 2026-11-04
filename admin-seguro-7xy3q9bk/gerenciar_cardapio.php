@@ -95,8 +95,8 @@ require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/header.php';
         .menu-admin input, .menu-admin select, .menu-admin textarea { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #1e293b; font: inherit; }
         .menu-admin .filter-field input { padding-left: 40px; }
         .menu-admin input:focus, .menu-admin select:focus, .menu-admin textarea:focus { border-color: #f97316; outline: 3px solid #fed7aa80; }
-        .menu-admin button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 9px 14px; border: 0; border-radius: 8px; background: #f97316; color: #fff; font: inherit; font-weight: 700; cursor: pointer; transition: background .2s ease, transform .2s ease; }
-        .menu-admin button:hover { background: #ea580c; transform: translateY(-1px); }
+        .menu-admin button:not(.btn):not(.close-button) { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 9px 14px; border: 0; border-radius: 8px; background: #f97316; color: #fff; font: inherit; font-weight: 700; cursor: pointer; transition: background .2s ease, transform .2s ease; }
+        .menu-admin button:not(.btn):not(.close-button):hover { background: #ea580c; transform: translateY(-1px); }
         .menu-admin button.secondary { background: #e2e8f0; color: #334155; }
         .menu-admin button.secondary:hover { background: #cbd5e1; }
         .menu-admin button.danger { background: #dc2626; }
@@ -115,26 +115,26 @@ require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/header.php';
         .menu-admin .product-meta { margin: 0; color: #64748b; font-size: .86rem; }
         .menu-admin .product .edit-product { min-height: 38px; padding: 8px 12px; }
         .menu-admin .empty { padding: 28px; border: 1px dashed #cbd5e1; border-radius: 12px; background: #fff; color: #64748b; text-align: center; }
-        .menu-admin dialog { width: min(680px, calc(100% - 24px)); max-height: 90vh; padding: 0; border: 0; border-radius: 14px; box-shadow: 0 20px 60px #0f172a40; }
-        .menu-admin dialog::backdrop { background: #0f172a80; }
-        .menu-admin .editor { padding: 22px; overflow-y: auto; }
-        .menu-admin .editor-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
-        .menu-admin .editor-header h2 { margin: 0 0 5px; }
-        .menu-admin .close-button { padding: 4px 10px; background: transparent; color: #475569; font-size: 1.4rem; }
+        .menu-admin .product-editor-modal .modal-content { border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 20px 60px #0f172a40; }
+        .menu-admin .product-editor-modal .modal-header,
+        .menu-admin .product-editor-modal .modal-footer { padding: 1rem 1.25rem; }
+        .menu-admin .product-editor-modal .modal-body { padding: 1.25rem; }
+        .menu-admin .product-editor-modal .modal-title { margin: 0 0 4px; }
+        .menu-admin .product-editor-modal .btn-close { min-height: 1em; padding: .5em; border: 0; border-radius: .375rem; background-color: transparent; }
+        .menu-admin .product-editor-modal .btn-close:hover { background-color: transparent; transform: none; }
         .menu-admin .field { display: grid; gap: 6px; margin: 14px 0; }
         .menu-admin .field label, .menu-admin .option label { font-weight: 700; }
         .menu-admin .field small, .menu-admin .section-help { color: #64748b; }
-        .menu-admin .product-details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px; border-radius: 8px; background: #f8fafc; }
+        .menu-admin .product-details { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 14px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; }
         .menu-admin .product-details p { margin: 0; }
         .menu-admin .options-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 20px; }
-        .menu-admin .options-heading h3 { margin: 0; }
-        .menu-admin .option { margin: 12px 0; padding: 14px; border: 1px solid #e2e8f0; border-radius: 8px; }
+        .menu-admin .options-heading h3 { margin: 0; font-size: 1.05rem; }
+        .menu-admin .option { margin: 12px 0; padding: 14px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; }
         .menu-admin .option-image { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
         .menu-admin .option-image img { width: 68px; height: 56px; border-radius: 6px; object-fit: cover; background: #e5e7eb; }
         .menu-admin .option-search { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
         .menu-admin .option-search a { display: inline-flex; border-radius: 6px; padding: 9px 12px; background: #e2e8f0; color: #334155; text-decoration: none; font-weight: 700; }
         .menu-admin .product-image-preview { width: 140px; height: 110px; border-radius: 7px; object-fit: cover; background: #e5e7eb; }
-        .menu-admin .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
         @media (max-width: 640px) {
             .menu-admin { padding: 1.25rem 0 2rem; }
             .menu-admin .filter-controls { grid-template-columns: 1fr; }
@@ -143,6 +143,7 @@ require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/header.php';
             .menu-admin .product > img { width: 60px; height: 58px; }
             .menu-admin .product .edit-product { grid-column: 1 / -1; }
             .menu-admin .product-details { grid-template-columns: 1fr; }
+            .menu-admin .product-editor-modal .modal-body { padding: 1rem; }
             .menu-admin .option-image { align-items: stretch; flex-direction: column; }
             .menu-admin .option-image img { width: 100%; height: 140px; }
         }
@@ -257,59 +258,64 @@ require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/header.php';
     <?php else: ?>
         <p class="empty">Não há produtos ativos para exibir. Ative os produtos no estoque para que apareçam aqui e no cardápio público.</p>
     <?php endif; ?>
-<dialog id="productEditor" aria-labelledby="editorTitle">
-    <form class="editor" id="productEditorForm">
-        <div class="editor-header">
-            <div>
-                <h2 id="editorTitle">Editar apresentação</h2>
-                <p class="help">O produto, o preço e a categoria não são alterados por este formulário.</p>
-            </div>
-            <button type="button" class="close-button" data-close-editor aria-label="Fechar">×</button>
-        </div>
+<div class="modal fade product-editor-modal" id="productEditor" tabindex="-1" aria-labelledby="editorTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+            <form id="productEditorForm">
+                <div class="modal-header">
+                    <div>
+                        <h2 class="modal-title fs-5" id="editorTitle">Editar apresentação</h2>
+                        <p class="mb-0 mt-1 small text-muted">O produto, o preço e a categoria não são alterados por este formulário.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="productId">
+                    <div class="product-details mb-3">
+                        <p><strong>Produto:</strong> <span id="officialName"></span></p>
+                        <p><strong>Preço:</strong> <span id="officialPrice"></span></p>
+                        <p><strong>Categoria:</strong> <span id="officialCategory"></span></p>
+                    </div>
 
-        <input type="hidden" id="productId">
-        <div class="product-details">
-            <p><strong>Produto:</strong> <span id="officialName"></span></p>
-            <p><strong>Preço:</strong> <span id="officialPrice"></span></p>
-            <p><strong>Categoria:</strong> <span id="officialCategory"></span></p>
-        </div>
+                    <div class="field">
+                        <label class="form-label" for="publicName">Nome no cardápio (opcional)</label>
+                        <input class="form-control" id="publicName" type="text" maxlength="100">
+                    </div>
+                    <div class="field">
+                        <label class="form-label" for="publicDescription">Descrição (opcional)</label>
+                        <textarea class="form-control" id="publicDescription" rows="3" maxlength="1000"></textarea>
+                    </div>
+                    <div class="field">
+                        <label class="form-label" for="productImage">Imagem do produto (opcional, JPG/PNG/GIF/WebP, até 5 MB)</label>
+                        <img class="product-image-preview" id="productImagePreview" src="../public/images/menu/default.png" alt="Prévia da imagem do produto" onerror="this.onerror=null; this.src='../public/images/menu/default.png'">
+                        <input class="form-control" id="productImage" type="file" accept="image/jpeg,image/png,image/gif,image/webp">
+                        <div class="option-search">
+                            <label class="form-label" for="productImageUrl">Ou importar uma URL HTTPS direta de imagem</label>
+                            <input class="form-control" id="productImageUrl" type="url" maxlength="2048" placeholder="https://site.com/imagem.jpg">
+                            <a id="productGoogleImageSearch" href="#" target="_blank" rel="noopener noreferrer">Pesquisar no Google Imagens</a>
+                        </div>
+                        <small>A imagem adicionada por último, seja arquivo ou link, será usada no cardápio. Sem imagem, será exibida a imagem padrão. Na busca, copie o endereço direto do arquivo. Use apenas imagens que tenha autorização para publicar.</small>
+                    </div>
 
-        <div class="field">
-            <label for="publicName">Nome no cardápio (opcional)</label>
-            <input id="publicName" type="text" maxlength="100">
-        </div>
-        <div class="field">
-            <label for="publicDescription">Descrição (opcional)</label>
-            <textarea id="publicDescription" rows="3" maxlength="1000"></textarea>
-        </div>
-        <div class="field">
-            <label for="productImage">Imagem do produto (opcional, JPG/PNG/GIF/WebP, até 5 MB)</label>
-            <img class="product-image-preview" id="productImagePreview" src="../public/images/menu/default.png" alt="Prévia da imagem do produto" onerror="this.onerror=null; this.src='../public/images/menu/default.png'">
-            <input id="productImage" type="file" accept="image/jpeg,image/png,image/gif,image/webp">
-            <div class="option-search">
-                <label for="productImageUrl">Ou importar uma URL HTTPS direta de imagem</label>
-                <input id="productImageUrl" type="url" maxlength="2048" placeholder="https://site.com/imagem.jpg">
-                <a id="productGoogleImageSearch" href="#" target="_blank" rel="noopener noreferrer">Pesquisar no Google Imagens</a>
-            </div>
-            <small>A imagem adicionada por último, seja arquivo ou link, será usada no cardápio. Sem imagem, será exibida a imagem padrão. Na busca, copie o endereço direto do arquivo. Use apenas imagens que tenha autorização para publicar.</small>
-        </div>
+                    <section>
+                        <div class="options-heading">
+                            <h3>Subcategorias do produto</h3>
+                            <button type="button" class="btn btn-outline-primary" id="addOption">Adicionar</button>
+                        </div>
+                        <p class="section-help">Use para listar sabores ou apresentações. Cada subcategoria pode ter foto própria, mas compartilha produto e preço. A imagem adicionada por último, seja arquivo ou link, será usada; sem imagem, aparece a imagem padrão. Use apenas imagens que tenha autorização para publicar.</p>
+                        <div id="productOptions"></div>
+                    </section>
 
-        <section>
-            <div class="options-heading">
-                <h3>Subcategorias do produto</h3>
-                <button type="button" class="secondary" id="addOption">Adicionar</button>
-            </div>
-            <p class="section-help">Use para listar sabores ou apresentações. Cada subcategoria pode ter foto própria, mas compartilha produto e preço. A imagem adicionada por último, seja arquivo ou link, será usada; sem imagem, aparece a imagem padrão. Use apenas imagens que tenha autorização para publicar.</p>
-            <div id="productOptions"></div>
-        </section>
-
-        <p class="error" id="editorError" hidden></p>
-        <div class="modal-actions">
-            <button type="button" class="secondary" data-close-editor>Cancelar</button>
-            <button type="submit" id="saveProduct">Salvar apresentação</button>
+                    <p class="alert alert-danger mt-3 mb-0" id="editorError" hidden></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="saveProduct">Salvar apresentação</button>
+                </div>
+            </form>
         </div>
-    </form>
-</dialog>
+    </div>
+</div>
 </div>
 
 <script>
@@ -336,26 +342,26 @@ require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/header.php';
         row.innerHTML = `
             <div class="field">
                 <label>Nome da subcategoria</label>
-                <input class="option-name" type="text" maxlength="100" required value="${escapeHtml(option.nome_exibicao || '')}">
+                <input class="form-control option-name" type="text" maxlength="100" required value="${escapeHtml(option.nome_exibicao || '')}">
             </div>
             <div class="field">
                 <label>Descrição (opcional)</label>
-                <textarea class="option-description" rows="2" maxlength="1000">${escapeHtml(option.descricao || '')}</textarea>
+                <textarea class="form-control option-description" rows="2" maxlength="1000">${escapeHtml(option.descricao || '')}</textarea>
             </div>
             <div class="option-image">
                 <img src="${escapeHtml(option.imagem_preview || '../public/images/menu/default.png')}" alt="Prévia da imagem da subcategoria" onerror="this.onerror=null; this.src='../public/images/menu/default.png'">
                 <label class="field">
                     Foto própria da subcategoria (JPG, PNG, GIF ou WebP; até 5 MB)
-                    <input class="option-file" type="file" accept="image/jpeg,image/png,image/gif,image/webp">
+                    <input class="form-control option-file" type="file" accept="image/jpeg,image/png,image/gif,image/webp">
                 </label>
             </div>
             <div class="field option-search">
                 <label>Ou importar uma URL HTTPS direta de imagem</label>
-                <input class="option-image-url" type="url" maxlength="2048" placeholder="https://site.com/imagem.jpg">
+                <input class="form-control option-image-url" type="url" maxlength="2048" placeholder="https://site.com/imagem.jpg">
                 <a class="google-image-search" href="#" target="_blank" rel="noopener noreferrer">Pesquisar no Google Imagens</a>
                 <small>Na busca, abra a imagem, copie o endereço direto do arquivo e cole aqui. Links de páginas de resultados/redirecionamentos não são aceitos.</small>
             </div>
-            <button type="button" class="danger remove-option">Remover subcategoria</button>
+            <button type="button" class="btn btn-outline-danger remove-option">Remover subcategoria</button>
         `;
         row.querySelector('.remove-option').addEventListener('click', () => row.remove());
         row.querySelector('.google-image-search').addEventListener('click', (event) => {
@@ -405,7 +411,7 @@ require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/header.php';
             document.getElementById('productImagePreview').src = currentProduct.imagem_url;
             document.getElementById('productImageUrl').value = currentProduct.imagem_url_original;
             currentProduct.opcoes.forEach(addOption);
-            editor.showModal();
+            bootstrap.Modal.getOrCreateInstance(editor).show();
         });
     });
 
@@ -432,10 +438,6 @@ require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/header.php';
         document.getElementById('productImage').value = '';
         document.getElementById('productImagePreview').src = event.target.value.trim()
             || '../public/images/menu/default.png';
-    });
-
-    document.querySelectorAll('[data-close-editor]').forEach((button) => {
-        button.addEventListener('click', () => editor.close());
     });
 
     document.getElementById('addOption').addEventListener('click', () => addOption());
@@ -524,7 +526,7 @@ require_once __DIR__ . '/../caixa-seguro-7xy3q9kkle/includes/header.php';
                 throw new Error(result.message || 'Não foi possível salvar as alterações.');
             }
 
-            editor.close();
+            bootstrap.Modal.getOrCreateInstance(editor).hide();
             window.location.reload();
         } catch (error) {
             errorBox.textContent = error.message;
