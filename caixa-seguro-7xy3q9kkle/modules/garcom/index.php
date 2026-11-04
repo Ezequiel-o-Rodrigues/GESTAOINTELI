@@ -183,41 +183,58 @@ try {
                     <?php elseif (!$produtos): ?>
                         <p class="waiter-empty">Nenhum produto ativo cadastrado.</p>
                     <?php else: ?>
-                        <div class="waiter-products">
-                            <?php foreach ($produtos as $produto): ?>
+                        <div id="productCategoryGroups" class="waiter-product-category-groups">
+                            <?php foreach ($categoriasProduto as $categoria): ?>
                                 <?php
-                                    $imagemProduto = menuResolveImageSource(
-                                        $produto['imagem'] ?? '',
-                                        $produto['imagem_url'] ?? '',
-                                        __DIR__ . '/../../../public/images/menu',
-                                        $base_path . '../public/images/menu/'
+                                    $produtosDaCategoria = array_filter(
+                                        $produtos,
+                                        static fn($produto) => (int) $produto['categoria_id'] === $categoria['id']
                                     );
                                 ?>
-                                <article
-                                    class="waiter-product"
-                                    data-product-card
-                                    data-product-name="<?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?>"
-                                    data-product-category="<?= (int) $produto['categoria_id'] ?>"
-                                >
-                                    <img
-                                        class="waiter-product-image"
-                                        src="<?= htmlspecialchars($imagemProduto, ENT_QUOTES, 'UTF-8') ?>"
-                                        alt=""
-                                        loading="lazy"
-                                        onerror="this.onerror=null;this.src='<?= htmlspecialchars($base_path . '../public/images/menu/default.png', ENT_QUOTES, 'UTF-8') ?>'"
-                                    >
-                                    <div class="waiter-product-info">
-                                        <h3><?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?></h3>
-                                        <p class="waiter-product-price">R$ <?= number_format((float) $produto['preco'], 2, ',', '.') ?></p>
-                                        <small>Estoque: <?= (int) $produto['estoque_atual'] ?></small>
-                                    </div>
-                                    <button
-                                        class="waiter-button waiter-button--add"
-                                        type="button"
-                                        data-add-product="<?= (int) $produto['id'] ?>"
-                                        aria-label="Adicionar <?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?> à comanda"
-                                    ><i class="bi bi-plus-lg" aria-hidden="true"></i><span>Adicionar</span></button>
-                                </article>
+                                <?php if ($produtosDaCategoria): ?>
+                                    <section class="waiter-product-category" data-category-group="<?= (int) $categoria['id'] ?>">
+                                        <h3 class="waiter-category-divider">
+                                            <span><?= htmlspecialchars($categoria['nome'], ENT_QUOTES, 'UTF-8') ?></span>
+                                        </h3>
+                                        <div class="waiter-products">
+                                            <?php foreach ($produtosDaCategoria as $produto): ?>
+                                                <?php
+                                                    $imagemProduto = menuResolveImageSource(
+                                                        $produto['imagem'] ?? '',
+                                                        $produto['imagem_url'] ?? '',
+                                                        __DIR__ . '/../../../public/images/menu',
+                                                        $base_path . '../public/images/menu/'
+                                                    );
+                                                ?>
+                                                <article
+                                                    class="waiter-product"
+                                                    data-product-card
+                                                    data-product-name="<?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?>"
+                                                    data-product-category="<?= (int) $produto['categoria_id'] ?>"
+                                                >
+                                                    <img
+                                                        class="waiter-product-image"
+                                                        src="<?= htmlspecialchars($imagemProduto, ENT_QUOTES, 'UTF-8') ?>"
+                                                        alt=""
+                                                        loading="lazy"
+                                                        onerror="this.onerror=null;this.src='<?= htmlspecialchars($base_path . '../public/images/menu/default.png', ENT_QUOTES, 'UTF-8') ?>'"
+                                                    >
+                                                    <div class="waiter-product-info">
+                                                        <h3><?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?></h3>
+                                                        <p class="waiter-product-price">R$ <?= number_format((float) $produto['preco'], 2, ',', '.') ?></p>
+                                                        <small>Estoque: <?= (int) $produto['estoque_atual'] ?></small>
+                                                    </div>
+                                                    <button
+                                                        class="waiter-button waiter-button--add"
+                                                        type="button"
+                                                        data-add-product="<?= (int) $produto['id'] ?>"
+                                                        aria-label="Adicionar <?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?> à comanda"
+                                                    ><i class="bi bi-plus-lg" aria-hidden="true"></i><span>Adicionar</span></button>
+                                                </article>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </section>
+                                <?php endif; ?>
                             <?php endforeach; ?>
                         </div>
                         <p id="productsEmpty" class="waiter-empty" hidden>Nenhum produto encontrado com esses filtros.</p>

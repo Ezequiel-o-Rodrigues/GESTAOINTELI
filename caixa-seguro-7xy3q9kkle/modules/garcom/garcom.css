@@ -367,6 +367,23 @@ body.waiter-app {
     color: #64748b;
     font-size: 0.82rem;
 }
+.waiter-product-category-groups { display: grid; gap: 18px; }
+.waiter-product-category[hidden] { display: none; }
+.waiter-category-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 9px;
+    color: #64748b;
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+.waiter-category-divider::after {
+    height: 1px;
+    flex: 1;
+    background: #e2e8f0;
+    content: "";
+}
 .waiter-products {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -581,6 +598,7 @@ body.waiter-app {
     .waiter-create-form { grid-template-columns: 1fr; padding: 18px; }
     .waiter-sidebar { width: min(100vw, 430px); padding: 18px; }
     .waiter-filters { grid-template-columns: 1fr; gap: 10px; padding: 14px; }
+    .waiter-product-category-groups { gap: 14px; }
     .waiter-products { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
     .waiter-product { gap: 5px; padding: 5px; border-radius: 10px; }
     .waiter-product::before { margin: -5px -5px 0; border-radius: 10px 10px 0 0; }
@@ -605,6 +623,7 @@ body.waiter-app {
     .waiter-item-actions { grid-column: 3; grid-row: 1 / span 2; }
     .waiter-icon-button { width: 38px; height: 38px; }
     .waiter-quantity { min-height: 38px; }
+    .waiter-product-category-groups { gap: 12px; }
     .waiter-products { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
     .waiter-product h3 { font-size: 0.72rem; }
     .waiter-product .waiter-button--add { gap: 4px; padding: 0 3px; font-size: 0.68rem; }

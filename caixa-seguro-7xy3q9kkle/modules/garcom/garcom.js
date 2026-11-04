@@ -216,6 +216,7 @@
         const term = productSearch.value.trim().toLocaleLowerCase();
         const category = productCategory.value;
         const cards = Array.from(document.querySelectorAll('[data-product-card]'));
+        const groups = Array.from(document.querySelectorAll('[data-category-group]'));
         let visibleCount = 0;
 
         cards.forEach((card) => {
@@ -223,6 +224,11 @@
             const matchesCategory = !category || card.dataset.productCategory === category;
             card.hidden = !matchesName || !matchesCategory;
             if (!card.hidden) visibleCount++;
+        });
+
+        groups.forEach((group) => {
+            const hasVisibleProducts = group.querySelector('[data-product-card]:not([hidden])') !== null;
+            group.hidden = !hasVisibleProducts;
         });
 
         productsCount.textContent = `${visibleCount} ${visibleCount === 1 ? 'produto' : 'produtos'}`;
