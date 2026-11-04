@@ -3,21 +3,31 @@ require_once __DIR__ . '/../../config/paths.php';
 require_once __DIR__ . '/../../includes/permissions.php';
 requireModuleAccess('garcom');
 require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/menu-images.php';
 
 $produtos = [];
+$categoriasProduto = [];
 $erroProdutos = '';
+$base_path = rtrim(PathConfig::url(), '/') . '/';
 
 try {
     $database = new Database();
     $db = $database->getConnection();
     $stmt = $db->prepare(
-        'SELECT id, nome, preco, estoque_atual
-         FROM produtos
-         WHERE ativo = 1
-         ORDER BY nome'
+        'SELECT p.*, c.nome AS categoria_nome
+         FROM produtos p
+         JOIN categorias c ON c.id = p.categoria_id
+         WHERE p.ativo = 1
+         ORDER BY c.nome, p.nome'
     );
     $stmt->execute();
     $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($produtos as $produto) {
+        $categoriasProduto[(string) $produto['categoria_id']] = [
+            'id' => (int) $produto['categoria_id'],
+            'nome' => $produto['categoria_nome']
+        ];
+    }
 } catch (PDOException $e) {
     error_log('Erro ao carregar produtos no módulo Garçom: ' . $e->getMessage());
     $erroProdutos = 'Não foi possível carregar os produtos. Atualize a página ou avise o administrador.';
@@ -97,61 +107,92 @@ try {
         <div id="waiterMessage" class="waiter-message" role="status" aria-live="polite"></div>
 
         <div class="waiter-layout">
-            <section id="activeOrder" class="waiter-card waiter-workspace" aria-labelledby="activeOrderTitle" hidden>
+            <section id="activeOrder" class="waiter-card waiter-workspace" aria-labelledby="activeOrderTitle">
                 <div class="waiter-section-heading">
                     <div>
-                        <p class="waiter-eyebrow">COMANDA SELECIONADA</p>
+                        <p class="waiter-eyebrow">COMANDA EM EDIÇÃO</p>
                         <h2 id="activeOrderTitle">Selecione uma comanda</h2>
                         <p id="activeOrderDetail" class="waiter-help"></p>
                     </div>
                 </div>
 
-                <div class="waiter-item-section">
-                    <h3>Itens da comanda</h3>
-                    <div id="orderItems" class="waiter-items">
+                <div id="orderItems" class="waiter-items">
                         <p class="waiter-empty">Nenhum item adicionado.</p>
-                    </div>
-                    <div class="waiter-order-total">
-                        <span>Total parcial</span>
-                        <strong id="orderTotal">R$ 0,00</strong>
+                </div>
+                <div class="waiter-order-total">
+                    <span>Total parcial</span>
+                    <strong id="orderTotal">R$ 0,00</strong>
+                </div>
+                <p class="waiter-help">A finalização da comanda é feita exclusivamente pelo caixa.</p>
+            </section>
+
+            <section class="waiter-products-section" aria-labelledby="products-title">
+                <div class="waiter-section-heading">
+                    <div>
+                        <p class="waiter-eyebrow">CARDÁPIO</p>
+                        <h2 id="products-title">Adicionar produtos</h2>
                     </div>
                 </div>
-
-                <div class="waiter-item-section">
-                    <div class="waiter-section-heading waiter-products-heading">
-                        <div>
-                            <h3>Adicionar produtos</h3>
-                            <p class="waiter-help">A finalização da comanda é feita exclusivamente pelo caixa.</p>
-                        </div>
-                    </div>
-                    <label class="waiter-search">
+                <div class="waiter-filters">
+                    <label class="waiter-search" for="productSearch">
                         <i class="bi bi-search" aria-hidden="true"></i>
                         <input id="productSearch" type="search" placeholder="Buscar produto..." autocomplete="off">
                     </label>
-                    <?php if ($erroProdutos !== ''): ?>
-                        <p class="waiter-error" role="alert"><?= htmlspecialchars($erroProdutos, ENT_QUOTES, 'UTF-8') ?></p>
-                    <?php elseif (!$produtos): ?>
-                        <p class="waiter-empty">Nenhum produto ativo cadastrado.</p>
-                    <?php else: ?>
-                        <div class="waiter-products">
-                            <?php foreach ($produtos as $produto): ?>
-                                <article class="waiter-product" data-product-card data-product-name="<?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?>">
-                                    <div>
-                                        <h4><?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?></h4>
-                                        <p>R$ <?= number_format((float) $produto['preco'], 2, ',', '.') ?></p>
-                                        <small>Estoque: <?= (int) $produto['estoque_atual'] ?></small>
-                                    </div>
-                                    <button
-                                        class="waiter-button waiter-button--add"
-                                        type="button"
-                                        data-add-product="<?= (int) $produto['id'] ?>"
-                                        aria-label="Adicionar <?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?>"
-                                    ><i class="bi bi-plus-lg" aria-hidden="true"></i><span>Adicionar</span></button>
-                                </article>
+                    <label class="waiter-category-filter" for="productCategory">
+                        <i class="bi bi-funnel" aria-hidden="true"></i>
+                        <select id="productCategory">
+                            <option value="">Todas categorias</option>
+                            <?php foreach ($categoriasProduto as $categoria): ?>
+                                <option value="<?= (int) $categoria['id'] ?>"><?= htmlspecialchars($categoria['nome'], ENT_QUOTES, 'UTF-8') ?></option>
                             <?php endforeach; ?>
-                        </div>
-                    <?php endif; ?>
+                        </select>
+                    </label>
                 </div>
+                <div id="productsCount" class="waiter-products-count" aria-live="polite"></div>
+                <?php if ($erroProdutos !== ''): ?>
+                    <p class="waiter-error" role="alert"><?= htmlspecialchars($erroProdutos, ENT_QUOTES, 'UTF-8') ?></p>
+                <?php elseif (!$produtos): ?>
+                    <p class="waiter-empty">Nenhum produto ativo cadastrado.</p>
+                <?php else: ?>
+                    <div class="waiter-products">
+                        <?php foreach ($produtos as $produto): ?>
+                            <?php
+                                $imagemProduto = menuResolveImageSource(
+                                    $produto['imagem'] ?? '',
+                                    $produto['imagem_url'] ?? '',
+                                    __DIR__ . '/../../../public/images/menu',
+                                    $base_path . '../public/images/menu/'
+                                );
+                            ?>
+                            <article
+                                class="waiter-product"
+                                data-product-card
+                                data-product-name="<?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?>"
+                                data-product-category="<?= (int) $produto['categoria_id'] ?>"
+                            >
+                                <img
+                                    class="waiter-product-image"
+                                    src="<?= htmlspecialchars($imagemProduto, ENT_QUOTES, 'UTF-8') ?>"
+                                    alt=""
+                                    loading="lazy"
+                                    onerror="this.onerror=null;this.src='<?= htmlspecialchars($base_path . '../public/images/menu/default.png', ENT_QUOTES, 'UTF-8') ?>'"
+                                >
+                                <div class="waiter-product-info">
+                                    <h3><?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?></h3>
+                                    <p class="waiter-product-price">R$ <?= number_format((float) $produto['preco'], 2, ',', '.') ?></p>
+                                    <small>Estoque: <?= (int) $produto['estoque_atual'] ?></small>
+                                </div>
+                                <button
+                                    class="waiter-button waiter-button--add"
+                                    type="button"
+                                    data-add-product="<?= (int) $produto['id'] ?>"
+                                    aria-label="Adicionar <?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?> à comanda"
+                                ><i class="bi bi-plus-lg" aria-hidden="true"></i><span>Adicionar</span></button>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                    <p id="productsEmpty" class="waiter-empty" hidden>Nenhum produto encontrado com esses filtros.</p>
+                <?php endif; ?>
             </section>
         </div>
     </main>

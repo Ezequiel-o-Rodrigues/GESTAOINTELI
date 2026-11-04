@@ -10,6 +10,9 @@
     const orderTotal = document.getElementById('orderTotal');
     const newOrderForm = document.getElementById('newOrderForm');
     const productSearch = document.getElementById('productSearch');
+    const productCategory = document.getElementById('productCategory');
+    const productsCount = document.getElementById('productsCount');
+    const productsEmpty = document.getElementById('productsEmpty');
     const ordersSidebar = document.getElementById('ordersSidebar');
     const ordersBackdrop = document.getElementById('ordersBackdrop');
     const toggleOrders = document.getElementById('toggleOrders');
@@ -149,6 +152,23 @@
         orderTotal.textContent = formatCurrency(total);
     }
 
+    function filterProducts() {
+        const term = productSearch.value.trim().toLocaleLowerCase();
+        const category = productCategory.value;
+        const cards = Array.from(document.querySelectorAll('[data-product-card]'));
+        let visibleCount = 0;
+
+        cards.forEach((card) => {
+            const matchesName = card.dataset.productName.toLocaleLowerCase().includes(term);
+            const matchesCategory = !category || card.dataset.productCategory === category;
+            card.hidden = !matchesName || !matchesCategory;
+            if (!card.hidden) visibleCount++;
+        });
+
+        productsCount.textContent = `${visibleCount} ${visibleCount === 1 ? 'produto' : 'produtos'}`;
+        if (productsEmpty) productsEmpty.hidden = visibleCount > 0;
+    }
+
     async function loadOrders(selectId) {
         const data = await request(config.ordersUrl);
         orders = data.comandas;
@@ -159,21 +179,25 @@
         } else if (selectedOrder) {
             selectedOrder = orders.find((item) => Number(item.id) === Number(selectedOrder.id)) || null;
             if (!selectedOrder) {
-                activeOrder.hidden = true;
                 renderItems([]);
+                activeOrderTitle.textContent = 'Comanda finalizada';
+                activeOrderDetail.textContent = 'Selecione outra comanda ou abra um novo atendimento.';
                 showMessage('A comanda selecionada não está mais aberta.', false);
             } else {
-                activeOrderTitle.textContent = orderLabel(selectedOrder);
+                updateActiveOrderHeading(selectedOrder);
             }
         }
         renderOrders();
     }
 
+    function updateActiveOrderHeading(order) {
+        activeOrderTitle.textContent = orderLabel(order);
+        activeOrderDetail.textContent = `Comanda #${order.id}`;
+    }
+
     async function selectOrder(order) {
         selectedOrder = order;
-        activeOrder.hidden = false;
-        activeOrderTitle.textContent = orderLabel(order);
-        activeOrderDetail.textContent = `Comanda #${order.id} · Você não pode finalizar esta comanda.`;
+        updateActiveOrderHeading(order);
         showMessage('', false);
         renderOrders();
         const data = await request(`${config.itemsUrl}?comanda_id=${encodeURIComponent(order.id)}`);
@@ -188,7 +212,11 @@
     }
 
     async function addItem(productId) {
-        if (!selectedOrder || isLoading) return;
+        if (!selectedOrder) {
+            showMessage('Abra uma comanda ou selecione uma na lista antes de adicionar produtos.', true);
+            return;
+        }
+        if (isLoading) return;
         isLoading = true;
         try {
             await request(config.itemsUrl, {
@@ -271,6 +299,7 @@
             newOrderForm.reset();
             await loadOrders(data.comanda_id);
             showMessage(data.message, false);
+            activeOrder.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } catch (error) {
             showMessage(error.message, true);
         } finally {
@@ -307,13 +336,10 @@
         button.addEventListener('click', () => addItem(Number(button.dataset.addProduct)));
     });
 
-    productSearch.addEventListener('input', () => {
-        const term = productSearch.value.trim().toLocaleLowerCase();
-        document.querySelectorAll('[data-product-card]').forEach((card) => {
-            card.hidden = !card.dataset.productName.toLocaleLowerCase().includes(term);
-        });
-    });
+    productSearch.addEventListener('input', filterProducts);
+    productCategory.addEventListener('change', filterProducts);
 
+    filterProducts();
     loadOrders().catch((error) => showMessage(error.message, true));
     window.setInterval(() => {
         loadOrders().catch((error) => showMessage(error.message, true));
