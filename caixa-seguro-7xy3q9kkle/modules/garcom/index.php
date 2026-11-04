@@ -81,15 +81,37 @@ try {
     </aside>
 
     <main class="waiter-main">
-        <section class="waiter-card waiter-create" aria-labelledby="create-title">
-            <div class="waiter-section-heading">
+        <div id="waiterMessage" class="waiter-message" role="status" aria-live="polite"></div>
+
+        <section id="ordersDashboard" class="waiter-dashboard" aria-labelledby="dashboardTitle">
+            <div class="waiter-dashboard-heading">
                 <div>
-                    <p class="waiter-eyebrow">NOVO ATENDIMENTO</p>
-                    <h2 id="create-title">Abrir comanda</h2>
+                    <p class="waiter-eyebrow">SEUS ATENDIMENTOS</p>
+                    <h2 id="dashboardTitle">Comandas abertas</h2>
+                    <p class="waiter-help">Selecione uma comanda para continuar o atendimento ou abra uma nova.</p>
                 </div>
+                <button class="waiter-button waiter-button--primary" type="button" id="openCreateOrder">
+                    <i class="bi bi-plus-circle" aria-hidden="true"></i> Abrir comanda
+                </button>
             </div>
-            <p class="waiter-help">Informe o nome do cliente ou o número da mesa. Basta preencher um dos campos.</p>
+            <div id="dashboardOrders" class="waiter-dashboard-orders" aria-live="polite">
+                <p class="waiter-empty">Carregando comandas...</p>
+            </div>
+        </section>
+
+        <dialog id="createOrderDialog" class="waiter-create-dialog" aria-labelledby="create-title">
             <form id="newOrderForm" class="waiter-create-form">
+                <div class="waiter-dialog-heading">
+                    <div>
+                        <p class="waiter-eyebrow">NOVO ATENDIMENTO</p>
+                        <h2 id="create-title">Abrir comanda</h2>
+                    </div>
+                    <button class="waiter-icon-button" type="button" id="closeCreateOrder" aria-label="Fechar">
+                        <i class="bi bi-x-lg" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <p class="waiter-help">Informe o nome do cliente ou o número da mesa. Basta preencher um dos campos.</p>
+                <p id="createOrderError" class="waiter-form-error" role="alert" hidden></p>
                 <label>
                     <span>Nome do cliente</span>
                     <input type="text" name="cliente_nome" maxlength="120" autocomplete="off" placeholder="Ex.: Ana">
@@ -98,103 +120,111 @@ try {
                     <span>Número da mesa</span>
                     <input type="number" name="mesa_numero" min="1" max="99999999999999999999" inputmode="numeric" placeholder="Ex.: 12">
                 </label>
-                <button class="waiter-button waiter-button--primary" type="submit">
-                    <i class="bi bi-plus-circle" aria-hidden="true"></i> Abrir comanda
-                </button>
+                <div class="waiter-dialog-actions">
+                    <button class="waiter-button waiter-button--secondary" type="button" id="cancelCreateOrder">Cancelar</button>
+                    <button class="waiter-button waiter-button--primary" type="submit">
+                        <i class="bi bi-plus-circle" aria-hidden="true"></i> Abrir comanda
+                    </button>
+                </div>
             </form>
-        </section>
+        </dialog>
 
-        <div id="waiterMessage" class="waiter-message" role="status" aria-live="polite"></div>
-
-        <div class="waiter-layout">
-            <section id="activeOrder" class="waiter-card waiter-workspace" aria-labelledby="activeOrderTitle">
-                <div class="waiter-section-heading">
-                    <div>
-                        <p class="waiter-eyebrow">COMANDA EM EDIÇÃO</p>
-                        <h2 id="activeOrderTitle">Selecione uma comanda</h2>
-                        <p id="activeOrderDetail" class="waiter-help"></p>
+        <section id="orderDetail" class="waiter-order-detail" aria-labelledby="activeOrderTitle" hidden>
+            <div class="waiter-detail-toolbar">
+                <button type="button" class="waiter-button waiter-button--secondary" id="backToOrders">
+                    <i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar às comandas
+                </button>
+            </div>
+            <div class="waiter-layout">
+                <section id="activeOrder" class="waiter-card waiter-workspace" aria-labelledby="activeOrderTitle">
+                    <div class="waiter-section-heading">
+                        <div>
+                            <p class="waiter-eyebrow">COMANDA EM EDIÇÃO</p>
+                            <h2 id="activeOrderTitle">Selecione uma comanda</h2>
+                            <p id="activeOrderDetail" class="waiter-help"></p>
+                        </div>
                     </div>
-                </div>
 
-                <div id="orderItems" class="waiter-items">
+                    <div id="orderItems" class="waiter-items">
                         <p class="waiter-empty">Nenhum item adicionado.</p>
-                </div>
-                <div class="waiter-order-total">
-                    <span>Total parcial</span>
-                    <strong id="orderTotal">R$ 0,00</strong>
-                </div>
-                <p class="waiter-help">A finalização da comanda é feita exclusivamente pelo caixa.</p>
-            </section>
+                    </div>
+                    <div class="waiter-order-total">
+                        <span>Total parcial</span>
+                        <strong id="orderTotal">R$ 0,00</strong>
+                    </div>
+                    <p class="waiter-help">A finalização da comanda é feita exclusivamente pelo caixa.</p>
+                </section>
 
-            <section class="waiter-products-section" aria-labelledby="products-title">
-                <div class="waiter-section-heading">
-                    <div>
-                        <p class="waiter-eyebrow">CARDÁPIO</p>
-                        <h2 id="products-title">Adicionar produtos</h2>
+                <section class="waiter-card waiter-products-section" aria-labelledby="products-title">
+                    <div class="waiter-section-heading">
+                        <div>
+                            <p class="waiter-eyebrow">CARDÁPIO</p>
+                            <h2 id="products-title">Adicionar produtos</h2>
+                        </div>
                     </div>
-                </div>
-                <div class="waiter-filters">
-                    <label class="waiter-search" for="productSearch">
-                        <i class="bi bi-search" aria-hidden="true"></i>
-                        <input id="productSearch" type="search" placeholder="Buscar produto..." autocomplete="off">
-                    </label>
-                    <label class="waiter-category-filter" for="productCategory">
-                        <i class="bi bi-funnel" aria-hidden="true"></i>
-                        <select id="productCategory">
-                            <option value="">Todas categorias</option>
-                            <?php foreach ($categoriasProduto as $categoria): ?>
-                                <option value="<?= (int) $categoria['id'] ?>"><?= htmlspecialchars($categoria['nome'], ENT_QUOTES, 'UTF-8') ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </label>
-                </div>
-                <div id="productsCount" class="waiter-products-count" aria-live="polite"></div>
-                <?php if ($erroProdutos !== ''): ?>
-                    <p class="waiter-error" role="alert"><?= htmlspecialchars($erroProdutos, ENT_QUOTES, 'UTF-8') ?></p>
-                <?php elseif (!$produtos): ?>
-                    <p class="waiter-empty">Nenhum produto ativo cadastrado.</p>
-                <?php else: ?>
-                    <div class="waiter-products">
-                        <?php foreach ($produtos as $produto): ?>
-                            <?php
-                                $imagemProduto = menuResolveImageSource(
-                                    $produto['imagem'] ?? '',
-                                    $produto['imagem_url'] ?? '',
-                                    __DIR__ . '/../../../public/images/menu',
-                                    $base_path . '../public/images/menu/'
-                                );
-                            ?>
-                            <article
-                                class="waiter-product"
-                                data-product-card
-                                data-product-name="<?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?>"
-                                data-product-category="<?= (int) $produto['categoria_id'] ?>"
-                            >
-                                <img
-                                    class="waiter-product-image"
-                                    src="<?= htmlspecialchars($imagemProduto, ENT_QUOTES, 'UTF-8') ?>"
-                                    alt=""
-                                    loading="lazy"
-                                    onerror="this.onerror=null;this.src='<?= htmlspecialchars($base_path . '../public/images/menu/default.png', ENT_QUOTES, 'UTF-8') ?>'"
+                    <div class="waiter-filters">
+                        <label class="waiter-search" for="productSearch">
+                            <i class="bi bi-search" aria-hidden="true"></i>
+                            <input id="productSearch" type="search" placeholder="Buscar produto..." autocomplete="off">
+                        </label>
+                        <label class="waiter-category-filter" for="productCategory">
+                            <i class="bi bi-funnel" aria-hidden="true"></i>
+                            <select id="productCategory">
+                                <option value="">Todas categorias</option>
+                                <?php foreach ($categoriasProduto as $categoria): ?>
+                                    <option value="<?= (int) $categoria['id'] ?>"><?= htmlspecialchars($categoria['nome'], ENT_QUOTES, 'UTF-8') ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </label>
+                    </div>
+                    <div id="productsCount" class="waiter-products-count" aria-live="polite"></div>
+                    <?php if ($erroProdutos !== ''): ?>
+                        <p class="waiter-error" role="alert"><?= htmlspecialchars($erroProdutos, ENT_QUOTES, 'UTF-8') ?></p>
+                    <?php elseif (!$produtos): ?>
+                        <p class="waiter-empty">Nenhum produto ativo cadastrado.</p>
+                    <?php else: ?>
+                        <div class="waiter-products">
+                            <?php foreach ($produtos as $produto): ?>
+                                <?php
+                                    $imagemProduto = menuResolveImageSource(
+                                        $produto['imagem'] ?? '',
+                                        $produto['imagem_url'] ?? '',
+                                        __DIR__ . '/../../../public/images/menu',
+                                        $base_path . '../public/images/menu/'
+                                    );
+                                ?>
+                                <article
+                                    class="waiter-product"
+                                    data-product-card
+                                    data-product-name="<?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?>"
+                                    data-product-category="<?= (int) $produto['categoria_id'] ?>"
                                 >
-                                <div class="waiter-product-info">
-                                    <h3><?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?></h3>
-                                    <p class="waiter-product-price">R$ <?= number_format((float) $produto['preco'], 2, ',', '.') ?></p>
-                                    <small>Estoque: <?= (int) $produto['estoque_atual'] ?></small>
-                                </div>
-                                <button
-                                    class="waiter-button waiter-button--add"
-                                    type="button"
-                                    data-add-product="<?= (int) $produto['id'] ?>"
-                                    aria-label="Adicionar <?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?> à comanda"
-                                ><i class="bi bi-plus-lg" aria-hidden="true"></i><span>Adicionar</span></button>
-                            </article>
-                        <?php endforeach; ?>
-                    </div>
-                    <p id="productsEmpty" class="waiter-empty" hidden>Nenhum produto encontrado com esses filtros.</p>
-                <?php endif; ?>
-            </section>
-        </div>
+                                    <img
+                                        class="waiter-product-image"
+                                        src="<?= htmlspecialchars($imagemProduto, ENT_QUOTES, 'UTF-8') ?>"
+                                        alt=""
+                                        loading="lazy"
+                                        onerror="this.onerror=null;this.src='<?= htmlspecialchars($base_path . '../public/images/menu/default.png', ENT_QUOTES, 'UTF-8') ?>'"
+                                    >
+                                    <div class="waiter-product-info">
+                                        <h3><?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?></h3>
+                                        <p class="waiter-product-price">R$ <?= number_format((float) $produto['preco'], 2, ',', '.') ?></p>
+                                        <small>Estoque: <?= (int) $produto['estoque_atual'] ?></small>
+                                    </div>
+                                    <button
+                                        class="waiter-button waiter-button--add"
+                                        type="button"
+                                        data-add-product="<?= (int) $produto['id'] ?>"
+                                        aria-label="Adicionar <?= htmlspecialchars($produto['nome'], ENT_QUOTES, 'UTF-8') ?> à comanda"
+                                    ><i class="bi bi-plus-lg" aria-hidden="true"></i><span>Adicionar</span></button>
+                                </article>
+                            <?php endforeach; ?>
+                        </div>
+                        <p id="productsEmpty" class="waiter-empty" hidden>Nenhum produto encontrado com esses filtros.</p>
+                    <?php endif; ?>
+                </section>
+            </div>
+        </section>
     </main>
 
     <script>

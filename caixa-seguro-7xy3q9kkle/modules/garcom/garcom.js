@@ -2,13 +2,21 @@
     const config = window.garcomConfig;
     const message = document.getElementById('waiterMessage');
     const ordersList = document.getElementById('ordersList');
+    const dashboardOrders = document.getElementById('dashboardOrders');
+    const ordersDashboard = document.getElementById('ordersDashboard');
+    const orderDetail = document.getElementById('orderDetail');
     const ordersCount = document.getElementById('ordersCount');
-    const activeOrder = document.getElementById('activeOrder');
     const activeOrderTitle = document.getElementById('activeOrderTitle');
     const activeOrderDetail = document.getElementById('activeOrderDetail');
     const orderItems = document.getElementById('orderItems');
     const orderTotal = document.getElementById('orderTotal');
     const newOrderForm = document.getElementById('newOrderForm');
+    const createOrderError = document.getElementById('createOrderError');
+    const createOrderDialog = document.getElementById('createOrderDialog');
+    const openCreateOrder = document.getElementById('openCreateOrder');
+    const closeCreateOrder = document.getElementById('closeCreateOrder');
+    const cancelCreateOrder = document.getElementById('cancelCreateOrder');
+    const backToOrders = document.getElementById('backToOrders');
     const productSearch = document.getElementById('productSearch');
     const productCategory = document.getElementById('productCategory');
     const productsCount = document.getElementById('productsCount');
@@ -47,23 +55,21 @@
 
     function renderOrders() {
         ordersCount.textContent = String(orders.length);
-        ordersList.removeAttribute('role');
         const term = searchOrders.value.trim().toLocaleLowerCase();
         const matchingOrders = orders.filter((order) =>
             `${order.cliente_nome || ''} ${order.mesa_numero || ''} ${order.id}`.toLocaleLowerCase().includes(term)
         );
+        dashboardOrders.replaceChildren();
         ordersList.replaceChildren();
-        if (matchingOrders.length === 0) {
+        if (orders.length === 0) {
             const empty = document.createElement('p');
             empty.className = 'waiter-empty';
-            empty.textContent = orders.length
-                ? 'Nenhuma comanda corresponde à pesquisa.'
-                : 'Você ainda não tem comandas abertas.';
-            ordersList.appendChild(empty);
-            return;
+            empty.textContent = 'Você ainda não tem comandas abertas.';
+            dashboardOrders.appendChild(empty);
+            ordersList.appendChild(empty.cloneNode(true));
         }
 
-        matchingOrders.forEach((order) => {
+        orders.forEach((order) => {
             const button = document.createElement('button');
             button.type = 'button';
             button.className = `waiter-order-button${selectedOrder && Number(selectedOrder.id) === Number(order.id) ? ' is-selected' : ''}`;
@@ -71,17 +77,42 @@
 
             const title = document.createElement('span');
             title.className = 'waiter-order-title';
-            title.textContent = orderLabel(order);
+            title.textContent = order.cliente_nome || `Comanda #${order.id}`;
             const number = document.createElement('span');
             number.className = 'waiter-order-meta';
-            number.textContent = `Comanda #${order.id}`;
+            number.textContent = order.mesa_numero
+                ? `Mesa ${order.mesa_numero} · Comanda #${order.id}`
+                : `Comanda #${order.id}`;
             const total = document.createElement('span');
             total.className = 'waiter-order-total';
             total.textContent = formatCurrency(order.valor_total);
 
             button.append(title, number, total);
-            ordersList.appendChild(button);
+            dashboardOrders.appendChild(button);
+
+            const sidebarButton = button.cloneNode(true);
+            sidebarButton.classList.add('waiter-order-button--sidebar');
+            if (matchingOrders.includes(order)) ordersList.appendChild(sidebarButton);
         });
+
+        if (orders.length > 0 && matchingOrders.length === 0) {
+            const empty = document.createElement('p');
+            empty.className = 'waiter-empty';
+            empty.textContent = 'Nenhuma comanda corresponde à pesquisa.';
+            ordersList.appendChild(empty);
+        }
+    }
+
+    function showDashboard() {
+        selectedOrder = null;
+        ordersDashboard.hidden = false;
+        orderDetail.hidden = true;
+        renderOrders();
+    }
+
+    function showOrderDetail() {
+        ordersDashboard.hidden = true;
+        orderDetail.hidden = false;
     }
 
     function setOrdersSidebarOpen(isOpen) {
@@ -182,10 +213,15 @@
                 renderItems([]);
                 activeOrderTitle.textContent = 'Comanda finalizada';
                 activeOrderDetail.textContent = 'Selecione outra comanda ou abra um novo atendimento.';
+                ordersDashboard.hidden = false;
+                orderDetail.hidden = true;
                 showMessage('A comanda selecionada não está mais aberta.', false);
             } else {
                 updateActiveOrderHeading(selectedOrder);
             }
+        } else {
+            ordersDashboard.hidden = false;
+            orderDetail.hidden = true;
         }
         renderOrders();
     }
@@ -196,12 +232,13 @@
     }
 
     async function selectOrder(order) {
+        const data = await request(`${config.itemsUrl}?comanda_id=${encodeURIComponent(order.id)}`);
         selectedOrder = order;
         updateActiveOrderHeading(order);
+        renderItems(data.itens);
+        showOrderDetail();
         showMessage('', false);
         renderOrders();
-        const data = await request(`${config.itemsUrl}?comanda_id=${encodeURIComponent(order.id)}`);
-        renderItems(data.itens);
     }
 
     async function refreshSelectedOrder() {
@@ -283,31 +320,44 @@
         const formData = new FormData(newOrderForm);
         const clienteNome = String(formData.get('cliente_nome') || '').trim();
         const mesaNumero = String(formData.get('mesa_numero') || '').trim();
+        createOrderError.hidden = true;
+        createOrderError.textContent = '';
         if (!clienteNome && !mesaNumero) {
-            showMessage('Informe o nome do cliente ou o número da mesa.', true);
+            createOrderError.textContent = 'Informe o nome do cliente ou o número da mesa.';
+            createOrderError.hidden = false;
             return;
         }
 
         const submitButton = newOrderForm.querySelector('button[type="submit"]');
         submitButton.disabled = true;
+        let comandaCriada = false;
         try {
             const data = await request(config.ordersUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ cliente_nome: clienteNome, mesa_numero: mesaNumero })
             });
+            comandaCriada = true;
             newOrderForm.reset();
             await loadOrders(data.comanda_id);
+            createOrderDialog.close();
             showMessage(data.message, false);
-            activeOrder.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            orderDetail.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } catch (error) {
-            showMessage(error.message, true);
+            if (comandaCriada) {
+                createOrderDialog.close();
+                showDashboard();
+                showMessage('A comanda foi criada, mas não foi possível atualizar a lista. Atualize a página antes de tentar abrir outra.', true);
+            } else {
+                createOrderError.textContent = error.message;
+                createOrderError.hidden = false;
+            }
         } finally {
             submitButton.disabled = false;
         }
     });
 
-    ordersList.addEventListener('click', async (event) => {
+    async function handleOrderSelection(event) {
         const button = event.target.closest('[data-order-id]');
         if (!button) return;
         const order = orders.find((item) => Number(item.id) === Number(button.dataset.orderId));
@@ -318,7 +368,10 @@
         } catch (error) {
             showMessage(error.message, true);
         }
-    });
+    }
+
+    ordersList.addEventListener('click', handleOrderSelection);
+    dashboardOrders.addEventListener('click', handleOrderSelection);
 
     toggleOrders.addEventListener('click', () =>
         setOrdersSidebarOpen(ordersSidebar.getAttribute('aria-hidden') === 'true')
@@ -326,6 +379,17 @@
     closeOrders.addEventListener('click', () => setOrdersSidebarOpen(false));
     ordersBackdrop.addEventListener('click', () => setOrdersSidebarOpen(false));
     searchOrders.addEventListener('input', renderOrders);
+    openCreateOrder.addEventListener('click', () => createOrderDialog.showModal());
+    closeCreateOrder.addEventListener('click', () => createOrderDialog.close());
+    cancelCreateOrder.addEventListener('click', () => createOrderDialog.close());
+    createOrderDialog.addEventListener('click', (event) => {
+        if (event.target === createOrderDialog) createOrderDialog.close();
+    });
+    backToOrders.addEventListener('click', () => {
+        showDashboard();
+        showMessage('', false);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && ordersSidebar.classList.contains('is-open')) {
             setOrdersSidebarOpen(false);
