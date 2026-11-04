@@ -98,8 +98,8 @@ require_once __DIR__ . '/../../includes/header.php';
         .menu-admin input, .menu-admin select, .menu-admin textarea { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #1e293b; font: inherit; }
         .menu-admin .filter-field input { padding-left: 40px; }
         .menu-admin input:focus, .menu-admin select:focus, .menu-admin textarea:focus { border-color: #f97316; outline: 3px solid #fed7aa80; }
-        .menu-admin button:not(.btn):not(.close-button) { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 9px 14px; border: 0; border-radius: 8px; background: #f97316; color: #fff; font: inherit; font-weight: 700; cursor: pointer; transition: background .2s ease, transform .2s ease; }
-        .menu-admin button:not(.btn):not(.close-button):hover { background: #ea580c; transform: translateY(-1px); }
+        .menu-admin button:not(.btn):not(.btn-close):not(.close-button) { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 9px 14px; border: 0; border-radius: 8px; background: #f97316; color: #fff; font: inherit; font-weight: 700; cursor: pointer; transition: background .2s ease, transform .2s ease; }
+        .menu-admin button:not(.btn):not(.btn-close):not(.close-button):hover { background: #ea580c; transform: translateY(-1px); }
         .menu-admin button.secondary { background: #e2e8f0; color: #334155; }
         .menu-admin button.secondary:hover { background: #cbd5e1; }
         .menu-admin button.danger { background: #dc2626; }
