@@ -10,7 +10,7 @@ try {
 
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $stmt = $db->prepare(
-            "SELECT c.id, c.cliente_nome, c.mesa_numero, c.valor_total, c.created_at,
+            "SELECT c.id, c.cliente_nome, c.mesa_numero, c.mesa_id, c.valor_total, c.created_at,
                     COALESCE(u.nome, g.nome) AS garcom_nome
              FROM comandas c
              LEFT JOIN usuarios u ON u.id = c.garcom_usuario_id
