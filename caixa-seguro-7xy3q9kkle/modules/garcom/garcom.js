@@ -583,11 +583,7 @@ if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
                     await carregarMapa();
                     return;
                 }
-                if (abertas.length === 1) {
-                    selecionarComandaDoMapa(abertas[0]);
-                } else {
-                    mostrarMultiComanda(abertas);
-                }
+                mostrarMultiComanda(abertas, mesa);
             }
         }
 
@@ -618,7 +614,7 @@ if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
             if (window._garcomSelectOrder) window._garcomSelectOrder(comanda);
         }
 
-        function mostrarMultiComanda(abertas) {
+        function mostrarMultiComanda(abertas, mesa) {
             if (!abertas.length) return;
             multiLista.replaceChildren();
             abertas.forEach(c => {
@@ -632,6 +628,19 @@ if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
                 });
                 multiLista.appendChild(btn);
             });
+            if (mesa) {
+                const sep = document.createElement('hr');
+                sep.style.margin = '8px 0';
+                const btnNova = document.createElement('button');
+                btnNova.className = 'waiter-button';
+                btnNova.style.cssText = 'width:100%';
+                btnNova.textContent = '+ Nova comanda nesta mesa';
+                btnNova.addEventListener('click', () => {
+                    multiDialog.hidden = true;
+                    abrirComandaMesa(mesa);
+                });
+                multiLista.append(sep, btnNova);
+            }
             multiDialog.hidden = false;
         }
 
