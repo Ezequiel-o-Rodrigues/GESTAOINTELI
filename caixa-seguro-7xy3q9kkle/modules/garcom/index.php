@@ -98,7 +98,10 @@ try {
                 <div>
                     <p class="waiter-eyebrow">ATENDIMENTO COOPERATIVO</p>
                     <h2 id="dashboardTitle">Comandas abertas</h2>
-                    <p class="waiter-help">Todos os garçons podem visualizar e atender qualquer comanda aberta.</p>
+                    <p class="waiter-help"><?= $usar_mapa_mesas
+                        ? 'Para abrir uma nova comanda, selecione uma mesa livre no Mapa de Mesas abaixo.'
+                        : 'Todos os garçons podem visualizar e atender qualquer comanda aberta.'
+                    ?></p>
                 </div>
                 <button class="waiter-button waiter-button--primary" type="button" id="openCreateOrder">
                     <i class="bi bi-plus-circle" aria-hidden="true"></i> Abrir comanda

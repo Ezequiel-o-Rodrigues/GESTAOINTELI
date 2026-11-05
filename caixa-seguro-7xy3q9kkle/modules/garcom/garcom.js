@@ -441,7 +441,16 @@
     closeOrders.addEventListener('click', () => setOrdersSidebarOpen(false));
     ordersBackdrop.addEventListener('click', () => setOrdersSidebarOpen(false));
     searchOrders.addEventListener('input', renderOrders);
-    openCreateOrder.addEventListener('click', () => createOrderDialog.showModal());
+    openCreateOrder.addEventListener('click', () => {
+        if (config.usarMapaMesas) {
+            // No modo mapa, nova comanda só pode ser aberta clicando em uma mesa livre
+            showMessage('Selecione uma mesa livre no Mapa de Mesas para abrir uma nova comanda.', true);
+            const mapa = document.getElementById('mapaMesas');
+            if (mapa) mapa.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            return;
+        }
+        createOrderDialog.showModal();
+    });
     closeCreateOrder.addEventListener('click', () => createOrderDialog.close());
     cancelCreateOrder.addEventListener('click', () => createOrderDialog.close());
     createOrderDialog.addEventListener('click', (event) => {
