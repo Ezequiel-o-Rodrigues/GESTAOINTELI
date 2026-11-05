@@ -518,6 +518,13 @@ if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
             nomeErro.hidden = true;
             nomeDialog.hidden = false;
             nomeInput.focus();
+            // Fecha o detalhe de comanda se estiver aberto
+            const orderDetail = document.getElementById('orderDetail');
+            const ordersDashboard = document.getElementById('ordersDashboard');
+            if (orderDetail && !orderDetail.hidden) {
+                orderDetail.hidden = true;
+                if (ordersDashboard) ordersDashboard.hidden = false;
+            }
 
             function confirmar() {
                 const nome = nomeInput.value.trim();
