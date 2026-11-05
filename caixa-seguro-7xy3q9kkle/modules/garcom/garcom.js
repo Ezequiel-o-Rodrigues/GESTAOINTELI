@@ -517,6 +517,7 @@ if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
                 if (!r.ok || !d.success) {
                     throw new Error(d.message || 'Não foi possível carregar o mapa de mesas.');
                 }
+                if (multiDialog && !multiDialog.hidden) multiDialog.hidden = true;
                 renderMapa(d.mesas);
             } catch (e) {
                 const error = document.createElement('p');
