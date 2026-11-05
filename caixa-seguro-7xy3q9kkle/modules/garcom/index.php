@@ -42,6 +42,7 @@ try {
     <title>Garçom | GestãoInteli</title>
     <link rel="stylesheet" href="<?= htmlspecialchars(PathConfig::modules('garcom/garcom.css'), ENT_QUOTES, 'UTF-8') ?>?v=<?= filemtime(__DIR__ . '/garcom.css') ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="<?= htmlspecialchars(PathConfig::url('css/support-widget.css'), ENT_QUOTES, 'UTF-8') ?>?v=1">
 </head>
 <body class="waiter-app">
     <header class="waiter-header">
@@ -55,6 +56,9 @@ try {
                 <span>Comandas abertas</span>
                 <span id="ordersCount" class="waiter-count">0</span>
             </button>
+            <a class="waiter-help-link" href="<?= htmlspecialchars(PathConfig::modules('ajuda/'), ENT_QUOTES, 'UTF-8') ?>">
+                <i class="bi bi-question-circle" aria-hidden="true"></i> Ajuda
+            </a>
             <span><?= htmlspecialchars($_SESSION['usuario_nome'] ?? 'Garçom', ENT_QUOTES, 'UTF-8') ?></span>
             <a href="<?= htmlspecialchars(PathConfig::url('logout.php'), ENT_QUOTES, 'UTF-8') ?>">Sair</a>
         </div>
@@ -252,5 +256,6 @@ try {
         };
     </script>
     <script src="<?= htmlspecialchars(PathConfig::modules('garcom/garcom.js'), ENT_QUOTES, 'UTF-8') ?>?v=<?= filemtime(__DIR__ . '/garcom.js') ?>"></script>
+    <?php require __DIR__ . '/../../includes/support-widget.php'; ?>
 </body>
 </html>

@@ -21,6 +21,7 @@
             (role === 'admin' || role === 'estoque') && { key: 'estoque', title: 'Estoque', icon: 'bi-box-seam', href: navRoot.dataset.stockUrl },
             ['admin', 'caixa', 'estoque'].includes(role) && { key: 'relatorios', title: 'Relatórios', icon: 'bi-bar-chart-line', href: navRoot.dataset.reportsUrl },
             role === 'admin' && { key: 'admin', title: 'Admin', icon: 'bi-gear', href: navRoot.dataset.adminUrl },
+            { key: 'ajuda', title: 'Ajuda', icon: 'bi-question-circle', href: navRoot.dataset.helpUrl, active: navRoot.dataset.helpActive === 'true' },
         ].filter(Boolean);
 
         return h(React.Fragment, null, ...links.map((link) => h('a', {
@@ -142,7 +143,11 @@
                 ),
                 h('a', { className: 'cash-home-link', href: root.dataset.homeUrl },
                     h('i', { className: 'bi bi-house', 'aria-hidden': 'true' }),
-                    ' Voltar ao início'
+                    h('span', null, 'Voltar ao início')
+                ),
+                h('a', { className: 'cash-home-link', href: root.dataset.helpUrl },
+                    h('i', { className: 'bi bi-question-circle', 'aria-hidden': 'true' }),
+                    h('span', null, 'Ajuda')
                 )
             )
         );

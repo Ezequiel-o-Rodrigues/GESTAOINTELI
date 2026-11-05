@@ -1,0 +1,52 @@
+.support-whatsapp {
+    position: fixed;
+    z-index: 1100;
+    right: 20px;
+    bottom: 20px;
+    display: inline-flex;
+    min-height: 52px;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 999px;
+    background: #16a34a;
+    box-shadow: 0 8px 24px rgba(22, 163, 74, 0.3);
+    color: #fff;
+    font: 600 0.95rem/1.2 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    text-decoration: none;
+    transition: background-color 0.18s ease, transform 0.18s ease;
+}
+
+.support-whatsapp:hover,
+.support-whatsapp:focus-visible {
+    transform: translateY(-2px);
+    background: #15803d;
+    color: #fff;
+}
+
+.support-whatsapp:focus-visible {
+    outline: 3px solid #86efac;
+    outline-offset: 3px;
+}
+
+.support-whatsapp .bi {
+    font-size: 1.35rem;
+}
+
+@media (max-width: 520px) {
+    .support-whatsapp {
+        right: 14px;
+        bottom: 14px;
+        min-height: 48px;
+        padding: 0 15px;
+        font-size: 0.875rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .support-whatsapp {
+        transition: none;
+    }
+}

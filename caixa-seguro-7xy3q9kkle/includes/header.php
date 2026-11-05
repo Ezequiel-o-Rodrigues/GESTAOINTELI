@@ -11,6 +11,7 @@ $usuarioPerfil = $_SESSION['usuario_perfil'] ?? '';
 $tituloPagina = $tituloPagina ?? 'Sistema Restaurante';
 $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
 $paginaInicio = rtrim(dirname($scriptName), '/.') === rtrim(PathConfig::url(), '/');
+$paginaAjuda = strpos($scriptName, '/modules/ajuda/') !== false;
 $urlGerenciarCardapio = PathConfig::modules('cardapio/');
 
 ?>
@@ -24,6 +25,10 @@ $urlGerenciarCardapio = PathConfig::modules('cardapio/');
     <!-- ✅ Bootstrap via CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="<?= htmlspecialchars(PathConfig::url('css/support-widget.css'), ENT_QUOTES, 'UTF-8') ?>?v=1">
+    <?php if ($paginaAjuda): ?>
+        <link rel="stylesheet" href="<?= htmlspecialchars(PathConfig::modules('ajuda/ajuda.css'), ENT_QUOTES, 'UTF-8') ?>?v=1">
+    <?php endif; ?>
     <!-- ✅ CSS personalizado - se existir na raiz -->
     <?php if (file_exists(__DIR__ . '/../css/style.css')): ?>
         <link rel="stylesheet" href="<?= PathConfig::url('css/style.css') ?>?v=<?= filemtime(__DIR__ . '/../css/style.css') ?>">
@@ -123,6 +128,8 @@ $urlGerenciarCardapio = PathConfig::modules('cardapio/');
                 data-stock-url="<?= htmlspecialchars(PathConfig::modules('estoque/'), ENT_QUOTES, 'UTF-8') ?>"
                 data-reports-url="<?= htmlspecialchars(PathConfig::modules('relatorios/'), ENT_QUOTES, 'UTF-8') ?>"
                 data-admin-url="<?= htmlspecialchars(PathConfig::modules('admin/'), ENT_QUOTES, 'UTF-8') ?>"
+                data-help-url="<?= htmlspecialchars(PathConfig::modules('ajuda/'), ENT_QUOTES, 'UTF-8') ?>"
+                data-help-active="<?= $paginaAjuda ? 'true' : 'false' ?>"
             ></nav>
 
             <?php if ($usuarioLogado): ?>

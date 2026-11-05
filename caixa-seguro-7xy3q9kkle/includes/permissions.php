@@ -9,10 +9,10 @@ function currentUserRole() {
 function canAccessModule($module) {
     $role = currentUserRole();
     $permissions = [
-        'admin' => ['admin', 'caixa', 'estoque', 'relatorios'],
-        'caixa' => ['caixa', 'relatorios'],
-        'estoque' => ['estoque', 'relatorios'],
-        'garcom' => ['garcom'],
+        'admin' => ['admin', 'caixa', 'estoque', 'relatorios', 'ajuda'],
+        'caixa' => ['caixa', 'relatorios', 'ajuda'],
+        'estoque' => ['estoque', 'relatorios', 'ajuda'],
+        'garcom' => ['garcom', 'ajuda'],
     ];
 
     return in_array($module, $permissions[$role] ?? [], true);
