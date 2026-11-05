@@ -83,7 +83,7 @@ VALUES ('commission_rate', '0.03', 'Taxa de comissão dos garçons')
 ON DUPLICATE KEY UPDATE `descricao` = VALUES(`descricao`);
 
 INSERT INTO `configuracoes_sistema` (`chave`, `valor`, `descricao`)
-VALUES ('service_fee_enabled', '0', 'Cobrar do cliente o percentual configurado sobre o subtotal')
+VALUES ('service_fee_enabled', '0', 'Cobrar do cliente as comissões dos itens lançados por garçons')
 ON DUPLICATE KEY UPDATE `descricao` = VALUES(`descricao`);
 
 -- A taxa padrão de comissão é definida pelo administrador em Administração > Configurações.

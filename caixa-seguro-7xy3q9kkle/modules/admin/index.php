@@ -400,15 +400,15 @@ require_once '../../includes/header.php';
                                value="<?= $current_commission * 100 ?>" min="0" max="100" step="0.1" required>
                         <span class="input-group-text">%</span>
                     </div>
-                    <div class="form-text">Comissão nos itens lançados por garçons e, se habilitado, taxa aplicada à conta do cliente. Atual: <?= number_format($current_commission * 100, 1) ?>%</div>
+                    <div class="form-text">Comissão nos itens lançados por garçons e, se habilitado, gorjeta calculada somente sobre esses itens. Atual: <?= number_format($current_commission * 100, 1) ?>%</div>
                 </div>
                 <div class="col-md-8 d-flex align-items-center">
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="service_fee_enabled" name="service_fee_enabled" value="1" <?= $service_fee_enabled ? 'checked' : '' ?>>
                         <label class="form-check-label" for="service_fee_enabled">
-                            Cobrar do cliente o percentual configurado sobre o subtotal da comanda
+                            Cobrar do cliente a gorjeta dos itens lançados por garçons
                         </label>
-                        <div class="form-text">Quando ativado, a taxa incide sobre todos os itens, inclusive os lançados pelo caixa ou administração. A comissão continua sendo atribuída somente aos itens lançados por garçons.</div>
+                        <div class="form-text">Quando ativado, os itens lançados pelo caixa ou administração entram no subtotal, mas não geram gorjeta.</div>
                     </div>
                 </div>
                 <div class="col-12">

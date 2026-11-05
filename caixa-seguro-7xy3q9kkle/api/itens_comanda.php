@@ -39,10 +39,40 @@ try {
               WHERE ic.comanda_id = ? AND ic.cancelado_em IS NULL";
     $stmt = $db->prepare($query);
     $stmt->execute([(int) $comandaId]);
-    
     $itens = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    echo json_encode(['itens' => $itens]);
+
+    $stmt = $db->prepare(
+        "SELECT
+            (
+                SELECT COALESCE(SUM(subtotal), 0)
+                FROM itens_comanda
+                WHERE comanda_id = ? AND cancelado_em IS NULL
+            ) + (
+                SELECT COALESCE(SUM(subtotal), 0)
+                FROM itens_livres
+                WHERE comanda_id = ?
+            ) AS valor_total,
+            (
+                SELECT COALESCE(SUM(comissao_valor), 0)
+                FROM itens_comanda
+                WHERE comanda_id = ? AND cancelado_em IS NULL
+            ) AS taxa_gorjeta"
+    );
+    $stmt->execute([(int) $comandaId, (int) $comandaId, (int) $comandaId]);
+    $totais = $stmt->fetch(PDO::FETCH_ASSOC);
+    $stmt = $db->prepare("SELECT valor FROM configuracoes_sistema WHERE chave = 'service_fee_enabled'");
+    $stmt->execute();
+    $repasseAtivo = (string) $stmt->fetchColumn() === '1';
+    $valorTotal = (float) $totais['valor_total'];
+    $taxaGorjeta = $repasseAtivo ? (float) $totais['taxa_gorjeta'] : 0;
+
+    echo json_encode([
+        'success' => true,
+        'itens' => $itens,
+        'valor_total' => $valorTotal,
+        'taxa_gorjeta' => $taxaGorjeta,
+        'total_a_pagar' => round($valorTotal + $taxaGorjeta, 2)
+    ], JSON_UNESCAPED_UNICODE);
     
 } catch (PDOException $e) {
     error_log('Erro ao carregar itens da comanda no caixa: ' . $e->getMessage());

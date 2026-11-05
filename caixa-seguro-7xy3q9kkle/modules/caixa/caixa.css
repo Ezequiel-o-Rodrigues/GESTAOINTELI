@@ -173,10 +173,19 @@ body.cash-register .comanda-numero {
 }
 
 body.cash-register .total-comanda {
+    display: flex;
     min-width: 112px;
+    flex-direction: column;
+    gap: 2px;
     color: #0f172a;
     font-size: 1.05rem;
     white-space: nowrap;
+}
+
+body.cash-register .cash-total-breakdown {
+    color: #64748b;
+    font-size: 0.7rem;
+    font-weight: 500;
 }
 
 body.cash-register .botoes-comanda {

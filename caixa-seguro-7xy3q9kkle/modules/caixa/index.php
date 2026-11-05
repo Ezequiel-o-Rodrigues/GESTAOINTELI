@@ -804,6 +804,9 @@ try {
 
                 window.caixaSystem.comandaAtual = { id: Number(data.comanda_id) };
                 window.caixaSystem.itensComanda = [];
+                window.caixaSystem.totalComanda = 0;
+                window.caixaSystem.taxaGorjeta = 0;
+                window.caixaSystem.totalAPagar = 0;
                 window.caixaSystem.atualizarUIComanda();
                 if (window.comandasAbertasUI) window.comandasAbertasUI.load();
                 fecharModalGarcom();
@@ -841,6 +844,9 @@ try {
                     if (window.caixaSystem) {
                         window.caixaSystem.comandaAtual = { id: data.comanda_id };
                         window.caixaSystem.itensComanda = [];
+                        window.caixaSystem.totalComanda = 0;
+                        window.caixaSystem.taxaGorjeta = 0;
+                        window.caixaSystem.totalAPagar = 0;
                         window.caixaSystem.atualizarUIComanda();
                     }
                     if (window.comandasAbertasUI) {

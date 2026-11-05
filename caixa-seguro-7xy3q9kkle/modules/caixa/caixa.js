@@ -9,6 +9,9 @@ if (window.CaixaSystemAlreadyLoaded) {
     constructor() {
         this.comandaAtual = null;
         this.itensComanda = [];
+        this.totalComanda = 0;
+        this.taxaGorjeta = 0;
+        this.totalAPagar = 0;
         this.produtos = [];
         this.carregando = false;
         
@@ -145,6 +148,9 @@ if (window.CaixaSystemAlreadyLoaded) {
                 }
 
                 this.itensComanda = [];
+                this.totalComanda = 0;
+                this.taxaGorjeta = 0;
+                this.totalAPagar = 0;
                 this.atualizarUIComanda();
                 this.mostrarToast('Nova comanda criada (sem garçom)', 'success');
                 if (window.comandasAbertasUI) window.comandasAbertasUI.load();
@@ -177,6 +183,9 @@ if (window.CaixaSystemAlreadyLoaded) {
             if (data.success) {
                 this.comandaAtual = { id: data.comanda_id };
                 this.itensComanda = [];
+                this.totalComanda = 0;
+                this.taxaGorjeta = 0;
+                this.totalAPagar = 0;
                 this.atualizarUIComanda();
                 this.mostrarToast(data.message || 'Comanda criada com garçom', 'success');
                 if (window.comandasAbertasUI) window.comandasAbertasUI.load();
@@ -262,6 +271,9 @@ if (window.CaixaSystemAlreadyLoaded) {
                 this.itensComanda = [];
                 console.warn('Formato inesperado na resposta de itens:', data);
             }
+            this.totalComanda = Number(data.valor_total);
+            this.taxaGorjeta = Number(data.taxa_gorjeta);
+            this.totalAPagar = Number(data.total_a_pagar);
 
             console.log('Itens carregados:', this.itensComanda);
 
@@ -279,18 +291,27 @@ if (window.CaixaSystemAlreadyLoaded) {
     async abrirComandaSelecionada(comanda) {
         const comandaAnterior = this.comandaAtual;
         const itensAnteriores = this.itensComanda;
+        const totalAnterior = this.totalComanda;
+        const gorjetaAnterior = this.taxaGorjeta;
+        const totalAPagarAnterior = this.totalAPagar;
         this.comandaAtual = {
             id: Number(comanda.id),
             cliente_nome: comanda.cliente_nome || '',
             mesa_numero: comanda.mesa_numero || ''
         };
         this.itensComanda = [];
+        this.totalComanda = 0;
+        this.taxaGorjeta = 0;
+        this.totalAPagar = 0;
         try {
             await this.carregarItensComanda();
             this.atualizarUIComanda();
         } catch (error) {
             this.comandaAtual = comandaAnterior;
             this.itensComanda = itensAnteriores;
+            this.totalComanda = totalAnterior;
+            this.taxaGorjeta = gorjetaAnterior;
+            this.totalAPagar = totalAPagarAnterior;
             this.atualizarUIComanda();
             throw error;
         }
@@ -636,6 +657,9 @@ if (window.CaixaSystemAlreadyLoaded) {
     limparComanda() {
         this.comandaAtual = null;
         this.itensComanda = [];
+        this.totalComanda = 0;
+        this.taxaGorjeta = 0;
+        this.totalAPagar = 0;
         this.atualizarUIComanda();
     }
     
@@ -680,8 +704,15 @@ if (window.CaixaSystemAlreadyLoaded) {
         const totalElement = document.getElementById('total-comanda');
         if (!totalElement) return;
         
-        const total = this.itensComanda.reduce((sum, item) => sum + parseFloat(item.subtotal), 0);
-        totalElement.textContent = 'R$ ' + total.toFixed(2).replace('.', ',');
+        const totalAPagar = this.totalAPagar;
+        const valorFormatado = totalAPagar.toFixed(2).replace('.', ',');
+        if (this.taxaGorjeta > 0) {
+            const subtotalFormatado = this.totalComanda.toFixed(2).replace('.', ',');
+            const gorjetaFormatada = this.taxaGorjeta.toFixed(2).replace('.', ',');
+            totalElement.innerHTML = `Total: R$ ${valorFormatado}<small class="cash-total-breakdown">Subtotal R$ ${subtotalFormatado} + gorjeta R$ ${gorjetaFormatada}</small>`;
+        } else {
+            totalElement.textContent = 'R$ ' + valorFormatado;
+        }
     }
     
     atualizarBotaoFinalizar() {

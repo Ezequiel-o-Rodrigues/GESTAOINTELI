@@ -66,7 +66,7 @@
             number.textContent = details.join(' · ');
             const total = document.createElement('span');
             total.className = 'open-order-total';
-            total.textContent = `R$ ${Number(order.valor_total || 0).toFixed(2).replace('.', ',')}`;
+            total.textContent = `Total: R$ ${Number(order.total_a_pagar ?? order.valor_total ?? 0).toFixed(2).replace('.', ',')}`;
 
             button.append(title, number, total);
             list.appendChild(button);

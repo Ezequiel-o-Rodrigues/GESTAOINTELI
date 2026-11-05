@@ -50,16 +50,14 @@ try {
     $stmt = $db->prepare("SELECT valor FROM configuracoes_sistema WHERE chave = 'service_fee_enabled'");
     $stmt->execute();
     $repasseAtivo = (string) $stmt->fetchColumn() === '1';
-    $stmt = $db->prepare("SELECT valor FROM configuracoes_sistema WHERE chave = 'commission_rate'");
-    $stmt->execute();
-    $taxaPercentual = $stmt->fetchColumn();
-    if ($taxaPercentual === false || !is_numeric($taxaPercentual)
-        || (float) $taxaPercentual < 0 || (float) $taxaPercentual > 1) {
-        throw new RuntimeException('A porcentagem da taxa de serviço não está configurada corretamente.');
-    }
-    $taxa_gorjeta = $repasseAtivo
-        ? round($total_comanda * (float) $taxaPercentual, 2)
-        : 0;
+    $stmt = $db->prepare(
+        'SELECT COALESCE(SUM(comissao_valor), 0)
+         FROM itens_comanda
+         WHERE comanda_id = ? AND cancelado_em IS NULL'
+    );
+    $stmt->execute([(int) $comanda_id]);
+    $comissaoItens = (float) $stmt->fetchColumn();
+    $taxa_gorjeta = $repasseAtivo ? round($comissaoItens, 2) : 0;
 
     // Atualizar comanda
     $stmt = $db->prepare("UPDATE comandas SET status = 'fechada', valor_total = ?, taxa_gorjeta = 0, data_venda = NOW(), data_finalizacao = NOW(), usuario_fechamento_id = ? WHERE id = ? AND status = 'aberta'");
@@ -68,8 +66,8 @@ try {
         http_response_code(409);
         throw new Exception('A comanda já foi finalizada por outro operador.');
     }
-    // O gatilho legado aplica uma taxa própria; substituímos pelo percentual configurado
-    // sobre o subtotal da comanda, que é independente das comissões dos garçons.
+    // O gatilho legado aplica uma taxa própria; substituímos pela soma das comissões
+    // dos itens ativos lançados por garçons.
     $stmt = $db->prepare('UPDATE comandas SET taxa_gorjeta = ? WHERE id = ? AND status = \'fechada\'');
     $stmt->execute([$taxa_gorjeta, (int) $comanda_id]);
 
