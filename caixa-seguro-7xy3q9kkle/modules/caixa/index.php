@@ -55,6 +55,17 @@ try {
     $stmt_garcons = $db->prepare($query_garcons);
     $stmt_garcons->execute();
     $garcons = $stmt_garcons->fetchAll(PDO::FETCH_ASSOC);
+
+$usar_mapa_mesas_caixa = false;
+$erro_config_mapa_mesas_caixa = false;
+try {
+    $stmt_mapa_caixa = $db->prepare("SELECT valor FROM configuracoes_sistema WHERE chave = 'usar_mapa_mesas'");
+    $stmt_mapa_caixa->execute();
+    $usar_mapa_mesas_caixa = $stmt_mapa_caixa->fetchColumn() === '1';
+} catch (Exception $e) {
+    error_log('Erro ao carregar configuração do mapa de mesas no caixa: ' . $e->getMessage());
+    $erro_config_mapa_mesas_caixa = true;
+}
 ?>
 
 <!DOCTYPE html>
@@ -532,6 +543,11 @@ try {
             <button type="button" class="btn btn-orders" id="toggle-open-orders" aria-expanded="false" aria-controls="open-orders-panel">
                 <i class="bi bi-list-ul" aria-hidden="true"></i> Comandas
             </button>
+            <?php if ($usar_mapa_mesas_caixa): ?>
+            <button type="button" class="btn btn-orders" id="toggle-mesas-map" aria-expanded="false" aria-controls="mapas-mesas-panel">
+                <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i> Mesas
+            </button>
+            <?php endif; ?>
             <button class="btn btn-primary" id="btn-nova-comanda-topo" onclick="novaComanda()"><i class="bi bi-plus-circle" aria-hidden="true"></i> Nova comanda</button>
             <span id="contexto-comanda" class="cash-order-context" aria-live="polite"></span>
         </div>
@@ -562,6 +578,28 @@ try {
                 <p class="open-orders-empty">Carregando comandas...</p>
             </div>
         </aside>
+
+        <?php if ($usar_mapa_mesas_caixa): ?>
+        <div id="mapas-mesas-backdrop" class="open-orders-backdrop" hidden></div>
+        <aside id="mapas-mesas-panel" class="open-orders-panel mesas-map-panel" role="dialog" aria-modal="true" aria-label="Mapa de mesas" aria-hidden="true" inert>
+            <div class="open-orders-heading">
+                <div>
+                    <p class="waiter-eyebrow">ATENDIMENTO</p>
+                    <h2>Mapa de mesas</h2>
+                </div>
+                <div class="mesas-map-actions">
+                    <button type="button" id="refresh-mesas-map" class="open-orders-close" aria-label="Atualizar mapa de mesas">
+                        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" id="close-mesas-map" class="open-orders-close" aria-label="Fechar mapa de mesas">
+                        <i class="bi bi-x-lg" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+            <p class="open-orders-empty">Selecione uma mesa livre para abrir uma comanda. Se estiver ocupada, abra a comanda existente.</p>
+            <div class="mapa-canvas-caixa" id="mapaCanvasCaixa" aria-live="polite"></div>
+        </aside>
+        <?php endif; ?>
 
         <div class="botoes-comanda">
             <span class="total-comanda" id="total-comanda">
@@ -661,23 +699,10 @@ try {
             createOrderUrl: <?= json_encode(PathConfig::modules('caixa/criar_comanda.php')) ?>,
             openOrdersUrl: <?= json_encode(PathConfig::api('comandas_abertas.php')) ?>,
             mapaMesasUrl: <?= json_encode(PathConfig::api('mapa_mesas.php')) ?>,
-            novaComandaUrl: <?= json_encode(PathConfig::api('nova_comanda.php')) ?>
+            novaComandaUrl: <?= json_encode(PathConfig::api('nova_comanda.php')) ?>,
+            usarMapaMesas: <?= $usar_mapa_mesas_caixa ? 'true' : 'false' ?>,
+            erroConfigMapaMesas: <?= $erro_config_mapa_mesas_caixa ? 'true' : 'false' ?>
         }, window.appConfig || {});
-    window.appConfig.erroConfigMapaMesas = false;
-    window.appConfig.usarMapaMesas = <?php
-        $usar_mapa_mesas_caixa = false;
-        $erro_config_mapa_mesas_caixa = false;
-        try {
-            $s = $db->prepare("SELECT valor FROM configuracoes_sistema WHERE chave = 'usar_mapa_mesas'");
-            $s->execute();
-            $usar_mapa_mesas_caixa = $s->fetchColumn() === '1';
-        } catch (Exception $e) {
-            error_log('Erro ao carregar configuração do mapa de mesas no caixa: ' . $e->getMessage());
-            $erro_config_mapa_mesas_caixa = true;
-        }
-        echo $usar_mapa_mesas_caixa ? 'true' : 'false';
-    ?>;
-    window.appConfig.erroConfigMapaMesas = <?= $erro_config_mapa_mesas_caixa ? 'true' : 'false' ?>;
     </script>   
 
         <!-- Modal para definir se a nova comanda será aberta pelo caixa ou por um garçom. -->
@@ -900,13 +925,11 @@ try {
             }
 
             if (window.appConfig && window.appConfig.usarMapaMesas) {
-                const mapa = document.getElementById('mapaMesasCaixa');
-                if (!mapa) {
+                if (!window.mapaMesasCaixaUI) {
                     notificarCaixa('O mapa de mesas está ativo, mas não foi possível carregá-lo. Atualize a página ou avise o administrador.', 'error');
                     return;
                 }
-                mapa.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                notificarCaixa('Selecione uma mesa livre no mapa para abrir uma comanda.', 'info');
+                window.mapaMesasCaixaUI.open();
                 return;
             }
 
@@ -978,23 +1001,48 @@ document.addEventListener('DOMContentLoaded', function() {
 
     <?php if (!empty($usar_mapa_mesas_caixa)): ?>
     <style>
-        #mapaMesasCaixa { padding: 12px 15px; border-bottom: 1px solid #e0e0e0; background: white; }
-        #mapaMesasCaixa h3 { font-size: 0.9rem; color: #2c3e50; margin-bottom: 8px; }
-        .mapa-canvas-caixa { position: relative; width: 100%; min-height: 300px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; overflow: auto; }
+        .mesas-map-panel { width: min(760px, 100vw); }
+        .mesas-map-actions { display: flex; gap: 8px; }
+        .mesas-map-panel .mapa-canvas-caixa { position: relative; flex: 1; width: 100%; min-width: 0; min-height: 300px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; overflow: auto; }
         .mesa-btn-caixa { position: absolute; width: 68px; height: 68px; border-radius: 8px; border: 2px solid; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; transition: transform .15s; background: white; }
         .mesa-btn-caixa:hover { transform: scale(1.07); }
         .mesa-btn-caixa.livre   { border-color: #27ae60; color: #27ae60; }
         .mesa-btn-caixa.ocupada { border-color: #e74c3c; color: #e74c3c; background: #fef2f2; }
         .mesa-btn-caixa small { font-size: 0.6rem; font-weight: 400; }
+        @media (max-width: 700px) {
+            .mesas-map-panel { width: min(100vw, 760px); padding: 18px; }
+        }
     </style>
-    <div id="mapaMesasCaixa">
-        <h3><i class="bi bi-grid-3x3-gap"></i> Mapa de Mesas</h3>
-        <div class="mapa-canvas-caixa" id="mapaCanvasCaixa"></div>
-    </div>
     <script>
     (function() {
         const canvas = document.getElementById('mapaCanvasCaixa');
+        const panel = document.getElementById('mapas-mesas-panel');
+        const backdrop = document.getElementById('mapas-mesas-backdrop');
+        const toggle = document.getElementById('toggle-mesas-map');
+        const close = document.getElementById('close-mesas-map');
+        const refresh = document.getElementById('refresh-mesas-map');
         const cfg = window.appConfig;
+        if (!canvas || !panel || !backdrop || !toggle || !close || !refresh) return;
+
+        function fecharMapaCaixa(returnFocus = true) {
+            panel.classList.remove('is-open');
+            panel.setAttribute('aria-hidden', 'true');
+            panel.inert = true;
+            backdrop.hidden = true;
+            toggle.setAttribute('aria-expanded', 'false');
+            if (returnFocus) toggle.focus();
+        }
+
+        function abrirMapaCaixa() {
+            if (window.comandasAbertasUI) window.comandasAbertasUI.close();
+            panel.classList.add('is-open');
+            panel.setAttribute('aria-hidden', 'false');
+            panel.inert = false;
+            backdrop.hidden = false;
+            toggle.setAttribute('aria-expanded', 'true');
+            close.focus();
+            carregarMapaCaixa();
+        }
 
         async function carregarMapaCaixa() {
             try {
@@ -1004,6 +1052,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     throw new Error(d.message || 'Não foi possível carregar o mapa de mesas.');
                 }
                 canvas.replaceChildren();
+                canvas.style.minWidth = '0';
+                canvas.style.minHeight = '300px';
                 if (d.mesas.length === 0) {
                     const empty = document.createElement('p');
                     empty.setAttribute('role', 'status');
@@ -1059,7 +1109,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.caixaSystem.atualizarUIComanda();
                     if (window.comandasAbertasUI) window.comandasAbertasUI.load();
                     carregarMapaCaixa();
-                } catch(e) { alert(e.message); }
+                    notificarCaixa(`Comanda aberta na mesa ${mesa.numero_mesa}.`, 'success');
+                } catch(e) {
+                    notificarCaixa(e.message || 'Não foi possível abrir a comanda.', 'error');
+                    carregarMapaCaixa();
+                }
             } else {
                 // Mesa ocupada: abrir painel de comandas filtrado
                 const panel = document.getElementById('open-orders-panel');
@@ -1068,6 +1122,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (window.comandasAbertasUI) await window.comandasAbertasUI.load();
                     search.value = mesa.numero_mesa;
                     search.dispatchEvent(new Event('input'));
+                    fecharMapaCaixa(false);
                     if (panel.getAttribute('aria-hidden') === 'true') {
                         document.getElementById('toggle-open-orders')?.click();
                     }
@@ -1075,11 +1130,22 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        carregarMapaCaixa();
-        setInterval(carregarMapaCaixa, 15000);
+        toggle.addEventListener('click', abrirMapaCaixa);
+        close.addEventListener('click', () => fecharMapaCaixa());
+        refresh.addEventListener('click', carregarMapaCaixa);
+        backdrop.addEventListener('click', () => fecharMapaCaixa());
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && panel.classList.contains('is-open')) fecharMapaCaixa();
+        });
 
-        // Atualizar mapa após finalizar comanda
         document.addEventListener('comandaFinalizada', carregarMapaCaixa);
+        window.mapaMesasCaixaUI = {
+            open: abrirMapaCaixa,
+            close: () => fecharMapaCaixa()
+        };
+        window.setInterval(() => {
+            if (panel.classList.contains('is-open')) carregarMapaCaixa();
+        }, 15000);
     })();
     </script>
     <?php endif; ?>

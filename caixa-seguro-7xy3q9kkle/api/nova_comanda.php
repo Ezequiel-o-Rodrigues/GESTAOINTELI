@@ -63,7 +63,11 @@ try {
         $check = $db->prepare(
             "SELECT COUNT(*) FROM comandas
              WHERE status = 'aberta'
-               AND (mesa_id = ? OR (mesa_id IS NULL AND mesa_numero = ?))"
+               AND (mesa_id = ? OR (
+                    mesa_id IS NULL
+                    AND CONVERT(mesa_numero USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                        = CONVERT(? USING utf8mb4) COLLATE utf8mb4_unicode_ci
+               ))"
         );
         $check->execute([$mesa_id, $mesa['numero']]);
         if ((int) $check->fetchColumn() > 0) {

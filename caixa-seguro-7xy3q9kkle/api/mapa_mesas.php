@@ -22,10 +22,14 @@ try {
             COUNT(c.id)   AS qtd_comandas_abertas
          FROM mesas m
          LEFT JOIN comandas c
-           ON (c.mesa_id = m.id OR (c.mesa_id IS NULL AND c.mesa_numero = m.numero))
+           ON (c.mesa_id = m.id OR (
+                c.mesa_id IS NULL
+                AND CONVERT(c.mesa_numero USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                    = CONVERT(m.numero USING utf8mb4) COLLATE utf8mb4_unicode_ci
+           ))
           AND c.status = 'aberta'
          WHERE m.ativo = 1
-         GROUP BY m.id
+         GROUP BY m.id, m.numero, m.ambiente, m.posicao_x, m.posicao_y
          ORDER BY m.ambiente, m.numero"
     );
 
@@ -34,8 +38,16 @@ try {
         'mesas'   => $stmt->fetchAll(PDO::FETCH_ASSOC)
     ], JSON_UNESCAPED_UNICODE);
 
+} catch (PDOException $e) {
+    error_log('Erro ao carregar mapa de mesas: ' . $e->getMessage());
+    http_response_code(500);
+    $driverCode = (int) ($e->errorInfo[1] ?? 0);
+    $message = in_array($driverCode, [1054, 1146], true)
+        ? 'A estrutura do mapa de mesas está incompleta. Execute a migração migracao_mapa_mesas.sql no banco e atualize a página.'
+        : 'Não foi possível carregar o mapa de mesas. Verifique o log do servidor para identificar o erro.';
+    echo json_encode(['success' => false, 'message' => $message], JSON_UNESCAPED_UNICODE);
 } catch (Exception $e) {
     error_log('Erro ao carregar mapa de mesas: ' . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Não foi possível carregar o mapa de mesas.'], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['success' => false, 'message' => 'Não foi possível carregar o mapa de mesas. Verifique o log do servidor para identificar o erro.'], JSON_UNESCAPED_UNICODE);
 }
