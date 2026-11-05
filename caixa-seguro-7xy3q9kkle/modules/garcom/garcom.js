@@ -1,4 +1,4 @@
-﻿(() => {
+(() => {
     const config = window.garcomConfig;
     const message = document.getElementById('waiterMessage');
     const ordersList = document.getElementById('ordersList');
@@ -42,7 +42,7 @@
         const response = await fetch(url, options);
         const data = await response.json();
         if (!response.ok || data.success === false) {
-            throw new Error(data.message || 'NÃ£o foi possÃ­vel concluir a operaÃ§Ã£o.');
+            throw new Error(data.message || 'Não foi possível concluir a operação.');
         }
         return data;
     }
@@ -51,7 +51,7 @@
         const details = [];
         if (order.cliente_nome) details.push(order.cliente_nome);
         if (order.mesa_numero) details.push(`Mesa ${order.mesa_numero}`);
-        return details.length ? details.join(' Â· ') : `Comanda #${order.id}`;
+        return details.length ? details.join(' · ') : `Comanda #${order.id}`;
     }
 
     function renderOrders() {
@@ -65,7 +65,7 @@
         if (orders.length === 0) {
             const empty = document.createElement('p');
             empty.className = 'waiter-empty';
-            empty.textContent = 'NÃ£o hÃ¡ comandas abertas neste momento.';
+            empty.textContent = 'Não há comandas abertas neste momento.';
             dashboardOrders.appendChild(empty);
             ordersList.appendChild(empty.cloneNode(true));
         }
@@ -82,10 +82,10 @@
             const number = document.createElement('span');
             number.className = 'waiter-order-meta';
             const details = order.mesa_numero
-                ? `Mesa ${order.mesa_numero} Â· Comanda #${order.id}`
+                ? `Mesa ${order.mesa_numero} · Comanda #${order.id}`
                 : `Comanda #${order.id}`;
             number.textContent = order.garcom_nome
-                ? `${details} Â· Aberta por ${order.garcom_nome}`
+                ? `${details} · Aberta por ${order.garcom_nome}`
                 : details;
             const total = document.createElement('span');
             total.className = 'waiter-order-total';
@@ -102,7 +102,7 @@
         if (orders.length > 0 && matchingOrders.length === 0) {
             const empty = document.createElement('p');
             empty.className = 'waiter-empty';
-            empty.textContent = 'Nenhuma comanda corresponde Ã  pesquisa.';
+            empty.textContent = 'Nenhuma comanda corresponde à pesquisa.';
             ordersList.appendChild(empty);
         }
     }
@@ -253,7 +253,7 @@
                 activeOrderDetail.textContent = 'Selecione outra comanda ou abra um novo atendimento.';
                 ordersDashboard.hidden = false;
                 orderDetail.hidden = true;
-                showMessage('A comanda selecionada nÃ£o estÃ¡ mais aberta.', false);
+                showMessage('A comanda selecionada não está mais aberta.', false);
             } else {
                 updateActiveOrderHeading(selectedOrder);
                 if (!orderDetail.hidden) {
@@ -309,7 +309,7 @@
                 body: JSON.stringify({ comanda_id: selectedOrder.id, produto_id: productId, quantidade: 1 })
             });
             await refreshSelectedOrder();
-            showMessage('Produto adicionado Ã  comanda.', false);
+            showMessage('Produto adicionado à comanda.', false);
         } catch (error) {
             showMessage(error.message, true);
         } finally {
@@ -395,7 +395,7 @@
         createOrderError.hidden = true;
         createOrderError.textContent = '';
         if (!clienteNome && !mesaNumero) {
-            createOrderError.textContent = 'Informe o nome do cliente ou o nÃºmero da mesa.';
+            createOrderError.textContent = 'Informe o nome do cliente ou o número da mesa.';
             createOrderError.hidden = false;
             return;
         }
@@ -419,7 +419,7 @@
             if (comandaCriada) {
                 createOrderDialog.close();
                 showDashboard();
-                showMessage('A comanda foi criada, mas nÃ£o foi possÃ­vel atualizar a lista. Atualize a pÃ¡gina antes de tentar abrir outra.', true);
+                showMessage('A comanda foi criada, mas não foi possível atualizar a lista. Atualize a página antes de tentar abrir outra.', true);
             } else {
                 createOrderError.textContent = error.message;
                 createOrderError.hidden = false;
@@ -453,7 +453,6 @@
     searchOrders.addEventListener('input', renderOrders);
     openCreateOrder.addEventListener('click', () => {
         if (config.usarMapaMesas) {
-            // No modo mapa, nova comanda sÃ³ pode ser aberta clicando em uma mesa livre
             showMessage('Selecione uma mesa livre no Mapa de Mesas para abrir uma nova comanda.', true);
             const mapa = document.getElementById('mapaMesas');
             if (mapa) mapa.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -490,7 +489,7 @@
         loadOrders().catch((error) => showMessage(error.message, true));
     }, 15000);
 
-    // ExpÃµe selectOrder para o mÃ³dulo MapaMesas
+    // Expõe selectOrder para o módulo MapaMesas
     window._garcomSelectOrder = (order) => selectOrder(order).catch((e) => showMessage(e.message, true));
 })();
 
@@ -578,7 +577,6 @@ if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
                         && String(c.mesa_numero).trim() === String(mesa.numero_mesa).trim()
                 );
                 if (abertas.length === 0) {
-                    // Nenhuma comanda encontrada — fecha dialog e recarrega mapa
                     multiDialog.hidden = true;
                     await carregarMapa();
                     return;
