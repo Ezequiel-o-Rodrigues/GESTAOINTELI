@@ -191,6 +191,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['sucesso'] = 'Garçom removido da lista.';
             header('Location: index.php'); exit;
         }
+
+        if ($action === 'toggle_mapa_mesas') {
+            $valor = isset($_POST['usar_mapa_mesas']) ? '1' : '0';
+            $stmt = $db->prepare(
+                "INSERT INTO configuracoes_sistema (chave, valor, descricao)
+                 VALUES ('usar_mapa_mesas', ?, 'Habilita o mapa visual de mesas')
+                 ON DUPLICATE KEY UPDATE valor = VALUES(valor), updated_at = NOW()"
+            );
+            $stmt->execute([$valor]);
+            $_SESSION['sucesso'] = 'Configuração do mapa de mesas salva.';
+            header('Location: index.php'); exit;
+        }
     } catch (Exception $e) {
         if ($db instanceof PDO && $db->inTransaction()) {
             $db->rollBack();
@@ -212,6 +224,7 @@ $garcons = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $current_commission = 0.03;
 $service_fee_enabled = false;
+$usar_mapa_mesas = false;
 $commission_config_error = '';
 try {
     $stmt = $db->prepare("SELECT valor FROM configuracoes_sistema WHERE chave = 'commission_rate'");
@@ -233,6 +246,10 @@ try {
     $stmt->execute();
     $repasse = $stmt->fetchColumn();
     $service_fee_enabled = $repasse === '1';
+
+    $stmt = $db->prepare("SELECT valor FROM configuracoes_sistema WHERE chave = 'usar_mapa_mesas'");
+    $stmt->execute();
+    $usar_mapa_mesas = $stmt->fetchColumn() === '1';
 } catch (Exception $e) {
     error_log('Erro ao carregar configurações de comissão: ' . $e->getMessage());
     $commission_config_error = 'Não foi possível carregar as configurações de comissão. Verifique a migração do banco e tente novamente.';
@@ -673,6 +690,182 @@ function definirTituloGarcom(texto, icone) {
     elementoIcone.setAttribute('aria-hidden', 'true');
     titulo.replaceChildren(elementoIcone, document.createTextNode(` ${texto}`));
 }
+</script>
+
+
+<!-- Card: Mapa de Mesas -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h5 class="card-title mb-0"><i class="bi bi-grid-3x3-gap" aria-hidden="true"></i> Mapa de Mesas</h5>
+                <p class="text-muted small mb-0">Gerencie as mesas do salão e ative o mapa visual nos módulos Garçom e Caixa.</p>
+            </div>
+            <form method="POST" class="d-flex align-items-center gap-2">
+                <input type="hidden" name="action" value="toggle_mapa_mesas">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_admin_user'], ENT_QUOTES, 'UTF-8') ?>">
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" role="switch" id="usar_mapa_mesas"
+                           name="usar_mapa_mesas" value="1" <?= $usar_mapa_mesas ? 'checked' : '' ?>
+                           onchange="this.form.submit()">
+                    <label class="form-check-label" for="usar_mapa_mesas">
+                        <?= $usar_mapa_mesas ? 'Mapa ativado' : 'Mapa desativado' ?>
+                    </label>
+                </div>
+            </form>
+        </div>
+
+        <div class="d-flex justify-content-end mb-2">
+            <button class="btn btn-primary btn-sm" onclick="abrirModalMesa(null)">
+                <i class="bi bi-plus-circle" aria-hidden="true"></i> Nova mesa
+            </button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-sm align-middle" id="tabelaMesas">
+                <thead>
+                    <tr>
+                        <th>Número</th>
+                        <th>Ambiente</th>
+                        <th>Posição (X, Y)</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="mesas-tbody">
+                    <tr><td colspan="5" class="text-center text-muted">Carregando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Mesa -->
+<div class="modal fade" id="mesaModal" tabindex="-1" aria-labelledby="mesaModalTitle" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="mesaModalTitle"><i class="bi bi-grid-3x3-gap" aria-hidden="true"></i> Mesa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="mesa_id">
+                <div class="mb-3">
+                    <label for="mesa_numero" class="form-label">Número *</label>
+                    <input type="text" class="form-control" id="mesa_numero" maxlength="20" required>
+                </div>
+                <div class="mb-3">
+                    <label for="mesa_ambiente" class="form-label">Ambiente</label>
+                    <input type="text" class="form-control" id="mesa_ambiente" value="Salão Principal" maxlength="50">
+                </div>
+                <div class="row g-2">
+                    <div class="col">
+                        <label for="mesa_x" class="form-label">Posição X</label>
+                        <input type="number" class="form-control" id="mesa_x" value="0" min="0">
+                    </div>
+                    <div class="col">
+                        <label for="mesa_y" class="form-label">Posição Y</label>
+                        <input type="number" class="form-control" id="mesa_y" value="0" min="0">
+                    </div>
+                </div>
+                <p id="mesa_erro" class="text-danger mt-2" hidden></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="salvarMesa()">Salvar mesa</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const salvarMesaUrl  = '<?= PathConfig::api('salvar_mesa.php') ?>';
+    const deletarMesaUrl = '<?= PathConfig::api('deletar_mesa.php') ?>';
+    const mapaMesasUrl   = '<?= PathConfig::api('mapa_mesas.php') ?>';
+
+    async function carregarMesas() {
+        const tbody = document.getElementById('mesas-tbody');
+        try {
+            const r = await fetch(mapaMesasUrl);
+            const d = await r.json();
+            if (!d.success) throw new Error(d.message);
+            if (!d.mesas.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nenhuma mesa cadastrada.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = d.mesas.map(m => `
+                <tr>
+                    <td>${escapeHtml(m.numero_mesa)}</td>
+                    <td>${escapeHtml(m.ambiente)}</td>
+                    <td>${m.posicao_x}, ${m.posicao_y}</td>
+                    <td><span class="badge bg-${m.status_mesa === 'ocupada' ? 'danger' : 'success'}">${m.status_mesa}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="abrirModalMesa(${JSON.stringify(m)})"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="excluirMesa(${m.mesa_id})"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch(e) {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-danger">${e.message}</td></tr>`;
+        }
+    }
+
+    window.abrirModalMesa = function(mesa) {
+        document.getElementById('mesa_id').value      = mesa ? mesa.mesa_id : '';
+        document.getElementById('mesa_numero').value  = mesa ? mesa.numero_mesa : '';
+        document.getElementById('mesa_ambiente').value = mesa ? mesa.ambiente : 'Salão Principal';
+        document.getElementById('mesa_x').value       = mesa ? mesa.posicao_x : 0;
+        document.getElementById('mesa_y').value       = mesa ? mesa.posicao_y : 0;
+        document.getElementById('mesa_erro').hidden   = true;
+        new bootstrap.Modal(document.getElementById('mesaModal')).show();
+    };
+
+    window.salvarMesa = async function() {
+        const erro = document.getElementById('mesa_erro');
+        erro.hidden = true;
+        const payload = {
+            id:         parseInt(document.getElementById('mesa_id').value) || null,
+            numero:     document.getElementById('mesa_numero').value.trim(),
+            ambiente:   document.getElementById('mesa_ambiente').value.trim() || 'Salão Principal',
+            posicao_x:  parseInt(document.getElementById('mesa_x').value) || 0,
+            posicao_y:  parseInt(document.getElementById('mesa_y').value) || 0,
+            ativo:      1
+        };
+        try {
+            const r = await fetch(salvarMesaUrl, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const d = await r.json();
+            if (!d.success) throw new Error(d.message);
+            bootstrap.Modal.getInstance(document.getElementById('mesaModal')).hide();
+            carregarMesas();
+        } catch(e) {
+            erro.textContent = e.message;
+            erro.hidden = false;
+        }
+    };
+
+    window.excluirMesa = async function(id) {
+        if (!confirm('Excluir esta mesa? O histórico de comandas será preservado.')) return;
+        try {
+            const r = await fetch(deletarMesaUrl, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id})
+            });
+            const d = await r.json();
+            if (!d.success) throw new Error(d.message);
+            carregarMesas();
+        } catch(e) {
+            alert(e.message);
+        }
+    };
+
+    carregarMesas();
+})();
 </script>
 
 <?php require_once '../../includes/footer.php'; ?>

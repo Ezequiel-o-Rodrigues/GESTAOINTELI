@@ -32,6 +32,13 @@ try {
     error_log('Erro ao carregar produtos no módulo Garçom: ' . $e->getMessage());
     $erroProdutos = 'Não foi possível carregar os produtos. Atualize a página ou avise o administrador.';
 }
+
+$usar_mapa_mesas = false;
+try {
+    $stmt_mapa = $db->prepare("SELECT valor FROM configuracoes_sistema WHERE chave = 'usar_mapa_mesas'");
+    $stmt_mapa->execute();
+    $usar_mapa_mesas = $stmt_mapa->fetchColumn() === '1';
+} catch (PDOException $e) { /* ignora se migração ainda não foi aplicada */ }
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -249,11 +256,46 @@ try {
 
     <script>
         window.garcomConfig = {
-            ordersUrl: <?= json_encode(PathConfig::api('garcom_comandas.php')) ?>,
-            itemsUrl: <?= json_encode(PathConfig::api('garcom_itens.php')) ?>,
-            removeItemUrl: <?= json_encode(PathConfig::api('garcom_remover_item.php')) ?>
+            ordersUrl:    <?= json_encode(PathConfig::api('garcom_comandas.php')) ?>,
+            itemsUrl:     <?= json_encode(PathConfig::api('garcom_itens.php')) ?>,
+            removeItemUrl:<?= json_encode(PathConfig::api('garcom_remover_item.php')) ?>,
+            mapaMesasUrl: <?= json_encode(PathConfig::api('mapa_mesas.php')) ?>,
+            novaComandaUrl: <?= json_encode(PathConfig::api('nova_comanda.php')) ?>,
+            usarMapaMesas: <?= $usar_mapa_mesas ? 'true' : 'false' ?>
         };
     </script>
+    <?php if ($usar_mapa_mesas): ?>
+    <style>
+        #mapaMesas { padding: 16px; }
+        .mapa-canvas { position: relative; width: 100%; min-height: 400px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; overflow: auto; }
+        .mesa-btn { position: absolute; width: 72px; height: 72px; border-radius: 10px; border: 2px solid; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; transition: transform .15s, box-shadow .15s; background: white; }
+        .mesa-btn:hover { transform: scale(1.08); box-shadow: 0 4px 12px rgba(0,0,0,.2); }
+        .mesa-btn.livre   { border-color: #16a34a; color: #16a34a; }
+        .mesa-btn.ocupada { border-color: #dc2626; color: #dc2626; background: #fef2f2; }
+        .mesa-btn small { font-size: 0.65rem; font-weight: 400; }
+        #mesaMultiDialog { background: rgba(0,0,0,.5); position: fixed; inset: 0; z-index: 999; display: flex; align-items: center; justify-content: center; }
+        #mesaMultiDialog .inner { background: white; border-radius: 12px; padding: 24px; min-width: 280px; max-width: 360px; }
+    </style>
+    <section id="mapaMesas" aria-label="Mapa de mesas">
+        <div class="waiter-dashboard-heading">
+            <div>
+                <p class="waiter-eyebrow">SALÃO</p>
+                <h2>Mapa de Mesas</h2>
+            </div>
+            <button class="waiter-button waiter-button--secondary" type="button" id="btnAtualizarMapa">
+                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Atualizar
+            </button>
+        </div>
+        <div class="mapa-canvas" id="mapaCanvas" aria-live="polite"></div>
+    </section>
+    <div id="mesaMultiDialog" hidden role="dialog" aria-modal="true" aria-labelledby="mesaMultiTitle">
+        <div class="inner">
+            <h3 id="mesaMultiTitle" style="margin-bottom:12px">Selecione a comanda</h3>
+            <div id="mesaMultiLista"></div>
+            <button class="waiter-button waiter-button--secondary" style="margin-top:12px;width:100%" onclick="document.getElementById('mesaMultiDialog').hidden=true">Cancelar</button>
+        </div>
+    </div>
+    <?php endif; ?>
     <script src="<?= htmlspecialchars(PathConfig::modules('garcom/garcom.js'), ENT_QUOTES, 'UTF-8') ?>?v=<?= filemtime(__DIR__ . '/garcom.js') ?>"></script>
 </body>
 </html>

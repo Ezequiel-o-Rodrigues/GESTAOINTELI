@@ -470,4 +470,121 @@
     window.setInterval(() => {
         loadOrders().catch((error) => showMessage(error.message, true));
     }, 15000);
+
+    // Expõe selectOrder para o módulo MapaMesas
+    window._garcomSelectOrder = (order) => selectOrder(order).catch((e) => showMessage(e.message, true));
 })();
+
+// ── Mapa de Mesas ──────────────────────────────────────────────────────────
+if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
+    (() => {
+        const cfg        = window.garcomConfig;
+        const canvas     = document.getElementById('mapaCanvas');
+        const multiDialog = document.getElementById('mesaMultiDialog');
+        const multiLista  = document.getElementById('mesaMultiLista');
+        if (!canvas) return;
+
+        async function carregarMapa() {
+            try {
+                const r = await fetch(cfg.mapaMesasUrl);
+                const d = await r.json();
+                if (!d.success) return;
+                renderMapa(d.mesas);
+            } catch (e) { /* silencioso no polling */ }
+        }
+
+        function renderMapa(mesas) {
+            canvas.replaceChildren();
+            // Calcular dimensão mínima do canvas
+            let maxX = 0, maxY = 0;
+            mesas.forEach(m => {
+                if (m.posicao_x + 90 > maxX) maxX = m.posicao_x + 90;
+                if (m.posicao_y + 90 > maxY) maxY = m.posicao_y + 90;
+            });
+            canvas.style.minWidth  = Math.max(maxX, 400) + 'px';
+            canvas.style.minHeight = Math.max(maxY, 400) + 'px';
+
+            mesas.forEach(m => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `mesa-btn ${m.status_mesa}`;
+                btn.style.left = m.posicao_x + 'px';
+                btn.style.top  = m.posicao_y + 'px';
+                btn.innerHTML  = `<span>${escapeHtmlMapa(m.numero_mesa)}</span><small>${escapeHtmlMapa(m.ambiente)}</small>`;
+                btn.setAttribute('aria-label', `Mesa ${m.numero_mesa} – ${m.status_mesa}`);
+                btn.addEventListener('click', () => clicarMesa(m));
+                canvas.appendChild(btn);
+            });
+        }
+
+        async function clicarMesa(mesa) {
+            if (mesa.status_mesa === 'livre') {
+                await abrirComandaMesa(mesa);
+            } else {
+                // Buscar comandas abertas desta mesa
+                const r = await fetch(cfg.ordersUrl);
+                const d = await r.json();
+                if (!d.success) return;
+                const abertas = d.comandas.filter(c => String(c.mesa_id) === String(mesa.mesa_id));
+                if (abertas.length === 1) {
+                    selecionarComandaDoMapa(abertas[0]);
+                } else {
+                    mostrarMultiComanda(abertas);
+                }
+            }
+        }
+
+        async function abrirComandaMesa(mesa) {
+            try {
+                const r = await fetch(cfg.novaComandaUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mesa_id: mesa.mesa_id })
+                });
+                const d = await r.json();
+                if (!d.success) throw new Error(d.message);
+                // Recarregar mapa e selecionar a comanda criada
+                await carregarMapa();
+                const rOrders = await fetch(cfg.ordersUrl);
+                const dOrders = await rOrders.json();
+                if (dOrders.success) {
+                    const nova = dOrders.comandas.find(c => Number(c.id) === Number(d.comanda_id));
+                    if (nova && window._garcomSelectOrder) window._garcomSelectOrder(nova);
+                }
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        function selecionarComandaDoMapa(comanda) {
+            if (window._garcomSelectOrder) window._garcomSelectOrder(comanda);
+        }
+
+        function mostrarMultiComanda(abertas) {
+            multiLista.replaceChildren();
+            abertas.forEach(c => {
+                const btn = document.createElement('button');
+                btn.className = 'waiter-button waiter-button--secondary';
+                btn.style.cssText = 'width:100%;margin-bottom:8px';
+                btn.textContent = c.cliente_nome ? `${c.cliente_nome} – Comanda #${c.id}` : `Comanda #${c.id}`;
+                btn.addEventListener('click', () => {
+                    multiDialog.hidden = true;
+                    selecionarComandaDoMapa(c);
+                });
+                multiLista.appendChild(btn);
+            });
+            multiDialog.hidden = false;
+        }
+
+        function escapeHtmlMapa(str) {
+            const el = document.createElement('span');
+            el.textContent = str == null ? '' : String(str);
+            return el.innerHTML;
+        }
+
+        document.getElementById('btnAtualizarMapa')?.addEventListener('click', carregarMapa);
+
+        carregarMapa();
+        setInterval(carregarMapa, 15000);
+    })();
+}

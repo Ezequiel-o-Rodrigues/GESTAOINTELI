@@ -660,7 +660,18 @@ try {
             basePath: <?= json_encode($base_path) ?>,
             apiBase: <?= json_encode(rtrim(PathConfig::api(), '/') . '/') ?>,
             createOrderUrl: <?= json_encode(PathConfig::modules('caixa/criar_comanda.php')) ?>,
-            openOrdersUrl: <?= json_encode(PathConfig::api('comandas_abertas.php')) ?>
+            openOrdersUrl: <?= json_encode(PathConfig::api('comandas_abertas.php')) ?>,
+            mapaMesasUrl: <?= json_encode(PathConfig::api('mapa_mesas.php')) ?>,
+            novaComandaUrl: <?= json_encode(PathConfig::api('nova_comanda.php')) ?>,
+            usarMapaMesas: <?php
+                $usar_mapa_mesas_caixa = false;
+                try {
+                    $s = $db->prepare("SELECT valor FROM configuracoes_sistema WHERE chave = 'usar_mapa_mesas'");
+                    $s->execute();
+                    $usar_mapa_mesas_caixa = $s->fetchColumn() === '1';
+                } catch (Exception $e) {}
+                echo $usar_mapa_mesas_caixa ? 'true' : 'false';
+            ?>
         });
     }
     </script>   
@@ -942,9 +953,98 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-    <!-- Carregamento do CaixaSystem (com proteção contra duplicação) -->
     <script src="<?= htmlspecialchars(PathConfig::modules('caixa/caixa.js'), ENT_QUOTES, 'UTF-8') ?>?v=<?= time() ?>"></script>
     <script src="<?= htmlspecialchars(PathConfig::modules('caixa/comandas-abertas.js'), ENT_QUOTES, 'UTF-8') ?>?v=<?= filemtime(__DIR__ . '/comandas-abertas.js') ?>"></script>
+
+    <?php if (!empty($usar_mapa_mesas_caixa)): ?>
+    <style>
+        #mapaMesasCaixa { padding: 12px 15px; border-bottom: 1px solid #e0e0e0; background: white; }
+        #mapaMesasCaixa h3 { font-size: 0.9rem; color: #2c3e50; margin-bottom: 8px; }
+        .mapa-canvas-caixa { position: relative; width: 100%; min-height: 300px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; overflow: auto; }
+        .mesa-btn-caixa { position: absolute; width: 68px; height: 68px; border-radius: 8px; border: 2px solid; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; transition: transform .15s; background: white; }
+        .mesa-btn-caixa:hover { transform: scale(1.07); }
+        .mesa-btn-caixa.livre   { border-color: #27ae60; color: #27ae60; }
+        .mesa-btn-caixa.ocupada { border-color: #e74c3c; color: #e74c3c; background: #fef2f2; }
+        .mesa-btn-caixa small { font-size: 0.6rem; font-weight: 400; }
+    </style>
+    <div id="mapaMesasCaixa">
+        <h3><i class="bi bi-grid-3x3-gap"></i> Mapa de Mesas</h3>
+        <div class="mapa-canvas-caixa" id="mapaCanvasCaixa"></div>
+    </div>
+    <script>
+    (function() {
+        const canvas = document.getElementById('mapaCanvasCaixa');
+        const cfg = window.appConfig;
+
+        async function carregarMapaCaixa() {
+            try {
+                const r = await fetch(cfg.mapaMesasUrl);
+                const d = await r.json();
+                if (!d.success) return;
+                canvas.replaceChildren();
+                let maxX = 0, maxY = 0;
+                d.mesas.forEach(m => {
+                    if (m.posicao_x + 86 > maxX) maxX = m.posicao_x + 86;
+                    if (m.posicao_y + 86 > maxY) maxY = m.posicao_y + 86;
+                });
+                canvas.style.minWidth  = Math.max(maxX, 400) + 'px';
+                canvas.style.minHeight = Math.max(maxY, 300) + 'px';
+                d.mesas.forEach(m => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = `mesa-btn-caixa ${m.status_mesa}`;
+                    btn.style.left = m.posicao_x + 'px';
+                    btn.style.top  = m.posicao_y + 'px';
+                    const esc = v => { const s = document.createElement('span'); s.textContent = v ?? ''; return s.innerHTML; };
+                    btn.innerHTML = `<span>${esc(m.numero_mesa)}</span><small>${esc(m.ambiente)}</small>`;
+                    btn.setAttribute('aria-label', `Mesa ${m.numero_mesa} – ${m.status_mesa}`);
+                    btn.addEventListener('click', () => clicarMesaCaixa(m));
+                    canvas.appendChild(btn);
+                });
+            } catch(e) { /* silencioso */ }
+        }
+
+        async function clicarMesaCaixa(mesa) {
+            if (mesa.status_mesa === 'livre') {
+                if (!window.caixaSystem) { alert('Caixa ainda carregando.'); return; }
+                try {
+                    const r = await fetch(cfg.novaComandaUrl, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ mesa_id: mesa.mesa_id })
+                    });
+                    const d = await r.json();
+                    if (!d.success) throw new Error(d.message);
+                    window.caixaSystem.comandaAtual = { id: Number(d.comanda_id) };
+                    window.caixaSystem.itensComanda = [];
+                    window.caixaSystem.totalComanda = 0;
+                    window.caixaSystem.taxaGorjeta  = 0;
+                    window.caixaSystem.totalAPagar  = 0;
+                    window.caixaSystem.atualizarUIComanda();
+                    if (window.comandasAbertasUI) window.comandasAbertasUI.load();
+                    carregarMapaCaixa();
+                } catch(e) { alert(e.message); }
+            } else {
+                // Mesa ocupada: abrir painel de comandas filtrado
+                if (window.comandasAbertasUI) window.comandasAbertasUI.load();
+                const panel = document.getElementById('open-orders-panel');
+                const search = document.getElementById('search-open-orders');
+                if (panel && search) {
+                    search.value = mesa.numero_mesa;
+                    search.dispatchEvent(new Event('input'));
+                    document.getElementById('toggle-open-orders')?.click();
+                }
+            }
+        }
+
+        carregarMapaCaixa();
+        setInterval(carregarMapaCaixa, 15000);
+
+        // Atualizar mapa após finalizar comanda
+        document.addEventListener('comandaFinalizada', carregarMapaCaixa);
+    })();
+    </script>
+    <?php endif; ?>
     
     <script>
     // Event listeners para modal de comprovante

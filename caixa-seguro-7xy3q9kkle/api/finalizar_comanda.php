@@ -127,6 +127,17 @@ try {
 
     $db->commit();
 
+    // Verificar se a mesa ficou livre
+    $mesa_liberada = false;
+    $stmt_mesa = $db->prepare("SELECT mesa_id FROM comandas WHERE id = ?");
+    $stmt_mesa->execute([$comanda_id]);
+    $mesa_id_fechada = $stmt_mesa->fetchColumn();
+    if ($mesa_id_fechada) {
+        $stmt_check = $db->prepare("SELECT COUNT(*) FROM comandas WHERE mesa_id = ? AND status = 'aberta'");
+        $stmt_check->execute([$mesa_id_fechada]);
+        $mesa_liberada = (int) $stmt_check->fetchColumn() === 0;
+    }
+
     // Limpar buffer e enviar JSON
     while (ob_get_level()) ob_end_clean();
     echo json_encode([
@@ -135,7 +146,8 @@ try {
         'valor_total' => $total_comanda,
         'taxa_gorjeta' => $taxa_gorjeta,
         'total_a_pagar' => $total_comanda + $taxa_gorjeta,
-        'comprovante_id' => $comprovante_id
+        'comprovante_id' => $comprovante_id,
+        'mesa_liberada'   => $mesa_liberada
     ], JSON_UNESCAPED_UNICODE);
     exit;
 
