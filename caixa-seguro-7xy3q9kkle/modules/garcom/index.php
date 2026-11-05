@@ -34,11 +34,15 @@ try {
 }
 
 $usar_mapa_mesas = false;
+$erro_config_mapa_mesas = false;
 try {
     $stmt_mapa = $db->prepare("SELECT valor FROM configuracoes_sistema WHERE chave = 'usar_mapa_mesas'");
     $stmt_mapa->execute();
     $usar_mapa_mesas = $stmt_mapa->fetchColumn() === '1';
-} catch (PDOException $e) { /* ignora se migração ainda não foi aplicada */ }
+} catch (PDOException $e) {
+    error_log('Erro ao carregar configuração do mapa de mesas no módulo Garçom: ' . $e->getMessage());
+    $erro_config_mapa_mesas = true;
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -98,12 +102,14 @@ try {
                 <div>
                     <p class="waiter-eyebrow">ATENDIMENTO COOPERATIVO</p>
                     <h2 id="dashboardTitle">Comandas abertas</h2>
-                    <p class="waiter-help"><?= $usar_mapa_mesas
-                        ? 'Para abrir uma nova comanda, selecione uma mesa livre no Mapa de Mesas abaixo.'
-                        : 'Todos os garçons podem visualizar e atender qualquer comanda aberta.'
+                    <p class="waiter-help"><?= $erro_config_mapa_mesas
+                        ? 'Não foi possível carregar a configuração do atendimento. Avise o administrador antes de abrir comandas.'
+                        : ($usar_mapa_mesas
+                            ? 'Para abrir uma nova comanda, selecione uma mesa livre no Mapa de Mesas abaixo.'
+                            : 'Todos os garçons podem visualizar e atender qualquer comanda aberta.')
                     ?></p>
                 </div>
-                <button class="waiter-button waiter-button--primary" type="button" id="openCreateOrder">
+                <button class="waiter-button waiter-button--primary" type="button" id="openCreateOrder" <?= ($usar_mapa_mesas || $erro_config_mapa_mesas) ? 'hidden' : '' ?>>
                     <i class="bi bi-plus-circle" aria-hidden="true"></i> Abrir comanda
                 </button>
             </div>
@@ -264,7 +270,8 @@ try {
             removeItemUrl:<?= json_encode(PathConfig::api('garcom_remover_item.php')) ?>,
             mapaMesasUrl: <?= json_encode(PathConfig::api('mapa_mesas.php')) ?>,
             novaComandaUrl: <?= json_encode(PathConfig::api('nova_comanda.php')) ?>,
-            usarMapaMesas: <?= $usar_mapa_mesas ? 'true' : 'false' ?>
+            usarMapaMesas: <?= $usar_mapa_mesas ? 'true' : 'false' ?>,
+            erroConfigMapaMesas: <?= $erro_config_mapa_mesas ? 'true' : 'false' ?>
         };
     </script>
     <?php if ($usar_mapa_mesas): ?>

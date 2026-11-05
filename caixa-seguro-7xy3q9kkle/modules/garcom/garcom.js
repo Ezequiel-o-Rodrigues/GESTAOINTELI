@@ -379,6 +379,16 @@
 
     newOrderForm.addEventListener('submit', async (event) => {
         event.preventDefault();
+        if (config.erroConfigMapaMesas) {
+            createOrderError.textContent = 'Não foi possível carregar a configuração do atendimento. Avise o administrador antes de abrir comandas.';
+            createOrderError.hidden = false;
+            return;
+        }
+        if (config.usarMapaMesas) {
+            createOrderError.textContent = 'Selecione uma mesa livre no mapa para abrir uma nova comanda.';
+            createOrderError.hidden = false;
+            return;
+        }
         const formData = new FormData(newOrderForm);
         const clienteNome = String(formData.get('cliente_nome') || '').trim();
         const mesaNumero = String(formData.get('mesa_numero') || '').trim();
@@ -492,19 +502,40 @@ if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
         const canvas      = document.getElementById('mapaCanvas');
         const multiDialog = document.getElementById('mesaMultiDialog');
         const multiLista  = document.getElementById('mesaMultiLista');
+        const mapMessage  = document.getElementById('waiterMessage');
         if (!canvas) return;
+
+        function showMapMessage(text, isError) {
+            mapMessage.textContent = text;
+            mapMessage.classList.toggle('is-error', Boolean(isError));
+        }
 
         async function carregarMapa() {
             try {
                 const r = await fetch(cfg.mapaMesasUrl);
                 const d = await r.json();
-                if (!d.success) return;
+                if (!r.ok || !d.success) {
+                    throw new Error(d.message || 'Não foi possível carregar o mapa de mesas.');
+                }
                 renderMapa(d.mesas);
-            } catch (e) { /* silencioso no polling */ }
+            } catch (e) {
+                const error = document.createElement('p');
+                error.className = 'waiter-empty';
+                error.setAttribute('role', 'alert');
+                error.textContent = e.message || 'Não foi possível carregar o mapa de mesas.';
+                canvas.replaceChildren(error);
+            }
         }
 
         function renderMapa(mesas) {
             canvas.replaceChildren();
+            if (mesas.length === 0) {
+                const empty = document.createElement('p');
+                empty.className = 'waiter-empty';
+                empty.textContent = 'Nenhuma mesa ativa cadastrada. Solicite ao administrador o cadastro das mesas.';
+                canvas.appendChild(empty);
+                return;
+            }
             let maxX = 0, maxY = 0;
             mesas.forEach(m => {
                 if (m.posicao_x + 90 > maxX) maxX = m.posicao_x + 90;
@@ -521,7 +552,9 @@ if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
                 btn.style.top  = m.posicao_y + 'px';
                 btn.innerHTML  = `<span>${escapeHtmlMapa(m.numero_mesa)}</span><small>${escapeHtmlMapa(m.ambiente)}</small>`;
                 btn.setAttribute('aria-label', `Mesa ${m.numero_mesa} – ${m.status_mesa}`);
-                btn.addEventListener('click', () => clicarMesa(m));
+                btn.addEventListener('click', () => clicarMesa(m).catch(error =>
+                    showMapMessage(error.message || 'Não foi possível abrir esta mesa.', true)
+                ));
                 canvas.appendChild(btn);
             });
         }
@@ -532,11 +565,16 @@ if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
             } else {
                 const r = await fetch(cfg.ordersUrl);
                 const d = await r.json();
-                if (!d.success) return;
-                const abertas = d.comandas.filter(c => Number(c.mesa_id) === Number(mesa.mesa_id));
+                if (!r.ok || !d.success) {
+                    throw new Error(d.message || 'Não foi possível carregar as comandas abertas.');
+                }
+                const abertas = d.comandas.filter(c =>
+                    Number(c.mesa_id) === Number(mesa.mesa_id)
+                    || (!c.mesa_id && String(c.mesa_numero) === String(mesa.numero_mesa))
+                );
                 if (abertas.length === 0) {
-                    // Estado desatualizado — recarrega o mapa sem abrir nada
                     await carregarMapa();
+                    showMapMessage('Esta mesa está ocupada por outro atendimento e não há uma comanda disponível para sua equipe.', true);
                     return;
                 }
                 if (abertas.length === 1) {
@@ -555,16 +593,18 @@ if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
                     body: JSON.stringify({ mesa_id: mesa.mesa_id })
                 });
                 const d = await r.json();
-                if (!d.success) throw new Error(d.message);
+                if (!r.ok || !d.success) throw new Error(d.message || 'Não foi possível abrir a comanda.');
                 await carregarMapa();
                 const rOrders = await fetch(cfg.ordersUrl);
                 const dOrders = await rOrders.json();
-                if (dOrders.success) {
-                    const nova = dOrders.comandas.find(c => Number(c.id) === Number(d.comanda_id));
-                    if (nova && window._garcomSelectOrder) window._garcomSelectOrder(nova);
+                if (!rOrders.ok || !dOrders.success) {
+                    throw new Error(dOrders.message || 'A comanda foi aberta, mas a lista não pôde ser atualizada.');
                 }
+                const nova = dOrders.comandas.find(c => Number(c.id) === Number(d.comanda_id));
+                if (nova && window._garcomSelectOrder) window._garcomSelectOrder(nova);
             } catch (e) {
-                alert(e.message);
+                showMapMessage(e.message || 'Não foi possível abrir a comanda.', true);
+                await carregarMapa();
             }
         }
 

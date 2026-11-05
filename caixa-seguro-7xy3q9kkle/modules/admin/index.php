@@ -26,7 +26,7 @@ $action = $_POST['action'] ?? '';
 // Handlers: salvar/atualizar usuário, alternar ativo, deletar
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
-        if (in_array($action, ['save_user', 'toggle_user', 'delete_user', 'save_commission'], true)
+        if (in_array($action, ['save_user', 'toggle_user', 'delete_user', 'save_commission', 'toggle_mapa_mesas'], true)
             && !hash_equals($_SESSION['csrf_admin_user'], (string) ($_POST['csrf_token'] ?? ''))) {
             throw new Exception('A sessão do formulário expirou. Atualize a página e tente novamente.');
         }
@@ -783,31 +783,65 @@ function definirTituloGarcom(texto, icone) {
     const salvarMesaUrl  = '<?= PathConfig::api('salvar_mesa.php') ?>';
     const deletarMesaUrl = '<?= PathConfig::api('deletar_mesa.php') ?>';
     const mapaMesasUrl   = '<?= PathConfig::api('mapa_mesas.php') ?>';
+    const csrfToken      = <?= json_encode($_SESSION['csrf_admin_user']) ?>;
 
     async function carregarMesas() {
         const tbody = document.getElementById('mesas-tbody');
         try {
             const r = await fetch(mapaMesasUrl);
             const d = await r.json();
-            if (!d.success) throw new Error(d.message);
+            if (!r.ok || !d.success) throw new Error(d.message || 'Não foi possível carregar as mesas.');
             if (!d.mesas.length) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nenhuma mesa cadastrada.</td></tr>';
+                const row = document.createElement('tr');
+                const cell = document.createElement('td');
+                cell.colSpan = 5;
+                cell.className = 'text-center text-muted';
+                cell.textContent = 'Nenhuma mesa cadastrada.';
+                row.appendChild(cell);
+                tbody.replaceChildren(row);
                 return;
             }
-            tbody.innerHTML = d.mesas.map(m => `
-                <tr>
-                    <td>${escapeHtml(m.numero_mesa)}</td>
-                    <td>${escapeHtml(m.ambiente)}</td>
-                    <td>${m.posicao_x}, ${m.posicao_y}</td>
-                    <td><span class="badge bg-${m.status_mesa === 'ocupada' ? 'danger' : 'success'}">${m.status_mesa}</span></td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary me-1" onclick="abrirModalMesa(${JSON.stringify(m)})"><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="excluirMesa(${m.mesa_id})"><i class="bi bi-trash"></i></button>
-                    </td>
-                </tr>
-            `).join('');
+            tbody.replaceChildren();
+            d.mesas.forEach(mesa => {
+                const row = document.createElement('tr');
+                const number = document.createElement('td');
+                number.textContent = mesa.numero_mesa;
+                const environment = document.createElement('td');
+                environment.textContent = mesa.ambiente;
+                const position = document.createElement('td');
+                position.textContent = `${mesa.posicao_x}, ${mesa.posicao_y}`;
+                const statusCell = document.createElement('td');
+                const status = document.createElement('span');
+                status.className = `badge bg-${mesa.status_mesa === 'ocupada' ? 'danger' : 'success'}`;
+                status.textContent = mesa.status_mesa;
+                statusCell.appendChild(status);
+
+                const actions = document.createElement('td');
+                const edit = document.createElement('button');
+                edit.type = 'button';
+                edit.className = 'btn btn-sm btn-outline-primary me-1';
+                edit.innerHTML = '<i class="bi bi-pencil" aria-hidden="true"></i>';
+                edit.setAttribute('aria-label', `Editar mesa ${mesa.numero_mesa}`);
+                edit.addEventListener('click', () => window.abrirModalMesa(mesa));
+
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.className = 'btn btn-sm btn-outline-danger';
+                remove.innerHTML = '<i class="bi bi-trash" aria-hidden="true"></i>';
+                remove.setAttribute('aria-label', `Excluir mesa ${mesa.numero_mesa}`);
+                remove.addEventListener('click', () => window.excluirMesa(mesa.mesa_id));
+                actions.append(edit, remove);
+                row.append(number, environment, position, statusCell, actions);
+                tbody.appendChild(row);
+            });
         } catch(e) {
-            tbody.innerHTML = `<tr><td colspan="5" class="text-danger">${e.message}</td></tr>`;
+            const row = document.createElement('tr');
+            const cell = document.createElement('td');
+            cell.colSpan = 5;
+            cell.className = 'text-danger';
+            cell.textContent = e.message;
+            row.appendChild(cell);
+            tbody.replaceChildren(row);
         }
     }
 
@@ -835,11 +869,11 @@ function definirTituloGarcom(texto, icone) {
         try {
             const r = await fetch(salvarMesaUrl, {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken},
                 body: JSON.stringify(payload)
             });
             const d = await r.json();
-            if (!d.success) throw new Error(d.message);
+            if (!r.ok || !d.success) throw new Error(d.message || 'Não foi possível salvar a mesa.');
             bootstrap.Modal.getInstance(document.getElementById('mesaModal')).hide();
             carregarMesas();
         } catch(e) {
@@ -853,11 +887,11 @@ function definirTituloGarcom(texto, icone) {
         try {
             const r = await fetch(deletarMesaUrl, {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken},
                 body: JSON.stringify({id})
             });
             const d = await r.json();
-            if (!d.success) throw new Error(d.message);
+            if (!r.ok || !d.success) throw new Error(d.message || 'Não foi possível excluir a mesa.');
             carregarMesas();
         } catch(e) {
             alert(e.message);

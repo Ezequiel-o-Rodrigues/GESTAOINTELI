@@ -24,6 +24,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $database = new Database();
         $db = $database->getConnection();
+
+        $stmtMapa = $db->prepare("SELECT valor FROM configuracoes_sistema WHERE chave = 'usar_mapa_mesas'");
+        $stmtMapa->execute();
+        if ($stmtMapa->fetchColumn() === '1') {
+            http_response_code(409);
+            echo json_encode([
+                'success' => false,
+                'message' => 'O mapa de mesas está ativo. Abra novas comandas selecionando uma mesa livre no mapa.'
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
         
         // Buscar ID do garçom pelo código
         $queryGarcom = "SELECT id, nome, codigo FROM garcons WHERE codigo = :codigo AND ativo = 1";

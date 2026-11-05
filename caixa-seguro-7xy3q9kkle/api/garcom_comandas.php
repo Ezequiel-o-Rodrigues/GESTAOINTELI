@@ -36,6 +36,17 @@ try {
         exit;
     }
 
+    $stmt = $db->prepare("SELECT valor FROM configuracoes_sistema WHERE chave = 'usar_mapa_mesas'");
+    $stmt->execute();
+    if ($stmt->fetchColumn() === '1') {
+        http_response_code(409);
+        echo json_encode([
+            'success' => false,
+            'message' => 'O mapa de mesas está ativo. Abra novas comandas selecionando uma mesa livre no mapa.'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     $clienteNome = isset($data['cliente_nome']) && is_string($data['cliente_nome'])
         ? trim($data['cliente_nome'])
         : '';

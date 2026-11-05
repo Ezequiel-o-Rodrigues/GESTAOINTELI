@@ -654,26 +654,30 @@ try {
         <!-- JavaScript -->
     <script>
           // Passar variáveis PHP para JavaScript - VERIFICAR SE JÁ EXISTE
-    if (typeof window.appConfig === 'undefined') {
-        window.appConfig = Object.assign({}, window.appConfig || {}, {
+    window.appConfig = Object.assign({
             comandaAtualId: null,
             basePath: <?= json_encode($base_path) ?>,
             apiBase: <?= json_encode(rtrim(PathConfig::api(), '/') . '/') ?>,
             createOrderUrl: <?= json_encode(PathConfig::modules('caixa/criar_comanda.php')) ?>,
             openOrdersUrl: <?= json_encode(PathConfig::api('comandas_abertas.php')) ?>,
             mapaMesasUrl: <?= json_encode(PathConfig::api('mapa_mesas.php')) ?>,
-            novaComandaUrl: <?= json_encode(PathConfig::api('nova_comanda.php')) ?>,
-            usarMapaMesas: <?php
-                $usar_mapa_mesas_caixa = false;
-                try {
-                    $s = $db->prepare("SELECT valor FROM configuracoes_sistema WHERE chave = 'usar_mapa_mesas'");
-                    $s->execute();
-                    $usar_mapa_mesas_caixa = $s->fetchColumn() === '1';
-                } catch (Exception $e) {}
-                echo $usar_mapa_mesas_caixa ? 'true' : 'false';
-            ?>
-        });
-    }
+            novaComandaUrl: <?= json_encode(PathConfig::api('nova_comanda.php')) ?>
+        }, window.appConfig || {});
+    window.appConfig.erroConfigMapaMesas = false;
+    window.appConfig.usarMapaMesas = <?php
+        $usar_mapa_mesas_caixa = false;
+        $erro_config_mapa_mesas_caixa = false;
+        try {
+            $s = $db->prepare("SELECT valor FROM configuracoes_sistema WHERE chave = 'usar_mapa_mesas'");
+            $s->execute();
+            $usar_mapa_mesas_caixa = $s->fetchColumn() === '1';
+        } catch (Exception $e) {
+            error_log('Erro ao carregar configuração do mapa de mesas no caixa: ' . $e->getMessage());
+            $erro_config_mapa_mesas_caixa = true;
+        }
+        echo $usar_mapa_mesas_caixa ? 'true' : 'false';
+    ?>;
+    window.appConfig.erroConfigMapaMesas = <?= $erro_config_mapa_mesas_caixa ? 'true' : 'false' ?>;
     </script>   
 
         <!-- Modal para definir se a nova comanda será aberta pelo caixa ou por um garçom. -->
@@ -886,8 +890,24 @@ try {
                 window.comandasAbertasUI.close();
             }
 
+            if (window.appConfig && window.appConfig.erroConfigMapaMesas) {
+                notificarCaixa('Não foi possível carregar a configuração do atendimento. Avise o administrador antes de abrir comandas.', 'error');
+                return;
+            }
+
             if (window.caixaSystem && window.caixaSystem.comandaAtual) {
                 if (!confirm('A comanda atual continuará aberta. Deseja iniciar outra comanda?')) return;
+            }
+
+            if (window.appConfig && window.appConfig.usarMapaMesas) {
+                const mapa = document.getElementById('mapaMesasCaixa');
+                if (!mapa) {
+                    notificarCaixa('O mapa de mesas está ativo, mas não foi possível carregá-lo. Atualize a página ou avise o administrador.', 'error');
+                    return;
+                }
+                mapa.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                notificarCaixa('Selecione uma mesa livre no mapa para abrir uma comanda.', 'info');
+                return;
             }
 
             abrirModalGarcom();
@@ -980,8 +1000,17 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 const r = await fetch(cfg.mapaMesasUrl);
                 const d = await r.json();
-                if (!d.success) return;
+                if (!r.ok || !d.success) {
+                    throw new Error(d.message || 'Não foi possível carregar o mapa de mesas.');
+                }
                 canvas.replaceChildren();
+                if (d.mesas.length === 0) {
+                    const empty = document.createElement('p');
+                    empty.setAttribute('role', 'status');
+                    empty.textContent = 'Nenhuma mesa ativa cadastrada.';
+                    canvas.appendChild(empty);
+                    return;
+                }
                 let maxX = 0, maxY = 0;
                 d.mesas.forEach(m => {
                     if (m.posicao_x + 86 > maxX) maxX = m.posicao_x + 86;
@@ -998,10 +1027,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     const esc = v => { const s = document.createElement('span'); s.textContent = v ?? ''; return s.innerHTML; };
                     btn.innerHTML = `<span>${esc(m.numero_mesa)}</span><small>${esc(m.ambiente)}</small>`;
                     btn.setAttribute('aria-label', `Mesa ${m.numero_mesa} – ${m.status_mesa}`);
-                    btn.addEventListener('click', () => clicarMesaCaixa(m));
+                    btn.addEventListener('click', () => clicarMesaCaixa(m).catch(error =>
+                        notificarCaixa(error.message || 'Não foi possível abrir esta mesa.', 'error')
+                    ));
                     canvas.appendChild(btn);
                 });
-            } catch(e) { /* silencioso */ }
+            } catch(e) {
+                const error = document.createElement('p');
+                error.setAttribute('role', 'alert');
+                error.textContent = e.message || 'Não foi possível carregar o mapa de mesas.';
+                canvas.replaceChildren(error);
+            }
         }
 
         async function clicarMesaCaixa(mesa) {
@@ -1014,7 +1050,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         body: JSON.stringify({ mesa_id: mesa.mesa_id })
                     });
                     const d = await r.json();
-                    if (!d.success) throw new Error(d.message);
+                    if (!r.ok || !d.success) throw new Error(d.message || 'Não foi possível abrir a comanda.');
                     window.caixaSystem.comandaAtual = { id: Number(d.comanda_id) };
                     window.caixaSystem.itensComanda = [];
                     window.caixaSystem.totalComanda = 0;
@@ -1026,13 +1062,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 } catch(e) { alert(e.message); }
             } else {
                 // Mesa ocupada: abrir painel de comandas filtrado
-                if (window.comandasAbertasUI) window.comandasAbertasUI.load();
                 const panel = document.getElementById('open-orders-panel');
                 const search = document.getElementById('search-open-orders');
                 if (panel && search) {
+                    if (window.comandasAbertasUI) await window.comandasAbertasUI.load();
                     search.value = mesa.numero_mesa;
                     search.dispatchEvent(new Event('input'));
-                    document.getElementById('toggle-open-orders')?.click();
+                    if (panel.getAttribute('aria-hidden') === 'true') {
+                        document.getElementById('toggle-open-orders')?.click();
+                    }
                 }
             }
         }
