@@ -65,7 +65,6 @@ try {
     <title>Caixa - Sistema Restaurante</title>
     <link rel="stylesheet" href="<?= htmlspecialchars(PathConfig::url('css/style.css'), ENT_QUOTES, 'UTF-8') ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="<?= htmlspecialchars(PathConfig::url('css/support-widget.css'), ENT_QUOTES, 'UTF-8') ?>?v=1">
     <style>
         * {
             margin: 0;
@@ -1017,7 +1016,6 @@ setTimeout(function() {
     }
 }, 1000);
 </script>
-<?php require __DIR__ . '/../../includes/support-widget.php'; ?>
     <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
     <script src="<?= htmlspecialchars(PathConfig::url('js/react-app.js'), ENT_QUOTES, 'UTF-8') ?>?v=<?= filemtime(__DIR__ . '/../../js/react-app.js') ?>"></script>

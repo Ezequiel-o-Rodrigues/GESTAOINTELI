@@ -25,8 +25,8 @@ $urlGerenciarCardapio = PathConfig::modules('cardapio/');
     <!-- ✅ Bootstrap via CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="<?= htmlspecialchars(PathConfig::url('css/support-widget.css'), ENT_QUOTES, 'UTF-8') ?>?v=1">
     <?php if ($paginaAjuda): ?>
+        <link rel="stylesheet" href="<?= htmlspecialchars(PathConfig::url('css/support-widget.css'), ENT_QUOTES, 'UTF-8') ?>?v=1">
         <link rel="stylesheet" href="<?= htmlspecialchars(PathConfig::modules('ajuda/ajuda.css'), ENT_QUOTES, 'UTF-8') ?>?v=1">
     <?php endif; ?>
     <!-- ✅ CSS personalizado - se existir na raiz -->

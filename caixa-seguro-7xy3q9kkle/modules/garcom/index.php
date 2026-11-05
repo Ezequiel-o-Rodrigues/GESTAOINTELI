@@ -42,7 +42,6 @@ try {
     <title>Garçom | GestãoInteli</title>
     <link rel="stylesheet" href="<?= htmlspecialchars(PathConfig::modules('garcom/garcom.css'), ENT_QUOTES, 'UTF-8') ?>?v=<?= filemtime(__DIR__ . '/garcom.css') ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="<?= htmlspecialchars(PathConfig::url('css/support-widget.css'), ENT_QUOTES, 'UTF-8') ?>?v=1">
 </head>
 <body class="waiter-app">
     <header class="waiter-header">
@@ -256,6 +255,5 @@ try {
         };
     </script>
     <script src="<?= htmlspecialchars(PathConfig::modules('garcom/garcom.js'), ENT_QUOTES, 'UTF-8') ?>?v=<?= filemtime(__DIR__ . '/garcom.js') ?>"></script>
-    <?php require __DIR__ . '/../../includes/support-widget.php'; ?>
 </body>
 </html>

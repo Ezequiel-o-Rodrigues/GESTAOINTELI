@@ -4,8 +4,6 @@ $usuarioLogado = isset($_SESSION['usuario_logado']) && $_SESSION['usuario_logado
 ?>
     </main>
 
-    <?php require __DIR__ . '/support-widget.php'; ?>
-
     <footer class="footer">
         <div class="dashboard-footer-inner">
             <p class="mb-0">&copy; <?= date('Y') ?> Sistema Restaurante - Espetinho do Júnior</p>
