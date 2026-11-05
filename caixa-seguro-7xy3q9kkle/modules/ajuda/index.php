@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../config/paths.php';
 require_once __DIR__ . '/../../includes/permissions.php';
 requireModuleAccess('ajuda');
+require_once __DIR__ . '/../../includes/functions.php';
 
 $tituloPagina = 'Central de ajuda | Sistema Restaurante';
 require_once __DIR__ . '/../../includes/header.php';
