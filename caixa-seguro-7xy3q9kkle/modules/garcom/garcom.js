@@ -505,6 +505,9 @@ if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
         const mapMessage  = document.getElementById('waiterMessage');
         if (!canvas) return;
 
+        // Garantir que o dialog inicia fechado independente de cache
+        if (multiDialog) multiDialog.hidden = true;
+
         function showMapMessage(text, isError) {
             mapMessage.textContent = text;
             mapMessage.classList.toggle('is-error', Boolean(isError));
@@ -571,11 +574,13 @@ if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
                 }
                 const abertas = d.comandas.filter(c =>
                     Number(c.mesa_id) === Number(mesa.mesa_id)
-                    || (!c.mesa_id && String(c.mesa_numero) === String(mesa.numero_mesa))
+                    || (Number(c.mesa_id) === 0 || !c.mesa_id)
+                        && String(c.mesa_numero).trim() === String(mesa.numero_mesa).trim()
                 );
                 if (abertas.length === 0) {
+                    // Nenhuma comanda encontrada — fecha dialog e recarrega mapa
+                    multiDialog.hidden = true;
                     await carregarMapa();
-                    showMapMessage('Esta mesa está ocupada por outro atendimento e não há uma comanda disponível para sua equipe.', true);
                     return;
                 }
                 if (abertas.length === 1) {
@@ -614,6 +619,7 @@ if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
         }
 
         function mostrarMultiComanda(abertas) {
+            if (!abertas.length) return;
             multiLista.replaceChildren();
             abertas.forEach(c => {
                 const btn = document.createElement('button');

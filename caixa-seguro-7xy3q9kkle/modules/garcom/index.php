@@ -284,6 +284,7 @@ try {
         .mesa-btn.ocupada { border-color: #dc2626; color: #dc2626; background: #fef2f2; }
         .mesa-btn small { font-size: 0.65rem; font-weight: 400; }
         #mesaMultiDialog { background: rgba(0,0,0,.5); position: fixed; inset: 0; z-index: 999; display: flex; align-items: center; justify-content: center; }
+        #mesaMultiDialog[hidden] { display: none; }
         #mesaMultiDialog .inner { background: white; border-radius: 12px; padding: 24px; min-width: 280px; max-width: 360px; }
     </style>
     <section id="mapaMesas" aria-label="Mapa de mesas">
