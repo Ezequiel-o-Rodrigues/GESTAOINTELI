@@ -60,29 +60,21 @@ try {
             throw new RuntimeException('Mesa não encontrada ou inativa.');
         }
 
-        $check = $db->prepare(
-            "SELECT COUNT(*) FROM comandas
-             WHERE status = 'aberta'
-               AND (mesa_id = ? OR (
-                    mesa_id IS NULL
-                    AND CONVERT(mesa_numero USING utf8mb4) COLLATE utf8mb4_unicode_ci
-                        = CONVERT(? USING utf8mb4) COLLATE utf8mb4_unicode_ci
-               ))"
-        );
-        $check->execute([$mesa_id, $mesa['numero']]);
-        if ((int) $check->fetchColumn() > 0) {
-            $responseStatus = 409;
-            throw new RuntimeException('Esta mesa já possui uma comanda aberta. Atualize o mapa e selecione a comanda existente.');
-        }
         $mesa_numero = $mesa['numero'];
     }
 
+    $cliente_nome = isset($data['cliente_nome']) ? trim((string) $data['cliente_nome']) : '';
+    if ($usarMapaMesas && $cliente_nome === '') {
+        $responseStatus = 400;
+        throw new RuntimeException('Informe o nome do cliente para identificar a comanda.');
+    }
+
     $stmt = $db->prepare(
-        "INSERT INTO comandas (garcom_usuario_id, mesa_id, mesa_numero, status, valor_total, taxa_gorjeta, created_at, updated_at)
-         VALUES (?, ?, ?, 'aberta', 0, 0, NOW(), NOW())"
+        "INSERT INTO comandas (garcom_usuario_id, mesa_id, mesa_numero, cliente_nome, status, valor_total, taxa_gorjeta, created_at, updated_at)
+         VALUES (?, ?, ?, ?, 'aberta', 0, 0, NOW(), NOW())"
     );
     $garcomUsuarioId = currentUserRole() === 'garcom' ? (int) $_SESSION['usuario_id'] : null;
-    $stmt->execute([$garcomUsuarioId, $mesa_id, $mesa_numero]);
+    $stmt->execute([$garcomUsuarioId, $mesa_id, $mesa_numero, $cliente_nome ?: null]);
     $comandaId = (int) $db->lastInsertId();
     $db->commit();
 

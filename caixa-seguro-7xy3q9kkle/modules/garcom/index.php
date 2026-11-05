@@ -286,6 +286,9 @@ try {
         #mesaMultiDialog { background: rgba(0,0,0,.5); position: fixed; inset: 0; z-index: 999; display: flex; align-items: center; justify-content: center; }
         #mesaMultiDialog[hidden] { display: none; }
         #mesaMultiDialog .inner { background: white; border-radius: 12px; padding: 24px; min-width: 280px; max-width: 360px; }
+        #mesaNomeDialog { background: rgba(0,0,0,.5); position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        #mesaNomeDialog[hidden] { display: none; }
+        #mesaNomeDialog .inner { background: white; border-radius: 12px; padding: 24px; min-width: 280px; max-width: 360px; }
     </style>
     <section id="mapaMesas" aria-label="Mapa de mesas">
         <div class="waiter-dashboard-heading">
@@ -304,6 +307,21 @@ try {
             <h3 id="mesaMultiTitle" style="margin-bottom:12px">Selecione a comanda</h3>
             <div id="mesaMultiLista"></div>
             <button class="waiter-button waiter-button--secondary" style="margin-top:12px;width:100%" onclick="document.getElementById('mesaMultiDialog').hidden=true">Cancelar</button>
+        </div>
+    </div>
+    <div id="mesaNomeDialog" hidden role="dialog" aria-modal="true" aria-labelledby="mesaNomeTitle">
+        <div class="inner">
+            <h3 id="mesaNomeTitle" style="margin-bottom:12px">Nova comanda</h3>
+            <p style="margin-bottom:12px;font-size:.9rem;color:#64748b">Informe o nome do cliente para identificar a comanda nesta mesa.</p>
+            <label style="display:block;margin-bottom:12px">
+                <span style="display:block;margin-bottom:4px;font-size:.85rem;font-weight:600">Nome do cliente</span>
+                <input id="mesaNomeInput" type="text" maxlength="120" autocomplete="off" placeholder="Ex.: João" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:1rem">
+            </label>
+            <p id="mesaNomeErro" style="color:#dc2626;font-size:.85rem;margin-bottom:8px" hidden></p>
+            <div style="display:flex;gap:8px">
+                <button id="mesaNomeCancelar" class="waiter-button waiter-button--secondary" style="flex:1">Cancelar</button>
+                <button id="mesaNomeConfirmar" class="waiter-button waiter-button--primary" style="flex:1">Abrir comanda</button>
+            </div>
         </div>
     </div>
     <?php endif; ?>

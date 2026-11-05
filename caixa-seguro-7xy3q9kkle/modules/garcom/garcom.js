@@ -506,6 +506,41 @@ if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
 
         // Garantir que o dialog inicia fechado independente de cache
         if (multiDialog) multiDialog.hidden = true;
+        const nomeDialog  = document.getElementById('mesaNomeDialog');
+        const nomeInput   = document.getElementById('mesaNomeInput');
+        const nomeErro    = document.getElementById('mesaNomeErro');
+        const nomeCancelar  = document.getElementById('mesaNomeCancelar');
+        const nomeConfirmar = document.getElementById('mesaNomeConfirmar');
+        if (nomeDialog) nomeDialog.hidden = true;
+
+        function pedirNomeEAbrir(mesa) {
+            nomeInput.value = '';
+            nomeErro.hidden = true;
+            nomeDialog.hidden = false;
+            nomeInput.focus();
+
+            function confirmar() {
+                const nome = nomeInput.value.trim();
+                if (!nome) {
+                    nomeErro.textContent = 'Informe o nome do cliente.';
+                    nomeErro.hidden = false;
+                    nomeInput.focus();
+                    return;
+                }
+                cleanup();
+                abrirComandaMesa(mesa, nome);
+            }
+            function cancelar() { cleanup(); nomeDialog.hidden = true; }
+            function cleanup() {
+                nomeConfirmar.removeEventListener('click', confirmar);
+                nomeCancelar.removeEventListener('click', cancelar);
+                nomeInput.removeEventListener('keydown', onKey);
+            }
+            function onKey(e) { if (e.key === 'Enter') { e.preventDefault(); confirmar(); } }
+            nomeConfirmar.addEventListener('click', confirmar);
+            nomeCancelar.addEventListener('click', cancelar);
+            nomeInput.addEventListener('keydown', onKey);
+        }
 
         function showMapMessage(text, isError) {
             mapMessage.textContent = text;
@@ -564,7 +599,7 @@ if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
 
         async function clicarMesa(mesa) {
             if (mesa.status_mesa === 'livre') {
-                await abrirComandaMesa(mesa);
+                pedirNomeEAbrir(mesa);
             } else {
                 const r = await fetch(cfg.ordersUrl);
                 const d = await r.json();
@@ -585,12 +620,12 @@ if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
             }
         }
 
-        async function abrirComandaMesa(mesa) {
+        async function abrirComandaMesa(mesa, clienteNome) {
             try {
                 const r = await fetch(cfg.novaComandaUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mesa_id: mesa.mesa_id })
+                    body: JSON.stringify({ mesa_id: mesa.mesa_id, cliente_nome: clienteNome })
                 });
                 const d = await r.json();
                 if (!r.ok || !d.success) throw new Error(d.message || 'Não foi possível abrir a comanda.');
@@ -635,7 +670,7 @@ if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
                 btnNova.textContent = '+ Nova comanda nesta mesa';
                 btnNova.addEventListener('click', () => {
                     multiDialog.hidden = true;
-                    abrirComandaMesa(mesa);
+                    pedirNomeEAbrir(mesa);
                 });
                 multiLista.append(sep, btnNova);
             }
