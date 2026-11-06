@@ -18,6 +18,9 @@ try {
             m.ambiente,
             m.posicao_x,
             m.posicao_y,
+            COALESCE(m.formato, 'quadrada')  AS formato,
+            COALESCE(m.largura, 60)          AS largura,
+            COALESCE(m.altura,  60)          AS altura,
             IF(COUNT(c.id) > 0, 'ocupada', 'livre') AS status_mesa,
             COUNT(c.id)   AS qtd_comandas_abertas
          FROM mesas m
@@ -29,7 +32,7 @@ try {
            ))
           AND c.status = 'aberta'
          WHERE m.ativo = 1
-         GROUP BY m.id, m.numero, m.ambiente, m.posicao_x, m.posicao_y
+         GROUP BY m.id, m.numero, m.ambiente, m.posicao_x, m.posicao_y, m.formato, m.largura, m.altura
          ORDER BY m.ambiente, m.numero"
     );
 

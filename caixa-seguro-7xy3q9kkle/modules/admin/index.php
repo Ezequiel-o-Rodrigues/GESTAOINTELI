@@ -555,6 +555,7 @@ require_once '../../includes/header.php';
 <!-- Bootstrap JS (bundle com Popper) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="<?= PathConfig::modules('admin/') ?>admin.js?v=<?= filemtime(__DIR__ . '/admin.js') ?>"></script>
+<link rel="stylesheet" href="<?= PathConfig::modules('admin/') ?>layout-editor.css?v=<?= filemtime(__DIR__ . '/layout-editor.css') ?>">
 
 <!-- Fetch and render performance dos garçons -->
 <script>
@@ -693,47 +694,59 @@ function definirTituloGarcom(texto, icone) {
 </script>
 
 
-<!-- Card: Mapa de Mesas -->
+<!-- Card: Editor de Layout do Salão -->
 <div class="card mb-4">
-    <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <div>
-                <h5 class="card-title mb-0"><i class="bi bi-grid-3x3-gap" aria-hidden="true"></i> Mapa de Mesas</h5>
-                <p class="text-muted small mb-0">Gerencie as mesas do salão e ative o mapa visual nos módulos Garçom e Caixa.</p>
-            </div>
-            <form method="POST" class="d-flex align-items-center gap-2">
+    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2 py-3">
+        <div>
+            <h5 class="card-title mb-1"><i class="bi bi-grid-3x3-gap" aria-hidden="true"></i> Editor de Layout do Salão</h5>
+            <p class="text-muted small mb-0">Arraste as mesas para posicioná-las. Clique em uma mesa para editar. Salve ao terminar.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <form method="POST" class="d-flex align-items-center gap-2 mb-0">
                 <input type="hidden" name="action" value="toggle_mapa_mesas">
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_admin_user'], ENT_QUOTES, 'UTF-8') ?>">
                 <div class="form-check form-switch mb-0">
                     <input class="form-check-input" type="checkbox" role="switch" id="usar_mapa_mesas"
                            name="usar_mapa_mesas" value="1" <?= $usar_mapa_mesas ? 'checked' : '' ?>
                            onchange="this.form.submit()">
-                    <label class="form-check-label" for="usar_mapa_mesas">
+                    <label class="form-check-label small" for="usar_mapa_mesas">
                         <?= $usar_mapa_mesas ? 'Mapa ativado' : 'Mapa desativado' ?>
                     </label>
                 </div>
             </form>
-        </div>
-
-        <div class="d-flex justify-content-end mb-2">
-            <button class="btn btn-primary btn-sm" onclick="abrirModalMesa(null)">
+            <button id="btnNovaMesaEditor" class="btn btn-primary btn-sm">
                 <i class="bi bi-plus-circle" aria-hidden="true"></i> Nova mesa
             </button>
+            <button id="btnSalvarLayout" class="btn btn-success btn-sm">
+                <i class="bi bi-floppy" aria-hidden="true"></i> Salvar layout
+            </button>
         </div>
-
-        <div class="table-responsive">
-            <table class="table table-sm align-middle" id="tabelaMesas">
+    </div>
+    <div class="card-body p-0">
+        <!-- Toolbar canvas -->
+        <div class="le-toolbar">
+            <div id="layoutAmbienteTabs" class="le-tabs" role="tablist" aria-label="Ambientes"></div>
+            <div class="le-zoom-controls">
+                <button id="btnZoomOut" class="le-zoom-btn" title="Diminuir zoom" aria-label="Diminuir zoom"><i class="bi bi-dash"></i></button>
+                <button id="btnZoomReset" class="le-zoom-btn" title="Resetar zoom" aria-label="Resetar zoom"><i class="bi bi-aspect-ratio"></i></button>
+                <button id="btnZoomIn" class="le-zoom-btn" title="Aumentar zoom" aria-label="Aumentar zoom"><i class="bi bi-plus"></i></button>
+            </div>
+            <span id="layoutStatus" class="layout-status layout-status--info" aria-live="polite"></span>
+        </div>
+        <!-- Canvas -->
+        <div id="layoutCanvasWrap" class="le-canvas-wrap" style="touch-action:none">
+            <div id="layoutCanvas" class="le-canvas le-grid"></div>
+        </div>
+        <!-- Tabela lista -->
+        <div class="table-responsive px-3 pb-3">
+            <table class="table table-sm align-middle mt-3">
                 <thead>
                     <tr>
-                        <th>Número</th>
-                        <th>Ambiente</th>
-                        <th>Posição (X, Y)</th>
-                        <th>Status</th>
-                        <th>Ações</th>
+                        <th>Número</th><th>Ambiente</th><th>Formato</th><th>Posição (X,Y)</th><th>Status</th><th>Ações</th>
                     </tr>
                 </thead>
                 <tbody id="mesas-tbody">
-                    <tr><td colspan="5" class="text-center text-muted">Carregando...</td></tr>
+                    <tr><td colspan="6" class="text-center text-muted">Carregando...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -758,6 +771,24 @@ function definirTituloGarcom(texto, icone) {
                     <label for="mesa_ambiente" class="form-label">Ambiente</label>
                     <input type="text" class="form-control" id="mesa_ambiente" value="Salão Principal" maxlength="50">
                 </div>
+                <div class="mb-3">
+                    <label for="mesa_formato" class="form-label">Formato</label>
+                    <select class="form-select" id="mesa_formato">
+                        <option value="quadrada">Quadrada</option>
+                        <option value="redonda">Redonda</option>
+                        <option value="retangular">Retangular</option>
+                    </select>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col">
+                        <label for="mesa_largura" class="form-label">Largura (px)</label>
+                        <input type="number" class="form-control" id="mesa_largura" value="60" min="40" max="200">
+                    </div>
+                    <div class="col">
+                        <label for="mesa_altura" class="form-label">Altura (px)</label>
+                        <input type="number" class="form-control" id="mesa_altura" value="60" min="40" max="200">
+                    </div>
+                </div>
                 <div class="row g-2">
                     <div class="col">
                         <label for="mesa_x" class="form-label">Posição X</label>
@@ -779,127 +810,14 @@ function definirTituloGarcom(texto, icone) {
 </div>
 
 <script>
-(function() {
-    const salvarMesaUrl  = '<?= PathConfig::api('salvar_mesa.php') ?>';
-    const deletarMesaUrl = '<?= PathConfig::api('deletar_mesa.php') ?>';
-    const mapaMesasUrl   = '<?= PathConfig::api('mapa_mesas.php') ?>';
-    const csrfToken      = <?= json_encode($_SESSION['csrf_admin_user']) ?>;
-
-    async function carregarMesas() {
-        const tbody = document.getElementById('mesas-tbody');
-        try {
-            const r = await fetch(mapaMesasUrl);
-            const d = await r.json();
-            if (!r.ok || !d.success) throw new Error(d.message || 'Não foi possível carregar as mesas.');
-            if (!d.mesas.length) {
-                const row = document.createElement('tr');
-                const cell = document.createElement('td');
-                cell.colSpan = 5;
-                cell.className = 'text-center text-muted';
-                cell.textContent = 'Nenhuma mesa cadastrada.';
-                row.appendChild(cell);
-                tbody.replaceChildren(row);
-                return;
-            }
-            tbody.replaceChildren();
-            d.mesas.forEach(mesa => {
-                const row = document.createElement('tr');
-                const number = document.createElement('td');
-                number.textContent = mesa.numero_mesa;
-                const environment = document.createElement('td');
-                environment.textContent = mesa.ambiente;
-                const position = document.createElement('td');
-                position.textContent = `${mesa.posicao_x}, ${mesa.posicao_y}`;
-                const statusCell = document.createElement('td');
-                const status = document.createElement('span');
-                status.className = `badge bg-${mesa.status_mesa === 'ocupada' ? 'danger' : 'success'}`;
-                status.textContent = mesa.status_mesa;
-                statusCell.appendChild(status);
-
-                const actions = document.createElement('td');
-                const edit = document.createElement('button');
-                edit.type = 'button';
-                edit.className = 'btn btn-sm btn-outline-primary me-1';
-                edit.innerHTML = '<i class="bi bi-pencil" aria-hidden="true"></i>';
-                edit.setAttribute('aria-label', `Editar mesa ${mesa.numero_mesa}`);
-                edit.addEventListener('click', () => window.abrirModalMesa(mesa));
-
-                const remove = document.createElement('button');
-                remove.type = 'button';
-                remove.className = 'btn btn-sm btn-outline-danger';
-                remove.innerHTML = '<i class="bi bi-trash" aria-hidden="true"></i>';
-                remove.setAttribute('aria-label', `Excluir mesa ${mesa.numero_mesa}`);
-                remove.addEventListener('click', () => window.excluirMesa(mesa.mesa_id));
-                actions.append(edit, remove);
-                row.append(number, environment, position, statusCell, actions);
-                tbody.appendChild(row);
-            });
-        } catch(e) {
-            const row = document.createElement('tr');
-            const cell = document.createElement('td');
-            cell.colSpan = 5;
-            cell.className = 'text-danger';
-            cell.textContent = e.message;
-            row.appendChild(cell);
-            tbody.replaceChildren(row);
-        }
-    }
-
-    window.abrirModalMesa = function(mesa) {
-        document.getElementById('mesa_id').value      = mesa ? mesa.mesa_id : '';
-        document.getElementById('mesa_numero').value  = mesa ? mesa.numero_mesa : '';
-        document.getElementById('mesa_ambiente').value = mesa ? mesa.ambiente : 'Salão Principal';
-        document.getElementById('mesa_x').value       = mesa ? mesa.posicao_x : 0;
-        document.getElementById('mesa_y').value       = mesa ? mesa.posicao_y : 0;
-        document.getElementById('mesa_erro').hidden   = true;
-        new bootstrap.Modal(document.getElementById('mesaModal')).show();
-    };
-
-    window.salvarMesa = async function() {
-        const erro = document.getElementById('mesa_erro');
-        erro.hidden = true;
-        const payload = {
-            id:         parseInt(document.getElementById('mesa_id').value) || null,
-            numero:     document.getElementById('mesa_numero').value.trim(),
-            ambiente:   document.getElementById('mesa_ambiente').value.trim() || 'Salão Principal',
-            posicao_x:  parseInt(document.getElementById('mesa_x').value) || 0,
-            posicao_y:  parseInt(document.getElementById('mesa_y').value) || 0,
-            ativo:      1
-        };
-        try {
-            const r = await fetch(salvarMesaUrl, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken},
-                body: JSON.stringify(payload)
-            });
-            const d = await r.json();
-            if (!r.ok || !d.success) throw new Error(d.message || 'Não foi possível salvar a mesa.');
-            bootstrap.Modal.getInstance(document.getElementById('mesaModal')).hide();
-            carregarMesas();
-        } catch(e) {
-            erro.textContent = e.message;
-            erro.hidden = false;
-        }
-    };
-
-    window.excluirMesa = async function(id) {
-        if (!confirm('Excluir esta mesa? O histórico de comandas será preservado.')) return;
-        try {
-            const r = await fetch(deletarMesaUrl, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken},
-                body: JSON.stringify({id})
-            });
-            const d = await r.json();
-            if (!r.ok || !d.success) throw new Error(d.message || 'Não foi possível excluir a mesa.');
-            carregarMesas();
-        } catch(e) {
-            alert(e.message);
-        }
-    };
-
-    carregarMesas();
-})();
+window.layoutEditorConfig = {
+    mapaMesasUrl:  '<?= PathConfig::api('mapa_mesas.php') ?>',
+    salvarMesaUrl: '<?= PathConfig::api('salvar_mesa.php') ?>',
+    deletarMesaUrl:'<?= PathConfig::api('deletar_mesa.php') ?>',
+    salvarLayoutUrl:'<?= PathConfig::api('salvar_layout.php') ?>',
+    csrfToken: <?= json_encode($_SESSION['csrf_admin_user']) ?>
+};
 </script>
+<script src="<?= PathConfig::modules('admin/') ?>layout-editor.js?v=<?= filemtime(__DIR__ . '/layout-editor.js') ?>"></script>
 
 <?php require_once '../../includes/footer.php'; ?>

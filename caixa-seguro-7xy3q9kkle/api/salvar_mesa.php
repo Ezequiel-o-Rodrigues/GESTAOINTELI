@@ -46,6 +46,10 @@ try {
     $posicaoY = is_int($posicaoYInput) || is_string($posicaoYInput)
         ? filter_var($posicaoYInput, FILTER_VALIDATE_INT)
         : false;
+    $formatosValidos = ['quadrada', 'redonda', 'retangular'];
+    $formato = in_array($data['formato'] ?? '', $formatosValidos, true) ? $data['formato'] : 'quadrada';
+    $largura = max(40, min(200, (int) ($data['largura'] ?? 60)));
+    $altura  = max(40, min(200, (int) ($data['altura']  ?? 60)));
     $ativoInput = $data['ativo'] ?? 1;
     $ativo = in_array($ativoInput, [0, 1, '0', '1', false, true], true)
         ? (int) (bool) $ativoInput
@@ -91,15 +95,15 @@ try {
         }
 
         $stmt = $db->prepare(
-            "UPDATE mesas SET numero = ?, ambiente = ?, posicao_x = ?, posicao_y = ?, ativo = ? WHERE id = ?"
+            "UPDATE mesas SET numero = ?, ambiente = ?, posicao_x = ?, posicao_y = ?, formato = ?, largura = ?, altura = ?, ativo = ? WHERE id = ?"
         );
-        $stmt->execute([$numero, $ambiente, $posicaoX, $posicaoY, $ativo, $id]);
+        $stmt->execute([$numero, $ambiente, $posicaoX, $posicaoY, $formato, $largura, $altura, $ativo, $id]);
         $mesaId = (int) $id;
     } else {
         $stmt = $db->prepare(
-            "INSERT INTO mesas (numero, ambiente, posicao_x, posicao_y, ativo) VALUES (?, ?, ?, ?, ?)"
+            "INSERT INTO mesas (numero, ambiente, posicao_x, posicao_y, formato, largura, altura, ativo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
         );
-        $stmt->execute([$numero, $ambiente, $posicaoX, $posicaoY, $ativo]);
+        $stmt->execute([$numero, $ambiente, $posicaoX, $posicaoY, $formato, $largura, $altura, $ativo]);
         $mesaId = (int) $db->lastInsertId();
     }
 
