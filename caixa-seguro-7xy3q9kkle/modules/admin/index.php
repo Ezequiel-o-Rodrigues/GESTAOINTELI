@@ -726,6 +726,21 @@ function definirTituloGarcom(texto, icone) {
         <!-- Toolbar canvas -->
         <div class="le-toolbar">
             <div id="layoutAmbienteTabs" class="le-tabs" role="tablist" aria-label="Ambientes"></div>
+            <div class="le-tool-group" role="group" aria-label="Ferramentas">
+                <button class="le-tool-btn le-tool--active" data-tool="select" title="Selecionar / Mover" aria-label="Selecionar">
+                    <i class="bi bi-cursor"></i>
+                </button>
+                <button class="le-tool-btn" data-tool="linha" title="Desenhar linha / divisória" aria-label="Linha">
+                    <i class="bi bi-slash-lg"></i>
+                </button>
+                <button class="le-tool-btn" data-tool="texto" title="Adicionar texto / rótulo" aria-label="Texto">
+                    <i class="bi bi-fonts"></i>
+                </button>
+                <label class="le-color-label" title="Cor do elemento">
+                    <i class="bi bi-palette"></i>
+                    <input type="color" id="leCorPicker" value="#475569" aria-label="Cor">
+                </label>
+            </div>
             <div class="le-zoom-controls">
                 <button id="btnZoomOut" class="le-zoom-btn" title="Diminuir zoom" aria-label="Diminuir zoom"><i class="bi bi-dash"></i></button>
                 <button id="btnZoomReset" class="le-zoom-btn" title="Resetar zoom" aria-label="Resetar zoom"><i class="bi bi-aspect-ratio"></i></button>
@@ -736,6 +751,8 @@ function definirTituloGarcom(texto, icone) {
         <!-- Canvas -->
         <div id="layoutCanvasWrap" class="le-canvas-wrap" style="touch-action:none">
             <div id="layoutCanvas" class="le-canvas le-grid"></div>
+            <svg id="layoutSvg" class="le-svg" xmlns="http://www.w3.org/2000/svg"
+                 width="1400" height="900" aria-hidden="true"></svg>
         </div>
         <!-- Tabela lista -->
         <div class="table-responsive px-3 pb-3">

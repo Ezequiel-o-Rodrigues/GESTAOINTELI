@@ -36,9 +36,18 @@ try {
          ORDER BY m.ambiente, m.numero"
     );
 
+    $mesas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $decoracoes = [];
+    try {
+        $stmtDec = $db->query('SELECT id, ambiente, tipo, x1, y1, x2, y2, texto, cor FROM layout_decoracoes ORDER BY id');
+        $decoracoes = $stmtDec->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) { /* tabela ainda não existe */ }
+
     echo json_encode([
-        'success' => true,
-        'mesas'   => $stmt->fetchAll(PDO::FETCH_ASSOC)
+        'success'    => true,
+        'mesas'      => $mesas,
+        'decoracoes' => $decoracoes
     ], JSON_UNESCAPED_UNICODE);
 
 } catch (PDOException $e) {

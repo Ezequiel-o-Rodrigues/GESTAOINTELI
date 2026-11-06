@@ -91,6 +91,82 @@
     will-change: transform;
 }
 
+/* SVG layer (linhas e textos) */
+.le-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1400px;
+    height: 900px;
+    pointer-events: none;
+    will-change: transform;
+    overflow: visible;
+}
+
+.le-dec-linha,
+.le-dec-texto {
+    pointer-events: all;
+    cursor: pointer;
+}
+
+.le-dec-linha:hover { stroke-opacity: 0.6; }
+.le-dec-texto:hover  { opacity: 0.7; }
+
+/* grupo de ferramentas */
+.le-tool-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 6px;
+    border-left: 1px solid #e2e8f0;
+    border-right: 1px solid #e2e8f0;
+}
+
+.le-tool-btn {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    background: transparent;
+    color: #475569;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background 0.15s, color 0.15s;
+}
+
+.le-tool-btn:hover { background: #f1f5f9; color: #0f172a; }
+
+.le-tool--active {
+    background: #fff7ed;
+    border-color: #ea580c;
+    color: #ea580c;
+}
+
+.le-color-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 6px;
+    height: 34px;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    background: #fff;
+    cursor: pointer;
+    color: #475569;
+    font-size: 0.9rem;
+}
+
+.le-color-label input[type=color] {
+    width: 22px;
+    height: 22px;
+    border: none;
+    padding: 0;
+    background: none;
+    cursor: pointer;
+}
+
 /* grade de fundo */
 .le-grid {
     background-image:

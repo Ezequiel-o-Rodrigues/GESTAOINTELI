@@ -23,6 +23,7 @@ $endpointRoles = [
     'marcar_perda_visualizada.php' => ['admin', 'caixa', 'estoque'],
     'mapa_mesas.php'    => ['admin', 'caixa', 'garcom'],
     'salvar_mesa.php'   => ['admin'],
+    'salvar_layout.php' => ['admin'],
     'deletar_mesa.php'  => ['admin'],
     'nova_comanda.php'  => ['admin', 'caixa', 'garcom'],
     'produto_info.php' => ['admin', 'caixa', 'estoque'],
