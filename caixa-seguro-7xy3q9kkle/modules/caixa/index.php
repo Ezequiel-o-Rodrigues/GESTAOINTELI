@@ -1051,7 +1051,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 canvas.replaceChildren();
                 canvas.style.minWidth = '0';
-                canvas.style.minHeight = '300px';
+                canvas.style.height = 'auto';
                 if (d.mesas.length === 0) {
                     const empty = document.createElement('p');
                     empty.setAttribute('role', 'status');
@@ -1061,8 +1061,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 let maxX = 0, maxY = 0;
                 d.mesas.forEach(m => {
-                    if (m.posicao_x + 86 > maxX) maxX = m.posicao_x + 86;
-                    if (m.posicao_y + 86 > maxY) maxY = m.posicao_y + 86;
+                    const bw = parseInt(m.largura) || 68;
+                    const bh = parseInt(m.altura)  || 68;
+                    if (m.posicao_x + bw + 10 > maxX) maxX = m.posicao_x + bw + 10;
+                    if (m.posicao_y + bh + 10 > maxY) maxY = m.posicao_y + bh + 10;
                 });
                 const decoracoes = d.decoracoes || [];
                 decoracoes.forEach(dec => {
@@ -1071,14 +1073,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (ex > maxX) maxX = ex;
                     if (ey > maxY) maxY = ey;
                 });
-                const w = Math.max(maxX, 400);
-                const h = Math.max(maxY, 300);
-                canvas.style.minWidth  = w + 'px';
-                canvas.style.minHeight = h + 'px';
+                const W = Math.max(maxX, 300);
+                const H = Math.max(maxY, 200);
 
-                // SVG layer para decorações
+                const inner = document.createElement('div');
+                inner.style.cssText = `position:relative;width:${W}px;height:${H}px;`;
+
                 const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                svg.setAttribute('width', w); svg.setAttribute('height', h);
+                svg.setAttribute('width', W); svg.setAttribute('height', H);
                 svg.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;overflow:visible';
                 svg.setAttribute('aria-hidden', 'true');
                 decoracoes.forEach(dec => {
@@ -1101,20 +1103,33 @@ document.addEventListener('DOMContentLoaded', function() {
                         svg.appendChild(txt);
                     }
                 });
-                canvas.appendChild(svg);
+                inner.appendChild(svg);
+
                 d.mesas.forEach(m => {
                     const btn = document.createElement('button');
+                    const bw = parseInt(m.largura) || 68;
+                    const bh = parseInt(m.altura)  || 68;
+                    const fmt = m.formato || 'quadrada';
+                    const radius = fmt === 'redonda' ? '50%' : fmt === 'retangular' ? '6px' : '8px';
                     btn.type = 'button';
                     btn.className = `mesa-btn-caixa ${m.status_mesa}`;
-                    btn.style.left = m.posicao_x + 'px';
-                    btn.style.top  = m.posicao_y + 'px';
+                    btn.style.cssText = `left:${m.posicao_x}px;top:${m.posicao_y}px;width:${bw}px;height:${bh}px;border-radius:${radius};`;
                     const esc = v => { const s = document.createElement('span'); s.textContent = v ?? ''; return s.innerHTML; };
                     btn.innerHTML = `<span>${esc(m.numero_mesa)}</span><small>${esc(m.ambiente)}</small>`;
                     btn.setAttribute('aria-label', `Mesa ${m.numero_mesa} – ${m.status_mesa}`);
                     btn.addEventListener('click', () => clicarMesaCaixa(m).catch(error =>
                         notificarCaixa(error.message || 'Não foi possível abrir esta mesa.', 'error')
                     ));
-                    canvas.appendChild(btn);
+                    inner.appendChild(btn);
+                });
+
+                canvas.appendChild(inner);
+                requestAnimationFrame(() => {
+                    const available = canvas.clientWidth || panel.clientWidth || window.innerWidth;
+                    const scale = Math.min(1, (available - 16) / W);
+                    inner.style.transform = `scale(${scale})`;
+                    inner.style.transformOrigin = '0 0';
+                    canvas.style.height = Math.ceil(H * scale) + 'px';
                 });
             } catch(e) {
                 const error = document.createElement('p');

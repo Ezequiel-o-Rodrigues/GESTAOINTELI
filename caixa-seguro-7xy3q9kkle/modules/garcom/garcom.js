@@ -583,8 +583,10 @@ if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
             }
             let maxX = 0, maxY = 0;
             mesas.forEach(m => {
-                if (m.posicao_x + 90 > maxX) maxX = m.posicao_x + 90;
-                if (m.posicao_y + 90 > maxY) maxY = m.posicao_y + 90;
+                const w = parseInt(m.largura) || 72;
+                const h = parseInt(m.altura)  || 72;
+                if (m.posicao_x + w + 10 > maxX) maxX = m.posicao_x + w + 10;
+                if (m.posicao_y + h + 10 > maxY) maxY = m.posicao_y + h + 10;
             });
             decoracoes.forEach(d => {
                 const ex = Math.max(d.x1, d.x2) + 20;
@@ -592,17 +594,20 @@ if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
                 if (ex > maxX) maxX = ex;
                 if (ey > maxY) maxY = ey;
             });
-            const w = Math.max(maxX, 400);
-            const h = Math.max(maxY, 400);
-            canvas.style.minWidth  = w + 'px';
-            canvas.style.minHeight = h + 'px';
+            const W = Math.max(maxX, 300);
+            const H = Math.max(maxY, 200);
 
-            // SVG layer para decorações (atrás das mesas)
+            // wrapper que aplica zoom automático
+            const wrap = document.createElement('div');
+            wrap.style.cssText = 'position:relative;overflow:auto;width:100%;';
+            const inner = document.createElement('div');
+            inner.style.cssText = `position:relative;width:${W}px;height:${H}px;`;
+
+            // SVG layer
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('width', w); svg.setAttribute('height', h);
+            svg.setAttribute('width', W); svg.setAttribute('height', H);
             svg.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;overflow:visible';
             svg.setAttribute('aria-hidden', 'true');
-
             decoracoes.forEach(dec => {
                 if (dec.tipo === 'linha') {
                     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -623,20 +628,35 @@ if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
                     svg.appendChild(txt);
                 }
             });
-            canvas.appendChild(svg);
+            inner.appendChild(svg);
 
             mesas.forEach(m => {
                 const btn = document.createElement('button');
+                const w = parseInt(m.largura) || 72;
+                const h = parseInt(m.altura)  || 72;
+                const fmt = m.formato || 'quadrada';
+                const radius = fmt === 'redonda' ? '50%' : fmt === 'retangular' ? '6px' : '10px';
                 btn.type = 'button';
                 btn.className = `mesa-btn ${m.status_mesa}`;
-                btn.style.left = m.posicao_x + 'px';
-                btn.style.top  = m.posicao_y + 'px';
-                btn.innerHTML  = `<span>${escapeHtmlMapa(m.numero_mesa)}</span><small>${escapeHtmlMapa(m.ambiente)}</small>`;
+                btn.style.cssText = `left:${m.posicao_x}px;top:${m.posicao_y}px;width:${w}px;height:${h}px;border-radius:${radius};`;
+                btn.innerHTML = `<span>${escapeHtmlMapa(m.numero_mesa)}</span><small>${escapeHtmlMapa(m.ambiente)}</small>`;
                 btn.setAttribute('aria-label', `Mesa ${m.numero_mesa} – ${m.status_mesa}`);
                 btn.addEventListener('click', () => clicarMesa(m).catch(error =>
                     showMapMessage(error.message || 'Não foi possível abrir esta mesa.', true)
                 ));
-                canvas.appendChild(btn);
+                inner.appendChild(btn);
+            });
+
+            wrap.appendChild(inner);
+            canvas.appendChild(wrap);
+
+            // zoom automático para caber na tela
+            requestAnimationFrame(() => {
+                const available = canvas.clientWidth || wrap.clientWidth || window.innerWidth;
+                const scale = Math.min(1, (available - 8) / W);
+                inner.style.transform = `scale(${scale})`;
+                inner.style.transformOrigin = '0 0';
+                wrap.style.height = Math.ceil(H * scale) + 'px';
             });
         }
 
