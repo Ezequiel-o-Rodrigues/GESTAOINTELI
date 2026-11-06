@@ -106,11 +106,17 @@
 .le-dec-linha,
 .le-dec-texto {
     pointer-events: all;
-    cursor: pointer;
+    cursor: move;
 }
 
 .le-dec-linha:hover { stroke-opacity: 0.6; }
 .le-dec-texto:hover  { opacity: 0.7; }
+
+/* handle de esticar */
+.le-handle {
+    cursor: nwse-resize;
+    pointer-events: all;
+}
 
 /* grupo de ferramentas */
 .le-tool-group {
