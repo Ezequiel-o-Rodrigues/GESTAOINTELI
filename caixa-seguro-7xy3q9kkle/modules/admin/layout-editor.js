@@ -115,7 +115,7 @@
             if (modoEdicao) {
                 el.setAttribute('draggable', 'false');
                 el.addEventListener('pointerdown', onMesaPointerDown);
-                el.addEventListener('click', e => { if (!e._wasDrag) abrirModalMesa(mesa); });
+                el.addEventListener('dblclick', () => abrirModalMesa(mesa));
             }
 
             canvas.appendChild(el);
