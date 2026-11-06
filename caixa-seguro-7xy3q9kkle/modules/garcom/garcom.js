@@ -562,7 +562,7 @@ if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
                     throw new Error(d.message || 'Não foi possível carregar o mapa de mesas.');
                 }
                 if (multiDialog && !multiDialog.hidden) multiDialog.hidden = true;
-                renderMapa(d.mesas);
+                renderMapa(d.mesas, d.decoracoes || []);
             } catch (e) {
                 const error = document.createElement('p');
                 error.className = 'waiter-empty';
@@ -572,7 +572,7 @@ if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
             }
         }
 
-        function renderMapa(mesas) {
+        function renderMapa(mesas, decoracoes) {
             canvas.replaceChildren();
             if (mesas.length === 0) {
                 const empty = document.createElement('p');
@@ -586,8 +586,44 @@ if (window.garcomConfig && window.garcomConfig.usarMapaMesas) {
                 if (m.posicao_x + 90 > maxX) maxX = m.posicao_x + 90;
                 if (m.posicao_y + 90 > maxY) maxY = m.posicao_y + 90;
             });
-            canvas.style.minWidth  = Math.max(maxX, 400) + 'px';
-            canvas.style.minHeight = Math.max(maxY, 400) + 'px';
+            decoracoes.forEach(d => {
+                const ex = Math.max(d.x1, d.x2) + 20;
+                const ey = Math.max(d.y1, d.y2) + 20;
+                if (ex > maxX) maxX = ex;
+                if (ey > maxY) maxY = ey;
+            });
+            const w = Math.max(maxX, 400);
+            const h = Math.max(maxY, 400);
+            canvas.style.minWidth  = w + 'px';
+            canvas.style.minHeight = h + 'px';
+
+            // SVG layer para decorações (atrás das mesas)
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', w); svg.setAttribute('height', h);
+            svg.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;overflow:visible';
+            svg.setAttribute('aria-hidden', 'true');
+
+            decoracoes.forEach(dec => {
+                if (dec.tipo === 'linha') {
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', dec.x1); line.setAttribute('y1', dec.y1);
+                    line.setAttribute('x2', dec.x2); line.setAttribute('y2', dec.y2);
+                    line.setAttribute('stroke', dec.cor || '#94a3b8');
+                    line.setAttribute('stroke-width', '3');
+                    line.setAttribute('stroke-linecap', 'round');
+                    svg.appendChild(line);
+                } else if (dec.tipo === 'texto') {
+                    const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    txt.setAttribute('x', dec.x1); txt.setAttribute('y', dec.y1);
+                    txt.setAttribute('fill', dec.cor || '#475569');
+                    txt.setAttribute('font-size', '14');
+                    txt.setAttribute('font-family', 'Segoe UI, sans-serif');
+                    txt.setAttribute('font-weight', '600');
+                    txt.textContent = dec.texto || '';
+                    svg.appendChild(txt);
+                }
+            });
+            canvas.appendChild(svg);
 
             mesas.forEach(m => {
                 const btn = document.createElement('button');

@@ -1064,8 +1064,44 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (m.posicao_x + 86 > maxX) maxX = m.posicao_x + 86;
                     if (m.posicao_y + 86 > maxY) maxY = m.posicao_y + 86;
                 });
-                canvas.style.minWidth  = Math.max(maxX, 400) + 'px';
-                canvas.style.minHeight = Math.max(maxY, 300) + 'px';
+                const decoracoes = d.decoracoes || [];
+                decoracoes.forEach(dec => {
+                    const ex = Math.max(dec.x1, dec.x2) + 20;
+                    const ey = Math.max(dec.y1, dec.y2) + 20;
+                    if (ex > maxX) maxX = ex;
+                    if (ey > maxY) maxY = ey;
+                });
+                const w = Math.max(maxX, 400);
+                const h = Math.max(maxY, 300);
+                canvas.style.minWidth  = w + 'px';
+                canvas.style.minHeight = h + 'px';
+
+                // SVG layer para decorações
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('width', w); svg.setAttribute('height', h);
+                svg.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;overflow:visible';
+                svg.setAttribute('aria-hidden', 'true');
+                decoracoes.forEach(dec => {
+                    if (dec.tipo === 'linha') {
+                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        line.setAttribute('x1', dec.x1); line.setAttribute('y1', dec.y1);
+                        line.setAttribute('x2', dec.x2); line.setAttribute('y2', dec.y2);
+                        line.setAttribute('stroke', dec.cor || '#94a3b8');
+                        line.setAttribute('stroke-width', '3');
+                        line.setAttribute('stroke-linecap', 'round');
+                        svg.appendChild(line);
+                    } else if (dec.tipo === 'texto') {
+                        const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        txt.setAttribute('x', dec.x1); txt.setAttribute('y', dec.y1);
+                        txt.setAttribute('fill', dec.cor || '#475569');
+                        txt.setAttribute('font-size', '14');
+                        txt.setAttribute('font-family', 'Segoe UI, sans-serif');
+                        txt.setAttribute('font-weight', '600');
+                        txt.textContent = dec.texto || '';
+                        svg.appendChild(txt);
+                    }
+                });
+                canvas.appendChild(svg);
                 d.mesas.forEach(m => {
                     const btn = document.createElement('button');
                     btn.type = 'button';
