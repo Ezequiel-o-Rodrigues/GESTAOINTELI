@@ -613,9 +613,7 @@ try {
 
     <!-- CONTEÚDO PRINCIPAL - MAIS ESPAÇO PARA PRODUTOS -->
     <div class="conteudo-principal">
-        <div class="alert alert-info" role="status">
-            Caixa, administração e garçons podem lançar produtos. A comissão do item é atribuída apenas quando lançado por um garçom autenticado.
-        </div>
+       
         <div class="filtros-container">
             <label class="cash-filter-search" for="search-produto">
                 <i class="bi bi-search" aria-hidden="true"></i>
